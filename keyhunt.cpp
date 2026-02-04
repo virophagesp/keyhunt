@@ -132,7 +132,6 @@ Point _2Gn;
 std::vector<Point> GSn;
 Point _2GSn;
 
-void menu();
 void init_generator();
 
 int searchbinary(struct address_value *buffer,char *data,int64_t array_length);
@@ -486,11 +485,8 @@ int main(int argc, char **argv)	{
 	
 	printf("[+] Version %s, developed by AlbertoBSD\n",version);
 
-	while ((c = getopt(argc, argv, "deh6MqRSB:b:c:C:E:f:I:k:l:m:N:n:p:r:s:t:v:G:8:z:")) != -1) {
+	while ((c = getopt(argc, argv, "de6MqRSB:b:c:C:E:f:I:k:l:m:N:n:p:r:s:t:v:G:8:z:")) != -1) {
 		switch(c) {
-			case 'h':
-				menu();
-			break;
 			case '6':
 				FLAGSKIPCHECKSUM = 1;
 				fprintf(stderr,"[W] Skipping checksums on files\n");
@@ -5736,40 +5732,6 @@ void sha256sse_23(uint8_t *src0, uint8_t *src1, uint8_t *src2, uint8_t *src3, ui
   BUFFMINIKEYCHECK(b2, src2);
   BUFFMINIKEYCHECK(b3, src3);
   sha256sse_1B(b0, b1, b2, b3, dst0, dst1, dst2, dst3);
-}
-
-void menu() {
-	printf("\nUsage:\n");
-	printf("-h          show this help\n");
-	printf("-B Mode     BSGS now have some modes <sequential, backward, both, random, dance>\n");
-	printf("-b bits     For some puzzles you only need some numbers of bits in the test keys.\n");
-	printf("-c crypto   Search for specific crypto. <btc, eth> valid only w/ -m address\n");
-	printf("-C mini     Set the minikey Base only 22 character minikeys, ex: SRPqx8QiwnW4WNWnTVa2W5\n");
-	printf("-8 alpha    Set the bas58 alphabet for minikeys\n");
-	printf("-e          Enable endomorphism search (Only for address, rmd160 and vanity)\n");
-	printf("-f file     Specify file name with addresses or xpoints or uncompressed public keys\n");
-	printf("-I stride   Stride for xpoint, rmd160 and address, this option don't work with bsgs\n");
-	printf("-k value    Use this only with bsgs mode, k value is factor for M, more speed but more RAM use wisely\n");
-	printf("-l look     What type of address/hash160 are you looking for <compress, uncompress, both> Only for rmd160 and address\n");
-	printf("-m mode     mode of search for cryptos. (bsgs, xpoint, rmd160, address, vanity) default: address\n");
-	printf("-M          Matrix screen, feel like a h4x0r, but performance will dropped\n");
-	printf("-n number   Check for N sequential numbers before the random chosen, this only works with -R option\n");
-	printf("            Use -n to set the N for the BSGS process. Bigger N more RAM needed\n");
-	printf("-q          Quiet the thread output\n");
-	printf("-r SR:EN    StarRange:EndRange, the end range can be omitted for search from start range to N-1 ECC value\n");
-	printf("-R          Random, this is the default behavior\n");
-	printf("-s ns       Number of seconds for the stats output, 0 to omit output.\n");
-	printf("-S          S is for SAVING in files BSGS data (Bloom filters and bPtable)\n");
-	printf("-6          to skip sha256 Checksum on data files");
-	printf("-t tn       Threads number, must be a positive integer\n");
-	printf("-v value    Search for vanity Address, only with -m vanity\n");
-	printf("-z value    Bloom size multiplier, only address,rmd160,vanity, xpoint, value >= 1\n");
-	printf("\nExample:\n\n");
-	printf("./keyhunt -m rmd160 -f tests/unsolvedpuzzles.rmd -b 66 -l compress -R -q -t 8\n\n");
-	printf("This line runs the program with 8 threads from the range 20000000000000000 to 40000000000000000 without stats output\n\n");
-	printf("Developed by AlbertoBSD\tTips BTC: 1Coffee1jV4gB5gaXfHgSHDz9xx9QSECVW\n");
-	printf("Thanks to Iceland always helping and sharing his ideas.\nTips to Iceland: bc1q39meky2mn5qjq704zz0nnkl0v7kj4uz6r529at\n\n");
-	exit(EXIT_FAILURE);
 }
 
 bool vanityrmdmatch(unsigned char *rmdhash)	{
