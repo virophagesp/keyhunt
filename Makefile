@@ -21,8 +21,10 @@ default:
 	rm -r *.o
 clean:
 	rm keyhunt
-run_test:
+run_small_test:
 	./keyhunt -m address -f 16.txt -l compress -r 8000:ffff -n 1024
+run_medium_test:
+	./keyhunt -m address -f 34.txt -l compress -r 200000000:3ffffffff -n 1024
 run_big_test:
 	./keyhunt -m address -f 69.txt -l compress -r 100000000000000000:1fffffffffffffffff -n 1024
 run_money:
