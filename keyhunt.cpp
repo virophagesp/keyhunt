@@ -273,7 +273,6 @@ uint64_t u64range;
 
 Int OUTPUTSECONDS;
 
-int FLAGSKIPCHECKSUM = 0;
 int FLAGENDOMORPHISM = 0;
 
 int FLAGBLOOMMULTIPLIER = 1;
@@ -485,12 +484,8 @@ int main(int argc, char **argv)	{
 	
 	printf("[+] Version %s, developed by AlbertoBSD\n",version);
 
-	while ((c = getopt(argc, argv, "de6MqRSB:b:c:C:E:f:I:k:l:m:N:n:p:r:s:t:v:G:8:z:")) != -1) {
+	while ((c = getopt(argc, argv, "deMqRSB:b:c:C:E:f:I:k:l:m:N:n:p:r:s:t:v:G:8:z:")) != -1) {
 		switch(c) {
-			case '6':
-				FLAGSKIPCHECKSUM = 1;
-				fprintf(stderr,"[W] Skipping checksums on files\n");
-			break;
 			case 'B':
 				index_value = indexOf(optarg,bsgs_modes,5);
 				if(index_value >= 0 && index_value <= 4)	{
@@ -1392,13 +1387,13 @@ int main(int argc, char **argv)	{
 						fprintf(stderr,"[E] Error reading the file %s\n",buffer_bloom_file);
 						exit(EXIT_FAILURE);
 					}
-					if(FLAGSKIPCHECKSUM == 0)	{
-						sha256((uint8_t*)bloom_bP[i].bf,bloom_bP[i].bytes,(uint8_t*)rawvalue);
-						if(memcmp(bloom_bP_checksums[i].data,rawvalue,32) != 0 || memcmp(bloom_bP_checksums[i].backup,rawvalue,32) != 0 )	{	/* Verification */
-							fprintf(stderr,"[E] Error checksum file mismatch! %s\n",buffer_bloom_file);
-							exit(EXIT_FAILURE);
-						}
+
+					sha256((uint8_t*)bloom_bP[i].bf,bloom_bP[i].bytes,(uint8_t*)rawvalue);
+					if(memcmp(bloom_bP_checksums[i].data,rawvalue,32) != 0 || memcmp(bloom_bP_checksums[i].backup,rawvalue,32) != 0 )	{	/* Verification */
+						fprintf(stderr,"[E] Error checksum file mismatch! %s\n",buffer_bloom_file);
+						exit(EXIT_FAILURE);
 					}
+
 					if(i % 64 == 0 )	{
 						printf(".");
 						fflush(stdout);
@@ -1447,13 +1442,13 @@ int main(int argc, char **argv)	{
 						memcpy(bloom_bP_checksums[i].data,oldbloom_bP.checksum,32);
 						memcpy(bloom_bP_checksums[i].backup,oldbloom_bP.checksum_backup,32);
 						memset(rawvalue,0,32);
-						if(FLAGSKIPCHECKSUM == 0)	{
-							sha256((uint8_t*)bloom_bP[i].bf,bloom_bP[i].bytes,(uint8_t*)rawvalue);
-							if(memcmp(bloom_bP_checksums[i].data,rawvalue,32) != 0 || memcmp(bloom_bP_checksums[i].backup,rawvalue,32) != 0 )	{	/* Verification */
-								fprintf(stderr,"[E] Error checksum file mismatch! %s\n",buffer_bloom_file);
-								exit(EXIT_FAILURE);
-							}
+
+						sha256((uint8_t*)bloom_bP[i].bf,bloom_bP[i].bytes,(uint8_t*)rawvalue);
+						if(memcmp(bloom_bP_checksums[i].data,rawvalue,32) != 0 || memcmp(bloom_bP_checksums[i].backup,rawvalue,32) != 0 )	{	/* Verification */
+							fprintf(stderr,"[E] Error checksum file mismatch! %s\n",buffer_bloom_file);
+							exit(EXIT_FAILURE);
 						}
+
 						if(i % 32 == 0 )	{
 							printf(".");
 							fflush(stdout);
@@ -1496,13 +1491,13 @@ int main(int argc, char **argv)	{
 						exit(EXIT_FAILURE);
 					}
 					memset(rawvalue,0,32);
-					if(FLAGSKIPCHECKSUM == 0)	{								
-						sha256((uint8_t*)bloom_bPx2nd[i].bf,bloom_bPx2nd[i].bytes,(uint8_t*)rawvalue);
-						if(memcmp(bloom_bPx2nd_checksums[i].data,rawvalue,32) != 0 || memcmp(bloom_bPx2nd_checksums[i].backup,rawvalue,32) != 0 )	{		/* Verification */
-							fprintf(stderr,"[E] Error checksum file mismatch! %s\n",buffer_bloom_file);
-							exit(EXIT_FAILURE);
-						}
+
+					sha256((uint8_t*)bloom_bPx2nd[i].bf,bloom_bPx2nd[i].bytes,(uint8_t*)rawvalue);
+					if(memcmp(bloom_bPx2nd_checksums[i].data,rawvalue,32) != 0 || memcmp(bloom_bPx2nd_checksums[i].backup,rawvalue,32) != 0 )	{		/* Verification */
+						fprintf(stderr,"[E] Error checksum file mismatch! %s\n",buffer_bloom_file);
+						exit(EXIT_FAILURE);
 					}
+
 					if(i % 64 == 0)	{
 						printf(".");
 						fflush(stdout);
@@ -1546,13 +1541,13 @@ int main(int argc, char **argv)	{
 					fprintf(stderr,"[E] Error reading the file %s\n",buffer_bloom_file);
 					exit(EXIT_FAILURE);
 				}
-				if(FLAGSKIPCHECKSUM == 0)	{
-					sha256((uint8_t*)bPtable,bytes,(uint8_t*)checksum_backup);
-					if(memcmp(checksum,checksum_backup,32) != 0)	{
-						fprintf(stderr,"[E] Error checksum file mismatch! %s\n",buffer_bloom_file);
-						exit(EXIT_FAILURE);
-					}
+
+				sha256((uint8_t*)bPtable,bytes,(uint8_t*)checksum_backup);
+				if(memcmp(checksum,checksum_backup,32) != 0)	{
+					fprintf(stderr,"[E] Error checksum file mismatch! %s\n",buffer_bloom_file);
+					exit(EXIT_FAILURE);
 				}
+
 				printf("... Done!\n");
 				fclose(fd_aux3);
 				FLAGREADEDFILE3 = 1;
@@ -1586,12 +1581,10 @@ int main(int argc, char **argv)	{
 						exit(EXIT_FAILURE);
 					}
 					memset(rawvalue,0,32);
-					if(FLAGSKIPCHECKSUM == 0)	{							
-						sha256((uint8_t*)bloom_bPx3rd[i].bf,bloom_bPx3rd[i].bytes,(uint8_t*)rawvalue);
-						if(memcmp(bloom_bPx3rd_checksums[i].data,rawvalue,32) != 0 || memcmp(bloom_bPx3rd_checksums[i].backup,rawvalue,32) != 0 )	{		/* Verification */
-							fprintf(stderr,"[E] Error checksum file mismatch! %s\n",buffer_bloom_file);
-							exit(EXIT_FAILURE);
-						}
+					sha256((uint8_t*)bloom_bPx3rd[i].bf,bloom_bPx3rd[i].bytes,(uint8_t*)rawvalue);
+					if(memcmp(bloom_bPx3rd_checksums[i].data,rawvalue,32) != 0 || memcmp(bloom_bPx3rd_checksums[i].backup,rawvalue,32) != 0 )	{		/* Verification */
+						fprintf(stderr,"[E] Error checksum file mismatch! %s\n",buffer_bloom_file);
+						exit(EXIT_FAILURE);
 					}
 					if(i % 64 == 0)	{
 						printf(".");
@@ -6155,24 +6148,22 @@ bool readFileAddress(char *fileName)	{
 				fclose(fileDescriptor);
 				return false;
 			}
-			if(FLAGSKIPCHECKSUM == 0){
-				
-				//calculate checksum of the current readed data
-				sha256((uint8_t*)bloom.bf,bloom.bytes,(uint8_t*)checksum);
-				
-				//Compare checksums
-				/*
-				if(FLAGDEBUG)	{
-					hextemp = tohex((char*)checksum,32);
-					printf("[D] Current Bloom checksum %s\n",hextemp);
-					free(hextemp);
-				}
-				*/
-				if(memcmp(checksum,bloomChecksum,32) != 0)	{
-					fprintf(stderr,"[E] Error checksum mismatch, code line %i\n",__LINE__ - 2);
-					fclose(fileDescriptor);
-					return false;
-				}
+			
+			//calculate checksum of the current readed data
+			sha256((uint8_t*)bloom.bf,bloom.bytes,(uint8_t*)checksum);
+			
+			//Compare checksums
+			/*
+			if(FLAGDEBUG)	{
+				hextemp = tohex((char*)checksum,32);
+				printf("[D] Current Bloom checksum %s\n",hextemp);
+				free(hextemp);
+			}
+			*/
+			if(memcmp(checksum,bloomChecksum,32) != 0)	{
+				fprintf(stderr,"[E] Error checksum mismatch, code line %i\n",__LINE__ - 2);
+				fclose(fileDescriptor);
+				return false;
 			}
 			
 			/*
@@ -6214,15 +6205,14 @@ bool readFileAddress(char *fileName)	{
 				fclose(fileDescriptor);
 				return false;
 			}
-			if(FLAGSKIPCHECKSUM == 0)	{
-					
-				sha256((uint8_t*)addressTable,dataSize,(uint8_t*)checksum);
-				if(memcmp(checksum,dataChecksum,32) != 0)	{
-					fprintf(stderr,"[E] Error checksum mismatch, code line %i\n",__LINE__ - 2);
-					fclose(fileDescriptor);
-					return false;
-				}
+			
+			sha256((uint8_t*)addressTable,dataSize,(uint8_t*)checksum);
+			if(memcmp(checksum,dataChecksum,32) != 0)	{
+				fprintf(stderr,"[E] Error checksum mismatch, code line %i\n",__LINE__ - 2);
+				fclose(fileDescriptor);
+				return false;
 			}
+			
 			//printf("[D] bloom.bf points to %p\n",bloom.bf);
 			FLAGREADEDFILE1 = 1;	/* We mark the file as readed*/
 			fclose(fileDescriptor);
