@@ -279,7 +279,6 @@ int FLAGBLOOMMULTIPLIER = 1;
 int FLAGVANITY = 0;
 int FLAGBASEMINIKEY = 0;
 int FLAGBSGSMODE = 0;
-int FLAGDEBUG = 0;
 int FLAGQUIET = 0;
 int KFACTOR = 1;
 int MAXLENGTHADDRESS = -1;
@@ -483,7 +482,7 @@ int main(int argc, char **argv)	{
 	
 	printf("[+] Version %s, developed by AlbertoBSD\n",version);
 
-	while ((c = getopt(argc, argv, "deqRSB:b:c:C:E:f:I:k:l:m:N:n:p:r:s:t:v:G:8:z:")) != -1) {
+	while ((c = getopt(argc, argv, "eqRSB:b:c:C:E:f:I:k:l:m:N:n:p:r:s:t:v:G:8:z:")) != -1) {
 		switch(c) {
 			case 'B':
 				index_value = indexOf(optarg,bsgs_modes,5);
@@ -561,10 +560,6 @@ int main(int argc, char **argv)	{
 					exit(EXIT_FAILURE);
 				}
 				
-			break;
-			case 'd':
-				FLAGDEBUG = 1;
-				printf("[+] Flag DEBUG enabled\n");
 			break;
 			case 'e':
 				FLAGENDOMORPHISM = 1;
@@ -1226,7 +1221,6 @@ int main(int argc, char **argv)	{
 				exit(EXIT_FAILURE);
 			}
 			bloom_bP_totalbytes += bloom_bP[i].bytes;
-			//if(FLAGDEBUG) bloom_print(&bloom_bP[i]);
 		}
 		printf(": %.2f MB\n",(float)((float)(uint64_t)bloom_bP_totalbytes/(float)(uint64_t)1048576));
 
@@ -1255,7 +1249,6 @@ int main(int argc, char **argv)	{
 				exit(EXIT_FAILURE);
 			}
 			bloom_bP2_totalbytes += bloom_bPx2nd[i].bytes;
-			//if(FLAGDEBUG) bloom_print(&bloom_bPx2nd[i]);
 		}
 		printf(": %.2f MB\n",(float)((float)(uint64_t)bloom_bP2_totalbytes/(float)(uint64_t)1048576));
 		
@@ -1284,10 +1277,8 @@ int main(int argc, char **argv)	{
 				exit(EXIT_FAILURE);
 			}
 			bloom_bP3_totalbytes += bloom_bPx3rd[i].bytes;
-			//if(FLAGDEBUG) bloom_print(&bloom_bPx3rd[i]);
 		}
 		printf(": %.2f MB\n",(float)((float)(uint64_t)bloom_bP3_totalbytes/(float)(uint64_t)1048576));
-		//if(FLAGDEBUG) printf("[D] bloom_bP3_totalbytes : %" PRIu64 "\n",bloom_bP3_totalbytes);
 
 
 
@@ -1414,13 +1405,6 @@ int main(int argc, char **argv)	{
 					for(i = 0; i < 256;i++)	{
 						bf_ptr = (char*) bloom_bP[i].bf;	/*We need to save the current bf pointer*/
 						readed = fread(&oldbloom_bP,sizeof(struct oldbloom),1,fd_aux1);
-						
-						/*
-						if(FLAGDEBUG)	{
-							printf("old Bloom filter %i\n",i);
-							oldbloom_print(&oldbloom_bP);
-						}
-						*/
 						
 						if(readed != 1)	{
 							fprintf(stderr,"[E] Error reading the file %s\n",buffer_bloom_file);
@@ -1725,10 +1709,8 @@ int main(int argc, char **argv)	{
 				}
 				THREADCYCLES = bsgs_m / THREADBPWORKLOAD;
 				PERTHREAD_R = bsgs_m % THREADBPWORKLOAD;
-				//if(FLAGDEBUG) printf("[D] THREADCYCLES: %lu\n",THREADCYCLES);
 				if(PERTHREAD_R != 0)	{
 					THREADCYCLES++;
-					//if(FLAGDEBUG) printf("[D] PERTHREAD_R: %lu\n",PERTHREAD_R);
 				}
 				
 				printf("\r[+] processing %lu/%lu bP points : %i%%\r",FINISHED_ITEMS,bsgs_m,(int) (((double)FINISHED_ITEMS/(double)bsgs_m)*100));
@@ -1776,9 +1758,7 @@ int main(int argc, char **argv)	{
 								bPload_temp_ptr[j].to = BASE + THREADBPWORKLOAD + PERTHREAD_R;
 								bPload_temp_ptr[j].workload = THREADBPWORKLOAD + PERTHREAD_R;
 								salir = 1;
-								//if(FLAGDEBUG) printf("[D] Salir OK\n");
 							}
-							//if(FLAGDEBUG) printf("[I] %lu to %lu\n",bPload_temp_ptr[i].from,bPload_temp_ptr[i].to);
 #if defined(_WIN64) && !defined(__CYGWIN__)
 							tid[j] = CreateThread(NULL, 0, thread_bPload, (void*) &bPload_temp_ptr[j], 0, &s);
 #else
@@ -3026,12 +3006,6 @@ void *thread_process(void *vargp)	{
 					temp_stride.Mult(&stride);
 					key_mpz.Add(&temp_stride);
 				}
-				/*
-				if(FLAGDEBUG) {
-					printf("\n[D] thread_process %i\n",__LINE__ -1 );
-					fflush(stdout);
-				}
-				*/
 
 				steps[thread_number]++;
 
@@ -3100,18 +3074,6 @@ void *thread_process_vanity(void *vargp)	{
 	//if FLAGENDOMORPHISM  == 1 and only compress search is enabled then there is no need to calculate the Y value value					
 	
 	bool calculate_y = FLAGSEARCH == SEARCH_UNCOMPRESS || FLAGSEARCH == SEARCH_BOTH;
-	
-	/*
-	if(FLAGDEBUG && thread_number == 0)	{
-		printf("[D] vanity_rmd_targets = %i          fillllll\n",vanity_rmd_targets);
-		printf("[D] vanity_rmd_total = %i\n",vanity_rmd_total);
-		for(i =0; i < vanity_rmd_targets;i++)	{
-			printf("[D] vanity_rmd_limits[%li] = %i\n",i,vanity_rmd_limits[i]);
-			
-		}
-		printf("[D] vanity_rmd_minimun_bytes_check_length = %i\n",vanity_rmd_minimun_bytes_check_length);
-	}
-	*/
 	
 
 	do {
@@ -3389,7 +3351,6 @@ void *thread_process_vanity(void *vargp)	{
 										if(memcmp(publickeyhashrmd160_endomorphism[l][k],publickeyhashrmd160,20) != 0){
 											keyfound.Neg();
 											keyfound.Add(&secp->order);
-											//if(FLAGDEBUG) printf("[D] Key need to be negated\n");
 										}
 										writevanitykey(true,&keyfound);
 									}
@@ -4355,7 +4316,6 @@ void *thread_bPload(void *vargp)	{
 	tt = (struct bPload *)vargp;
 	Int km((uint64_t)(tt->from + 1));
 	threadid = tt->threadid;
-	//if(FLAGDEBUG) printf("[D] thread %i from %" PRIu64 " to %" PRIu64 "\n",threadid,tt->from,tt->to);
 	
 	i_counter = tt->from;
 
@@ -4364,7 +4324,6 @@ void *thread_bPload(void *vargp)	{
 	if( ((tt->to - tt->from) % CPU_GRP_SIZE )  != 0)	{
 		nbStep++;
 	}
-	//if(FLAGDEBUG) printf("[D] thread %i nbStep %" PRIu64 "\n",threadid,nbStep);
 	to = tt->to;
 	
 	km.Add((uint64_t)(CPU_GRP_SIZE / 2));
@@ -4450,12 +4409,6 @@ void *thread_bPload(void *vargp)	{
 		for(j=0;j<CPU_GRP_SIZE;j++)	{
 			pts[j].x.Get32Bytes((unsigned char*)rawvalue);
 			bloom_bP_index = (uint8_t)rawvalue[0];
-			/*
-			if(FLAGDEBUG){
-				tohex_dst(rawvalue,32,hexraw);
-				printf("%i : %s : %i\n",i_counter,hexraw,bloom_bP_index);
-			}
-			*/
 			if(i_counter < bsgs_m3)	{
 				if(!FLAGREADEDFILE3)	{
 					memcpy(bPtable[i_counter].value,rawvalue+16,BSGS_XVALUE_RAM);
@@ -4553,7 +4506,6 @@ void *thread_bPload_2blooms(void *vargp)	{
 	if( ((tt->to - (tt->from)) % CPU_GRP_SIZE )  != 0)	{
 		nbStep++;
 	}
-	//if(FLAGDEBUG) printf("[D] thread %i nbStep %" PRIu64 "\n",threadid,nbStep);
 	//to = tt->to;
 	
 	km.Add((uint64_t)(CPU_GRP_SIZE / 2));
@@ -5665,7 +5617,6 @@ bool vanityrmdmatch(unsigned char *rmdhash)	{
 					cmpA = memcmp(vanity_rmd_limit_values_A[i][j],rmdhash,20);
 					cmpB = memcmp(vanity_rmd_limit_values_B[i][j],rmdhash,20);
 					if(cmpA <= 0 && cmpB >= 0)	{
-						//if(FLAGDEBUG ) printf("\n\n[D] cmpA = %i, cmpB = %i \n\n",cmpA,cmpB);
 						r = true;
 					}
 				}
@@ -6076,27 +6027,11 @@ bool readFileAddress(char *fileName)	{
 			sha256((uint8_t*)bloom.bf,bloom.bytes,(uint8_t*)checksum);
 			
 			//Compare checksums
-			/*
-			if(FLAGDEBUG)	{
-				hextemp = tohex((char*)checksum,32);
-				printf("[D] Current Bloom checksum %s\n",hextemp);
-				free(hextemp);
-			}
-			*/
 			if(memcmp(checksum,bloomChecksum,32) != 0)	{
 				fprintf(stderr,"[E] Error checksum mismatch, code line %i\n",__LINE__ - 2);
 				fclose(fileDescriptor);
 				return false;
 			}
-			
-			/*
-			if(FLAGDEBUG) {
-				hextemp = tohex((char*)bloom.bf,32);
-				printf("[D] first 32 bytes of the bloom : %s\n",hextemp);
-				bloom_print(&bloom);
-				printf("[D] bloom.bf points to %p\n",bloom.bf);
-			}
-			*/
 			
 			bytesRead = fread(dataChecksum,1,32,fileDescriptor);
 			if(bytesRead != 32)	{
@@ -6509,15 +6444,6 @@ void writeFileIfNeeded(const char *fileName)	{
 				exit(EXIT_FAILURE);
 			}
 			printf(".");
-			
-			/*
-			if(FLAGDEBUG)	{
-				hextemp = tohex((char*)bloom.bf,32);
-				printf("\n[D] first 32 bytes bloom : %s\n",hextemp);
-				bloom_print(&bloom);
-				free(hextemp);
-			}
-			*/
 
 			
 			
