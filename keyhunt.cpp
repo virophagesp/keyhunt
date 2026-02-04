@@ -281,7 +281,6 @@ int FLAGBASEMINIKEY = 0;
 int FLAGBSGSMODE = 0;
 int FLAGDEBUG = 0;
 int FLAGQUIET = 0;
-int FLAGMATRIX = 0;
 int KFACTOR = 1;
 int MAXLENGTHADDRESS = -1;
 int NTHREADS = 1;
@@ -484,7 +483,7 @@ int main(int argc, char **argv)	{
 	
 	printf("[+] Version %s, developed by AlbertoBSD\n",version);
 
-	while ((c = getopt(argc, argv, "deMqRSB:b:c:C:E:f:I:k:l:m:N:n:p:r:s:t:v:G:8:z:")) != -1) {
+	while ((c = getopt(argc, argv, "deqRSB:b:c:C:E:f:I:k:l:m:N:n:p:r:s:t:v:G:8:z:")) != -1) {
 		switch(c) {
 			case 'B':
 				index_value = indexOf(optarg,bsgs_modes,5);
@@ -606,10 +605,6 @@ int main(int argc, char **argv)	{
 						printf("[+] Search both compress and uncompress\n");
 					break;
 				}
-			break;
-			case 'M':
-				FLAGMATRIX = 1;
-				printf("[+] Matrix screen\n");
 			break;
 			case 'm':
 				switch(indexOf(optarg,modes,7)) {
@@ -2188,12 +2183,7 @@ int main(int argc, char **argv)	{
 				
 				
 				if(pretotal.IsLower(&int_limits[0]))	{
-					if(FLAGMATRIX)	{
-						sprintf(buffer,"[+] Total %s keys in %s seconds: %s keys/s\n",str_total,str_seconds,str_pretotal);
-					}
-					else	{
-						sprintf(buffer,"\r[+] Total %s keys in %s seconds: %s keys/s\r",str_total,str_seconds,str_pretotal);
-					}
+					sprintf(buffer,"\r[+] Total %s keys in %s seconds: %s keys/s\r",str_total,str_seconds,str_pretotal);
 				}
 				else	{
 					i = 0;
@@ -2210,16 +2200,11 @@ int main(int argc, char **argv)	{
 					div_pretotal.Set(&pretotal);
 					div_pretotal.Div(&int_limits[salir ? i : i-1]);
 					str_divpretotal = div_pretotal.GetBase10();
-					if(FLAGMATRIX)	{
-						sprintf(buffer,"[+] Total %s keys in %s seconds: ~%s %s (%s keys/s)\n",str_total,str_seconds,str_divpretotal,str_limits_prefixs[salir ? i : i-1],str_pretotal);
+					if(THREADOUTPUT == 1)	{
+						sprintf(buffer,"\r[+] Total %s keys in %s seconds: ~%s %s (%s keys/s)\r",str_total,str_seconds,str_divpretotal,str_limits_prefixs[salir ? i : i-1],str_pretotal);
 					}
 					else	{
-						if(THREADOUTPUT == 1)	{
-							sprintf(buffer,"\r[+] Total %s keys in %s seconds: ~%s %s (%s keys/s)\r",str_total,str_seconds,str_divpretotal,str_limits_prefixs[salir ? i : i-1],str_pretotal);
-						}
-						else	{
-							sprintf(buffer,"\r[+] Total %s keys in %s seconds: ~%s %s (%s keys/s)\r",str_total,str_seconds,str_divpretotal,str_limits_prefixs[salir ? i : i-1],str_pretotal);
-						}
+						sprintf(buffer,"\r[+] Total %s keys in %s seconds: ~%s %s (%s keys/s)\r",str_total,str_seconds,str_divpretotal,str_limits_prefixs[salir ? i : i-1],str_pretotal);
 					}
 					free(str_divpretotal);
 
@@ -2406,15 +2391,9 @@ void *thread_process_minikeys(void *vargp)	{
 		set_minikey(minikey2check+1,buffer_b58,21);
 		if(continue_flag)	{
 			count = 0;
-			if(FLAGMATRIX)	{
-					printf("[+] Base minikey: %s     \n",minikey2check);
-					fflush(stdout);
-			}
-			else	{
-				if(!FLAGQUIET)	{
-					printf("\r[+] Base minikey: %s     \r",minikey2check);
-					fflush(stdout);
-				}
+			if(!FLAGQUIET)	{
+				printf("\r[+] Base minikey: %s     \r",minikey2check);
+				fflush(stdout);
 			}
 			do {
 				for(j = 0;j<256; j++)	{
@@ -2557,20 +2536,12 @@ void *thread_process(void *vargp)	{
 		}
 		if(continue_flag)	{
 			count = 0;
-			if(FLAGMATRIX)	{
-					hextemp = key_mpz.GetBase16();
-					printf("Base key: %s thread %i\n",hextemp,thread_number);
-					fflush(stdout);
-					free(hextemp);
-			}
-			else	{
-				if(FLAGQUIET == 0){
-					hextemp = key_mpz.GetBase16();
-					printf("\rBase key: %s     \r",hextemp);
-					fflush(stdout);
-					free(hextemp);
-					THREADOUTPUT = 1;
-				}
+			if(FLAGQUIET == 0){
+				hextemp = key_mpz.GetBase16();
+				printf("\rBase key: %s     \r",hextemp);
+				fflush(stdout);
+				free(hextemp);
+				THREADOUTPUT = 1;
 			}
 			do {
 				temp_stride.SetInt32(CPU_GRP_SIZE / 2);
@@ -3167,20 +3138,12 @@ void *thread_process_vanity(void *vargp)	{
 		}
 		if(continue_flag)	{
 			count = 0;
-			if(FLAGMATRIX)	{
-					hextemp = key_mpz.GetBase16();
-					printf("Base key: %s thread %i\n",hextemp,thread_number);
-					fflush(stdout);
-					free(hextemp);
-			}
-			else	{
-				if(FLAGQUIET == 0)	{
-					hextemp = key_mpz.GetBase16();
-					printf("\rBase key: %s     \r",hextemp);
-					fflush(stdout);
-					free(hextemp);
-					THREADOUTPUT = 1;
-				}
+			if(FLAGQUIET == 0)	{
+				hextemp = key_mpz.GetBase16();
+				printf("\rBase key: %s     \r",hextemp);
+				fflush(stdout);
+				free(hextemp);
+				THREADOUTPUT = 1;
 			}
 			do {
 				temp_stride.SetInt32(CPU_GRP_SIZE / 2);
@@ -3832,20 +3795,12 @@ void *thread_process_bsgs(void *vargp)	{
 		if(base_key.IsGreaterOrEqual(&n_range_end))
 			break;
 		
-		if(FLAGMATRIX)	{
+		if(FLAGQUIET == 0){
 			aux_c = base_key.GetBase16();
-			printf("[+] Thread 0x%s \n",aux_c);
+			printf("\r[+] Thread 0x%s   \r",aux_c);
 			fflush(stdout);
 			free(aux_c);
-		}
-		else	{
-			if(FLAGQUIET == 0){
-				aux_c = base_key.GetBase16();
-				printf("\r[+] Thread 0x%s   \r",aux_c);
-				fflush(stdout);
-				free(aux_c);
-				THREADOUTPUT = 1;
-			}
+			THREADOUTPUT = 1;
 		}
 		base_point = secp->ComputePublicKey(&base_key);
 		km.Set(&base_key);
@@ -4062,20 +4017,12 @@ void *thread_process_bsgs_random(void *vargp)	{
 		pthread_mutex_unlock(&bsgs_thread);
 #endif
 
-		if(FLAGMATRIX)	{
-				aux_c = base_key.GetBase16();
-				printf("[+] Thread 0x%s  \n",aux_c);
-				fflush(stdout);
-				free(aux_c);
-		}
-		else{
-			if(FLAGQUIET == 0){
-				aux_c = base_key.GetBase16();
-				printf("\r[+] Thread 0x%s  \r",aux_c);
-				fflush(stdout);
-				free(aux_c);
-				THREADOUTPUT = 1;
-			}
+		if(FLAGQUIET == 0){
+			aux_c = base_key.GetBase16();
+			printf("\r[+] Thread 0x%s  \r",aux_c);
+			fflush(stdout);
+			free(aux_c);
+			THREADOUTPUT = 1;
 		}
 		base_point = secp->ComputePublicKey(&base_key);
 
@@ -4868,20 +4815,12 @@ void *thread_process_bsgs_dance(void *vargp)	{
 		if(entrar == 0)
 			break;
 			
-		if(FLAGMATRIX)	{
+		if(FLAGQUIET == 0){
 			aux_c = base_key.GetBase16();
-			printf("[+] Thread 0x%s \n",aux_c);
+			printf("\r[+] Thread 0x%s   \r",aux_c);
 			fflush(stdout);
 			free(aux_c);
-		}
-		else	{
-			if(FLAGQUIET == 0){
-				aux_c = base_key.GetBase16();
-				printf("\r[+] Thread 0x%s   \r",aux_c);
-				fflush(stdout);
-				free(aux_c);
-				THREADOUTPUT = 1;
-			}
+			THREADOUTPUT = 1;
 		}
 		
 		base_point = secp->ComputePublicKey(&base_key);
@@ -5128,20 +5067,12 @@ void *thread_process_bsgs_backward(void *vargp)	{
 		if(entrar == 0)
 			break;
 		
-		if(FLAGMATRIX)	{
+		if(FLAGQUIET == 0){
 			aux_c = base_key.GetBase16();
-			printf("[+] Thread 0x%s \n",aux_c);
+			printf("\r[+] Thread 0x%s   \r",aux_c);
 			fflush(stdout);
 			free(aux_c);
-		}
-		else	{
-			if(FLAGQUIET == 0){
-				aux_c = base_key.GetBase16();
-				printf("\r[+] Thread 0x%s   \r",aux_c);
-				fflush(stdout);
-				free(aux_c);
-				THREADOUTPUT = 1;
-			}
+			THREADOUTPUT = 1;
 		}
 		
 		base_point = secp->ComputePublicKey(&base_key);
@@ -5412,20 +5343,12 @@ void *thread_process_bsgs_both(void *vargp)	{
 			break;
 
 		
-		if(FLAGMATRIX)	{
+		if(FLAGQUIET == 0){
 			aux_c = base_key.GetBase16();
-			printf("[+] Thread 0x%s \n",aux_c);
+			printf("\r[+] Thread 0x%s   \r",aux_c);
 			fflush(stdout);
 			free(aux_c);
-		}
-		else	{
-			if(FLAGQUIET == 0){
-				aux_c = base_key.GetBase16();
-				printf("\r[+] Thread 0x%s   \r",aux_c);
-				fflush(stdout);
-				free(aux_c);
-				THREADOUTPUT = 1;
-			}
+			THREADOUTPUT = 1;
 		}
 		
 		base_point = secp->ComputePublicKey(&base_key);
