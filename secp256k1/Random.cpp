@@ -33,9 +33,6 @@ typedef struct rk_state_
 
 rk_state localState;
 
-/* Maximum generated random value */
-#define RK_MAX 0xFFFFFFFFUL
-
 void rk_seed(unsigned long seed, rk_state *state)
 {
   int pos;
@@ -94,13 +91,6 @@ inline unsigned long rk_random(rk_state *state)
   return y;
 }
 
-inline double rk_double(rk_state *state)
-{
-	/* shifts : 67108864 = 0x4000000, 9007199254740992 = 0x20000000000000 */
-	long a = rk_random(state) >> 5, b = rk_random(state) >> 6;
-	return (a * 67108864.0 + b) / 9007199254740992.0;
-}
-
 // Initialise the random generator with the specified seed
 void rseed(unsigned long seed) {
 	rk_seed(seed,&localState);
@@ -117,9 +107,4 @@ unsigned long rndl() {
 		/*Fail safe */
 		return rk_random(&localState);
 	}
-}
-
-// Returns a uniform distributed double value in the interval ]0,1[
-double rnd() {
-	return rk_double(&localState);
 }

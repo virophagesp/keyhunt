@@ -35,18 +35,9 @@ public:
   ~Secp256K1();
   void  Init();
   Point ComputePublicKey(Int *privKey);
-  Point NextKey(Point &key);
   bool  EC(Point &p);
   
-  Point ScalarMultiplication(Point &P,Int *scalar);
-  
-  char* GetPublicKeyHex(bool compressed, Point &p);
   void GetPublicKeyHex(bool compressed, Point &pubKey,char *dst);
-  
-  char* GetPublicKeyRaw(bool compressed, Point &p);
-  void GetPublicKeyRaw(bool compressed, Point &pubKey,char *dst);
-  
-  bool ParsePublicKeyHex(char *str,Point &p,bool &isCompressed);
 
   void GetHash160(int type,bool compressed,
     Point &k0, Point &k1, Point &k2, Point &k3,
@@ -62,9 +53,7 @@ public:
   Point Add(Point &p1, Point &p2);
   Point Add2(Point &p1, Point &p2);
   Point AddDirect(Point &p1, Point &p2);
-  Point Double(Point &p);
   Point DoubleDirect(Point &p);
-  Point Negation(Point &p);
 
   Point G;                 // Generator
   Int P;                   // Prime for the finite field
@@ -72,7 +61,6 @@ public:
 
 private:
 
-  uint8_t GetByte(char *str,int idx);
   Int GetY(Int x, bool isEven);
   Point GTable[256*32];       // Generator table
 

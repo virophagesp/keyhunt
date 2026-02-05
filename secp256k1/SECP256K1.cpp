@@ -81,112 +81,6 @@ Point Secp256K1::ComputePublicKey(Int *privKey) {
   return Q;
 }
 
-Point Secp256K1::NextKey(Point &key) {
-  // Input key must be reduced and different from G
-  // in order to use AddDirect
-  return AddDirect(key,G);
-}
-
-uint8_t Secp256K1::GetByte(char *str, int idx) {
-  char tmp[3];
-  int  val;
-  tmp[0] = str[2 * idx];
-  tmp[1] = str[2 * idx + 1];
-  tmp[2] = 0;
-  if (sscanf(tmp, "%X", &val) != 1) {
-    printf("ParsePublicKeyHex: Error invalid public key specified (unexpected hexadecimal digit)\n");
-    exit(-1);
-  }
-  return (uint8_t)val;
-}
-
-Point Secp256K1::Negation(Point &p) {
-  Point Q;
-  Q.Clear();
-  Q.x.Set(&p.x);
-  Q.y.Set(&this->P);
-  Q.y.Sub(&p.y);
-  Q.z.SetInt32(1);
-  return Q;
-}
-
-
-bool Secp256K1::ParsePublicKeyHex(char *str,Point &ret,bool &isCompressed) {
-  int len = strlen(str);
-  ret.Clear();
-  if (len < 2) {
-    printf("ParsePublicKeyHex: Error invalid public key specified (66 or 130 character length)\n");
-    return false;
-  }
-  uint8_t type = GetByte(str, 0);
-  switch (type) {
-    case 0x02:
-      if (len != 66) {
-        printf("ParsePublicKeyHex: Error invalid public key specified (66 character length)\n");
-        return false;
-      }
-      for (int i = 0; i < 32; i++)
-        ret.x.SetByte(31 - i, GetByte(str, i + 1));
-      ret.y = GetY(ret.x, true);
-      isCompressed = true;
-      break;
-
-    case 0x03:
-      if (len != 66) {
-        printf("ParsePublicKeyHex: Error invalid public key specified (66 character length)\n");
-        return false;
-      }
-      for (int i = 0; i < 32; i++)
-        ret.x.SetByte(31 - i, GetByte(str, i + 1));
-      ret.y = GetY(ret.x, false);
-      isCompressed = true;
-      break;
-
-    case 0x04:
-      if (len != 130) {
-        printf("ParsePublicKeyHex: Error invalid public key specified (130 character length)\n");
-        exit(-1);
-      }
-      for (int i = 0; i < 32; i++)
-        ret.x.SetByte(31 - i, GetByte(str, i + 1));
-      for (int i = 0; i < 32; i++)
-        ret.y.SetByte(31 - i, GetByte(str, i + 33));
-      isCompressed = false;
-      break;
-
-    default:
-      printf("ParsePublicKeyHex: Error invalid public key specified (Unexpected prefix (only 02,03 or 04 allowed)\n");
-      return false;
-  }
-
-  ret.z.SetInt32(1);
-
-  if (!EC(ret)) {
-    printf("ParsePublicKeyHex: Error invalid public key specified (Not lie on elliptic curve)\n");
-    return false;
-  }
-
-  return true;
-}
-
-char* Secp256K1::GetPublicKeyHex(bool compressed, Point &pubKey) {
-  unsigned char publicKeyBytes[65];
-  char *ret = NULL;
-  if (!compressed) {
-    //Uncompressed public key
-    publicKeyBytes[0] = 0x4;
-    pubKey.x.Get32Bytes(publicKeyBytes + 1);
-    pubKey.y.Get32Bytes(publicKeyBytes + 33);
-    ret = (char*) tohex((char*)publicKeyBytes,65);
-  }
-  else {
-    // Compressed public key
-    publicKeyBytes[0] = pubKey.y.IsEven() ? 0x2 : 0x3;
-    pubKey.x.Get32Bytes(publicKeyBytes + 1);
-    ret = (char*) tohex((char*)publicKeyBytes,33);
-  }
-  return ret;
-}
 
 void Secp256K1::GetPublicKeyHex(bool compressed, Point &pubKey,char *dst){
   unsigned char publicKeyBytes[65];
@@ -202,40 +96,6 @@ void Secp256K1::GetPublicKeyHex(bool compressed, Point &pubKey,char *dst){
     publicKeyBytes[0] = pubKey.y.IsEven() ? 0x2 : 0x3;
     pubKey.x.Get32Bytes(publicKeyBytes + 1);
 	tohex_dst((char*)publicKeyBytes,33,dst);
-  }
-}
-
-char* Secp256K1::GetPublicKeyRaw(bool compressed, Point &pubKey) {
-  char *ret = (char*) malloc(65);
-  if(ret == NULL) {
-    ::fprintf(stderr,"Can't alloc memory\n");
-    exit(0);
-  }
-  if (!compressed) {
-    //Uncompressed public key
-    ret[0] = 0x4;
-    pubKey.x.Get32Bytes((unsigned char*) (ret + 1));
-    pubKey.y.Get32Bytes((unsigned char*) (ret + 33));
-  }
-  else {
-    // Compressed public key
-    ret[0] = pubKey.y.IsEven() ? 0x2 : 0x3;
-    pubKey.x.Get32Bytes((unsigned char*) (ret + 1));
-  }
-  return ret;
-}
-
-void Secp256K1::GetPublicKeyRaw(bool compressed, Point &pubKey,char *dst) {
-  if (!compressed) {
-    //Uncompressed public key
-    dst[0] = 0x4;
-    pubKey.x.Get32Bytes((unsigned char*) (dst + 1));
-    pubKey.y.Get32Bytes((unsigned char*) (dst + 33));
-  }
-  else {
-    // Compressed public key
-    dst[0] = pubKey.y.IsEven() ? 0x2 : 0x3;
-    pubKey.x.Get32Bytes((unsigned char*) (dst + 1));
   }
 }
 
@@ -400,65 +260,6 @@ Point Secp256K1::DoubleDirect(Point &p) {
   return r;
 }
 
-Point Secp256K1::Double(Point &p) {
-  /*
-  if (Y == 0)
-    return POINT_AT_INFINITY
-    W = a * Z ^ 2 + 3 * X ^ 2
-    S = Y * Z
-    B = X * Y*S
-    H = W ^ 2 - 8 * B
-    X' = 2*H*S
-    Y' = W*(4*B - H) - 8*Y^2*S^2
-    Z' = 8*S^3
-    return (X', Y', Z')
-  */
-  Int z2;
-  Int x2;
-  Int _3x2;
-  Int w;
-  Int s;
-  Int s2;
-  Int b;
-  Int _8b;
-  Int _8y2s2;
-  Int y2;
-  Int h;
-  Point r;
-  z2.ModSquareK1(&p.z);
-  z2.SetInt32(0); // a=0
-  x2.ModSquareK1(&p.x);
-  _3x2.ModAdd(&x2,&x2);
-  _3x2.ModAdd(&x2);
-  w.ModAdd(&z2,&_3x2);
-  s.ModMulK1(&p.y,&p.z);
-  b.ModMulK1(&p.y,&s);
-  b.ModMulK1(&p.x);
-  h.ModSquareK1(&w);
-  _8b.ModAdd(&b,&b);
-  _8b.ModDouble();
-  _8b.ModDouble();
-  h.ModSub(&_8b);
-  r.x.ModMulK1(&h,&s);
-  r.x.ModAdd(&r.x);
-  s2.ModSquareK1(&s);
-  y2.ModSquareK1(&p.y);
-  _8y2s2.ModMulK1(&y2,&s2);
-  _8y2s2.ModDouble();
-  _8y2s2.ModDouble();
-  _8y2s2.ModDouble();
-  r.y.ModAdd(&b,&b);
-  r.y.ModAdd(&r.y,&r.y);
-  r.y.ModSub(&h);
-  r.y.ModMulK1(&w);
-  r.y.ModSub(&_8y2s2);
-  r.z.ModMulK1(&s2,&s);
-  r.z.ModDouble();
-  r.z.ModDouble();
-  r.z.ModDouble();
-  return r;
-}
-
 Int Secp256K1::GetY(Int x,bool isEven) {
   Int _s;
   Int _p;
@@ -484,30 +285,6 @@ bool Secp256K1::EC(Point &p) {
   _s.ModMulK1(&p.y,&p.y);
   _s.ModSub(&_p);
   return _s.IsZero(); // ( ((pow2(y) - (pow3(x) + 7)) % P) == 0 );
-}
-
-Point Secp256K1::ScalarMultiplication(Point &P,Int *scalar)	{
-	Point R,Q,T;
-	int  no_of_bits, loop;
-	no_of_bits = scalar->GetBitLength();
-	R.Clear();
-	R.z.SetInt32(1);
-	if(!scalar->IsZero())	{
-		Q.Set(P);
-		if(scalar->GetBit(0) == 1)	{
-			R.Set(P);
-		}
-		for(loop = 1; loop < no_of_bits; loop++) {
-			T = Double(Q);
-			Q.Set(T);
-			T.Set(R);
-			if(scalar->GetBit(loop)){
-				R = Add(T,Q);
-			}
-		}
-	}
-	R.Reduce();
-	return R;
 }
 
 #define KEYBUFFCOMP(buff,p) \

@@ -23,9 +23,6 @@
 #include <cctype>
 #include <emmintrin.h>
 
-#define MAX(x,y) (((x)>(y))?(x):(y))
-#define MIN(x,y) (((x)<(y))?(x):(y))
-
 Int _ONE((uint64_t)1);
 
 
@@ -260,13 +257,6 @@ bool Int::IsZero() {
 
 // ------------------------------------------------
 
-void Int::SetInt64(uint64_t value) {
-  CLEAR();
-  bits64[0]=value;
-}
-
-// ------------------------------------------------
-
 void Int::SetInt32(uint32_t value) {
   CLEAR();
   bits[0]=value;
@@ -274,32 +264,10 @@ void Int::SetInt32(uint32_t value) {
 
 // ------------------------------------------------
 
-uint32_t Int::GetInt32() {
-  return bits[0];
-}
-
-uint64_t Int::GetInt64() {
-  return bits64[0];
-}
-
-
-// ------------------------------------------------
-
 unsigned char Int::GetByte(int n) {
 
   unsigned char *bbPtr = (unsigned char *)bits;
   return bbPtr[n];
-
-}
-
-void Int::Set32Bytes(unsigned char *bytes) {
-
-  CLEAR();
-  uint64_t *ptr = (uint64_t *)bytes;
-  bits64[3] = _byteswap_uint64(ptr[0]);
-  bits64[2] = _byteswap_uint64(ptr[1]);
-  bits64[1] = _byteswap_uint64(ptr[2]);
-  bits64[0] = _byteswap_uint64(ptr[3]);
 
 }
 
@@ -320,18 +288,6 @@ void Int::SetByte(int n,unsigned char byte) {
 	unsigned char *bbPtr = (unsigned char *)bits;
 	bbPtr[n] = byte;
 
-}
-
-// ------------------------------------------------
-
-void Int::SetDWord(int n,uint32_t b) {
-  bits[n] = b;
-}
-
-// ------------------------------------------------
-
-void Int::SetQWord(int n, uint64_t b) {
-	bits64[n] = b;
 }
 
 // ------------------------------------------------
@@ -460,17 +416,6 @@ void Int::Neg() {
 
 // ------------------------------------------------
 
-void Int::ShiftL32Bit() {
-
-  for(int i=NB32BLOCK-1;i>0;i--) {
-    bits[i]=bits[i-1];
-  }
-  bits[0]=0;
-
-}
-
-// ------------------------------------------------
-
 void Int::ShiftL64Bit() {
 
 	for (int i = NB64BLOCK-1 ; i>0; i--) {
@@ -509,20 +454,6 @@ void Int::ShiftL(uint32_t n) {
     for(uint32_t i=0;i<nb64;i++) ShiftL64Bit();
 	  shiftL((unsigned char)nb, bits64);
   }
-
-}
-
-// ------------------------------------------------
-
-void Int::ShiftR32Bit() {
-
-  for(int i=0;i<NB32BLOCK-1;i++) {
-    bits[i]=bits[i+1];
-  }
-  if(((int32_t)bits[NB32BLOCK-2])<0)
-    bits[NB32BLOCK-1] = 0xFFFFFFFF;
-  else
-    bits[NB32BLOCK-1]=0;
 
 }
 
@@ -681,51 +612,11 @@ int Int::GetSize() {
 
 // ------------------------------------------------
 
-void Int::MultModN(Int *a,Int *b,Int *n) {
-
-  Int r;
-  Mult(a,b);
-  Div(n,&r);
-  Set(&r);
-
-}
-
-// ------------------------------------------------
-
 void Int::Mod(Int *n) {
 
   Int r;
   Div(n,&r);
   Set(&r);
-
-}
-
-// ------------------------------------------------
-
-int Int::GetLowestBit() {
-
-  // Assume this!=0
-  int b=0;
-  while(GetBit(b)==0) b++;
-  return b;
-
-}
-
-// ------------------------------------------------
-
-void Int::MaskByte(int n) {
-
-  for (int i = n; i < NB32BLOCK; i++)
-	  bits[i] = 0;
-
-}
-
-// ------------------------------------------------
-
-void Int::Abs() {
-
-  if (IsNegative())
-    Neg();
 
 }
 
@@ -954,40 +845,6 @@ char* Int::GetBase16() {
 
 // ------------------------------------------------
 
-char* Int::GetBlockStr() {
-  char *tmp =  (char*) calloc(1,256);
-	char bStr[256];
-	tmp[0] = 0;
-	for (int i = NB32BLOCK-3; i>=0 ; i--) {
-	  sprintf(bStr, "%08X", bits[i]);
-	  strcat(tmp, bStr);
-	  if(i!=0) strcat(tmp, " ");
-	}
-	return tmp;
-}
-
-// ------------------------------------------------
-
-char * Int::GetC64Str(int nbDigit) {
-  char *tmp =  (char*) calloc(1,256);
-  char bStr[256];
-  tmp[0] = '{';
-  tmp[1] = 0;
-  for (int i = 0; i< nbDigit; i++) {
-    if (bits64[i] != 0) {
-      sprintf(bStr, "0x%" PRIx64  "ULL", bits64[i]);
-    } else {
-      sprintf(bStr, "0ULL");
-    }
-    strcat(tmp, bStr);
-    if (i != nbDigit -1) strcat(tmp, ",");
-  }
-  strcat(tmp,"}");
-  return tmp;
-}
-
-// ------------------------------------------------
-
 void  Int::SetBaseN(int n,const char *charset,const char *value) {
   CLEAR();
   Int pw((uint64_t)1);
@@ -1056,21 +913,4 @@ int Int::GetBit(uint32_t n) {
   uint32_t bit  = n&31;
   uint32_t mask = 1 << bit;
   return (bits[byte] & mask)!=0;
-}
-
-// ------------------------------------------------
-char* Int::GetBase2() {
-  char *ret =  (char*) calloc(1,1024);
-  int k=0;
-  for(int i=0;i<NB32BLOCK-1;i++) {
-    unsigned int mask=0x80000000;
-    for(int j=0;j<32;j++) {
-      if(bits[i]&mask) ret[k]='1';
-      else             ret[k]='0';
-      k++;
-      mask=mask>>1;
-    }
-  }
-  ret[k]=0;
-  return ret;
 }

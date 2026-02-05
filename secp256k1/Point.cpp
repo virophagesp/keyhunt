@@ -58,10 +58,6 @@ void Point::Set(Point &p) {
   z.Set(&p.z);
 }
 
-bool Point::isZero() {
-  return x.IsZero() && y.IsZero();
-}
-
 void Point::Reduce() {
 
   Int i(&z);
@@ -70,8 +66,4 @@ void Point::Reduce() {
   y.ModMul(&y,&i);
   z.SetInt32(1);
 
-}
-
-bool Point::equals(Point &p) {
-  return x.IsEqual(&p.x) && y.IsEqual(&p.y) && z.IsEqual(&p.z);
 }

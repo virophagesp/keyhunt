@@ -63,17 +63,13 @@ public:
   void IMult(Int *a, int64_t b);
   void Mult(Int *a,Int *b);
   void Div(Int *a,Int *mod = NULL);
-  void MultModN(Int *a, Int *b, Int *n);
   void Neg();
-  void Abs();
 
   // Right shift (signed)
   void ShiftR(uint32_t n);
-  void ShiftR32Bit();
   void ShiftR64Bit();
   // Left shift
   void ShiftL(uint32_t n);
-  void ShiftL32Bit();
   void ShiftL64Bit();
 
   // Comp
@@ -128,42 +124,30 @@ public:
   static void InitK1(Int *order);
   void ModMulK1(Int *a, Int *b);
   void ModMulK1(Int *a);
-  void ModMulK1order(Int *a);
   void ModSquareK1(Int *a);
-  void ModAddK1order(Int *a,Int *b);
 
   // Size
   int GetSize();
   int GetBitLength();
 
   // Setter
-  void SetInt64(uint64_t value);
   void SetInt32(uint32_t value);
   void Set(Int *a);
   void SetBase10(const char *value);
   void SetBase16(const char *value);
   void SetBaseN(int n,const char *charset,const char *value);
   void SetByte(int n,unsigned char byte);
-  void SetDWord(int n, uint32_t b);
-  void SetQWord(int n,uint64_t b);
   void Rand(int nbit);
   void Rand(Int *min,Int *max);
-  void Set32Bytes(unsigned char *bytes);
-  void MaskByte(int n);
 
   // Getter
-  uint64_t GetInt64();
-  uint32_t GetInt32();
   int GetBit(uint32_t n);
   unsigned char GetByte(int n);
   void Get32Bytes(unsigned char *buff);
 
-  char* GetBase2();
   char* GetBase10();
   char* GetBase16();
   char* GetBaseN(int n,const char *charset);
-  char* GetBlockStr();
-  char* GetC64Str(int nbDigit);
 
   // Check function
   //static void Check();
@@ -186,7 +170,6 @@ private:
   uint64_t AddC(Int *a);
   void AddAndShift(Int *a, Int *b,uint64_t cH);
   void Mult(Int *a, uint32_t b);
-  int  GetLowestBit();
   void CLEAR();
   void CLEARFF();
 
