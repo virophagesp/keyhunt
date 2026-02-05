@@ -140,7 +140,6 @@ uint64_t u64range;
 Int OUTPUTSECONDS;
 
 int FLAGBLOOMMULTIPLIER = 1;
-int KFACTOR = 1;
 int MAXLENGTHADDRESS = -1;
 int NTHREADS = 1;
 
@@ -297,7 +296,7 @@ int main(int argc, char **argv)	{
 
 	printf("[+] Version %s, developed by AlbertoBSD\n",version);
 
-	while ((c = getopt(argc, argv, "S:b:E:f:I:k:N:n:p:r:s:t:G:z:")) != -1) {
+	while ((c = getopt(argc, argv, "S:b:E:f:I:N:n:p:r:s:t:G:z:")) != -1) {
 		switch(c) {
 			case 'b':
 				bitrange = strtol(optarg,NULL,10);
@@ -326,13 +325,6 @@ int main(int argc, char **argv)	{
 			case 'I':
 				FLAGSTRIDE = 1;
 				str_stride = optarg;
-			break;
-			case 'k':
-				KFACTOR = (int)strtol(optarg,NULL,10);
-				if(KFACTOR <= 0)	{
-					KFACTOR = 1;
-				}
-				printf("[+] K factor %i\n",KFACTOR);
 			break;
 
 			case 'n':
