@@ -215,7 +215,7 @@ int main(int argc, char **argv)	{
 
 	printf("[+] Version %s, developed by AlbertoBSD\n",version);
 
-	while ((c = getopt(argc, argv, "b:E:f:N:n:p:r:s:")) != -1) {
+	while ((c = getopt(argc, argv, "b:E:f:N:n:p:r:")) != -1) {
 		switch(c) {
 			case 'b':
 				bitrange = strtol(optarg,NULL,10);
@@ -279,20 +279,6 @@ int main(int argc, char **argv)	{
 							printf("[E] Unknow number of Range Params: %i\n",t.n);
 						break;
 					}
-				}
-			break;
-			case 's':
-				OUTPUTSECONDS.SetBase10(optarg);
-				if(OUTPUTSECONDS.IsLower(&ZERO))	{
-					OUTPUTSECONDS.SetInt32(30);
-				}
-				if(OUTPUTSECONDS.IsZero())	{
-					printf("[+] Turn off stats output\n");
-				}
-				else	{
-					hextemp = OUTPUTSECONDS.GetBase10();
-					printf("[+] Stats output every %s seconds\n",hextemp);
-					free(hextemp);
 				}
 			break;
 			default:
