@@ -101,8 +101,6 @@ void rmd160toaddress_dst(char *rmd,char *dst);
 void KECCAK_256(uint8_t *source, size_t size,uint8_t *dst);
 
 int THREADOUTPUT = 0;
-char *bit_range_str_min;
-char *bit_range_str_max;
 
 const char *cryptos[3] = {"btc","all"};
 const char *publicsearch[3] = {"uncompress","compress","both"};
@@ -132,7 +130,6 @@ int NTHREADS = 1;
 
 int FLAGREADEDFILE1 = 0;
 
-int FLAGBITRANGE = 0;
 int FLAGRANGE = 0;
 int FLAGFILE = 0;
 int FLAG_N = 0;
@@ -215,28 +212,8 @@ int main(int argc, char **argv)	{
 
 	printf("[+] Version %s, developed by AlbertoBSD\n",version);
 
-	while ((c = getopt(argc, argv, "b:f:n:r:")) != -1) {
+	while ((c = getopt(argc, argv, "f:n:r:")) != -1) {
 		switch(c) {
-			case 'b':
-				bitrange = strtol(optarg,NULL,10);
-				if(bitrange > 0 && bitrange <=256 )	{
-					MPZAUX.Set(&ONE);
-					MPZAUX.ShiftL(bitrange-1);
-					bit_range_str_min = MPZAUX.GetBase16();
-					checkpointer((void *)bit_range_str_min,__FILE__,"malloc","bit_range_str_min" ,__LINE__ -1);
-					MPZAUX.Set(&ONE);
-					MPZAUX.ShiftL(bitrange);
-					if(MPZAUX.IsGreater(&secp->order))	{
-						MPZAUX.Set(&secp->order);
-					}
-					bit_range_str_max = MPZAUX.GetBase16();
-					checkpointer((void *)bit_range_str_max,__FILE__,"malloc","bit_range_str_min" ,__LINE__ -1);
-					FLAGBITRANGE = 1;
-				}
-				else	{
-					fprintf(stderr,"[E] invalid bits param: %s.\n",optarg);
-				}
-			break;
 			case 'f':
 				FLAGFILE = 1;
 				fileName = optarg;
@@ -324,24 +301,11 @@ int main(int argc, char **argv)	{
 		}
 	}
 	BSGS_N.SetInt32(DEBUGCOUNT);
-	if(FLAGRANGE == 0 && FLAGBITRANGE == 0)	{
+	if(FLAGRANGE == 0)	{
 		n_range_start.SetInt32(1);
 		n_range_end.Set(&secp->order);
 		n_range_diff.Set(&n_range_end);
 		n_range_diff.Sub(&n_range_start);
-	}
-	else	{
-		if(FLAGBITRANGE)	{
-			n_range_start.SetBase16(bit_range_str_min);
-			n_range_end.SetBase16(bit_range_str_max);
-			n_range_diff.Set(&n_range_end);
-			n_range_diff.Sub(&n_range_start);
-		}
-		else	{
-			if(FLAGRANGE == 0)	{
-				fprintf(stderr,"[W] WTF!\n");
-			}
-		}
 	}
 	N = 0;
 
@@ -365,12 +329,7 @@ int main(int argc, char **argv)	{
 		}
 	}
 	printf("[+] N = %p\n",(void*)N_SEQUENTIAL_MAX);
-	if(FLAGBITRANGE)	{	// Bit Range
-		printf("[+] Bit Range %i\n",bitrange);
-	}
-	else	{
-		printf("[+] Range \n");
-	}
+	printf("[+] Range \n");
 	hextemp = n_range_start.GetBase16();
 	printf("[+] -- from : 0x%s\n",hextemp);
 	free(hextemp);
