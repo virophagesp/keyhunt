@@ -31,11 +31,6 @@ email: albertobsd@gmail.com
 
 #include <linux/random.h>
 
-struct checksumsha256	{
-	char data[32];
-	char backup[32];
-};
-
 struct address_value	{
 	uint8_t value[20];
 };
@@ -46,22 +41,8 @@ struct tothread {
 	char *rpt;  //rng per thread
 };
 
-struct __attribute__((__packed__)) publickey {
-  uint8_t parity;
-	union	{
-		uint8_t data8[32];
-		uint32_t data32[8];
-		uint64_t data64[4];
-	} X;
-};
-
-#define CPU_GRP_SIZE 1024
-
 std::vector<Point> Gn;
 Point _2Gn;
-
-std::vector<Point> GSn;
-Point _2GSn;
 
 void init_generator();
 
@@ -80,9 +61,6 @@ void writekey(bool compressed,Int *key);
 
 void checkpointer(void *ptr,const char *file,const char *function,const  char *name,int line);
 
-bool isBase58(char c);
-bool isValidBase58String(char *str);
-
 bool readFileAddress(char *fileName);
 bool forceReadFileAddress(char *fileName);
 
@@ -90,26 +68,16 @@ bool initBloomFilter(struct bloom *bloom_arg,uint64_t items_bloom);
 
 void writeFileIfNeeded(const char *fileName);
 
-void calcualteindex(int i,Int *key);
-
 void *thread_process(void *vargp);
-
-void rmd160toaddress_dst(char *rmd,char *dst);
-
-void KECCAK_256(uint8_t *source, size_t size,uint8_t *dst);
 
 int THREADOUTPUT = 0;
 
-const char *cryptos[3] = {"btc","all"};
-const char *publicsearch[3] = {"uncompress","compress","both"};
 const char *default_fileName = "addresses.txt";
 
 pthread_t *tid = NULL;
 pthread_mutex_t write_keys;
 pthread_mutex_t write_random;
 pthread_mutex_t bsgs_thread;
-
-uint8_t byte_encode_crypto = 0x00;		/* Bitcoin  */
 
 struct bloom bloom;
 
@@ -118,21 +86,15 @@ unsigned int *ends = NULL;
 uint64_t N = 0;
 
 uint64_t N_SEQUENTIAL_MAX = 0x100000000;
-uint64_t DEBUGCOUNT = 0x400;
 
 Int OUTPUTSECONDS;
 
-int FLAGBLOOMMULTIPLIER = 1;
 int MAXLENGTHADDRESS = -1;
-int NTHREADS = 1;
 
 int FLAGREADEDFILE1 = 0;
 
 int FLAGRANGE = 0;
-int FLAGFILE = 0;
-int FLAG_N = 0;
 
-int bitrange;
 char *str_N;
 char *range_start;
 char *range_end;
@@ -145,12 +107,6 @@ const char *str_limits_prefixs[7] = {"Mkeys/s","Gkeys/s","Tkeys/s","Pkeys/s","Ek
 const char *str_limits[7] = {"1000000","1000000000","1000000000000","1000000000000000","1000000000000000000","1000000000000000000000","1000000000000000000000000"};
 Int int_limits[7];
 
-Int BSGS_GROUP_SIZE;
-Int BSGS_N;
-Int BSGS_M3;				//M3 is M2/32
-Int BSGS_M3_double;			//M3_double is M3 * 2
-
-Int ONE;
 Int ZERO;
 Int MPZAUX;
 
@@ -186,8 +142,6 @@ int main(int argc, char **argv)	{
 	secp->Init();
 	OUTPUTSECONDS.SetInt32(30);
 	ZERO.SetInt32(0);
-	ONE.SetInt32(1);
-	BSGS_GROUP_SIZE.SetInt32(CPU_GRP_SIZE);
 
 	unsigned long rseedvalue;
 	int bytes_read = getrandom(&rseedvalue, sizeof(unsigned long), GRND_NONBLOCK);
@@ -213,12 +167,9 @@ int main(int argc, char **argv)	{
 	while ((c = getopt(argc, argv, "f:n:r:")) != -1) {
 		switch(c) {
 			case 'f':
-				FLAGFILE = 1;
 				fileName = optarg;
 			break;
-
 			case 'n':
-				FLAG_N = 1;
 				str_N = optarg;
 			break;
 			case 'r':
@@ -263,12 +214,8 @@ int main(int argc, char **argv)	{
 		}
 	}
 
-	stride.Set(&ONE);
+	stride.SetInt32(1);
 	init_generator();
-
-	if(FLAGFILE == 0) {
-		fileName =(char*) default_fileName;
-	}
 
 	printf("[+] Setting search for btc adddress\n");
 	if(FLAGRANGE) {
@@ -298,7 +245,6 @@ int main(int argc, char **argv)	{
 			FLAGRANGE = 0;
 		}
 	}
-	BSGS_N.SetInt32(DEBUGCOUNT);
 	if(FLAGRANGE == 0)	{
 		n_range_start.SetInt32(1);
 		n_range_end.Set(&secp->order);
@@ -307,25 +253,22 @@ int main(int argc, char **argv)	{
 	}
 	N = 0;
 
-	if(FLAG_N){
-		if(str_N[0] == '0' && str_N[1] == 'x')	{
-			N_SEQUENTIAL_MAX =strtol(str_N,NULL,16);
-		}
-		else	{
-			N_SEQUENTIAL_MAX =strtol(str_N,NULL,10);
-		}
-
-		if(N_SEQUENTIAL_MAX < 1024)	{
-			fprintf(stderr,"[I] n value need to be equal or great than 1024, back to defaults\n");
-			FLAG_N = 0;
-			N_SEQUENTIAL_MAX = 0x100000000;
-		}
-		if(N_SEQUENTIAL_MAX % 1024 != 0)	{
-			fprintf(stderr,"[I] n value need to be multiplier of  1024\n");
-			FLAG_N = 0;
-			N_SEQUENTIAL_MAX = 0x100000000;
-		}
+	if(str_N[0] == '0' && str_N[1] == 'x')	{
+		N_SEQUENTIAL_MAX =strtol(str_N,NULL,16);
 	}
+	else	{
+		N_SEQUENTIAL_MAX =strtol(str_N,NULL,10);
+	}
+
+	if(N_SEQUENTIAL_MAX < 1024)	{
+		fprintf(stderr,"[I] n value need to be equal or great than 1024, back to defaults\n");
+		N_SEQUENTIAL_MAX = 0x100000000;
+	}
+	if(N_SEQUENTIAL_MAX % 1024 != 0)	{
+		fprintf(stderr,"[I] n value need to be multiplier of  1024\n");
+		N_SEQUENTIAL_MAX = 0x100000000;
+	}
+
 	printf("[+] N = %p\n",(void*)N_SEQUENTIAL_MAX);
 	printf("[+] Range \n");
 	hextemp = n_range_start.GetBase16();
@@ -347,22 +290,20 @@ int main(int argc, char **argv)	{
 		writeFileIfNeeded(fileName);
 	}
 
-	steps = (uint64_t *) calloc(NTHREADS,sizeof(uint64_t));
+	steps = (uint64_t *) calloc(1,sizeof(uint64_t));
 	checkpointer((void *)steps,__FILE__,"calloc","steps" ,__LINE__ -1 );
-	ends = (unsigned int *) calloc(NTHREADS,sizeof(int));
+	ends = (unsigned int *) calloc(1,sizeof(int));
 	checkpointer((void *)ends,__FILE__,"calloc","ends" ,__LINE__ -1 );
-	tid = (pthread_t *) calloc(NTHREADS,sizeof(pthread_t));
+	tid = (pthread_t *) calloc(1,sizeof(pthread_t));
 	checkpointer((void *)tid,__FILE__,"calloc","tid" ,__LINE__ -1 );
-	for(j= 0;j < NTHREADS; j++)	{
-		tt = (tothread*) malloc(sizeof(struct tothread));
-		checkpointer((void *)tt,__FILE__,"malloc","tt" ,__LINE__ -1 );
-		tt->nt = j;
-		steps[j] = 0;
-		s = pthread_create(&tid[j],NULL,thread_process,(void *)tt);
-		if(s != 0)	{
-			fprintf(stderr,"[E] pthread_create thread_process\n");
-			exit(EXIT_FAILURE);
-		}
+	tt = (tothread*) malloc(sizeof(struct tothread));
+	checkpointer((void *)tt,__FILE__,"malloc","tt" ,__LINE__ -1 );
+	tt->nt = 0;
+	steps[0] = 0;
+	s = pthread_create(&tid[0],NULL,thread_process,(void *)tt);
+	if(s != 0)	{
+		fprintf(stderr,"[E] pthread_create thread_process\n");
+		exit(EXIT_FAILURE);
 	}
 
 	for(j =0; j < 7; j++)	{
@@ -372,15 +313,12 @@ int main(int argc, char **argv)	{
 	continue_flag = 1;
 	total.SetInt32(0);
 	pretotal.SetInt32(0);
-	debugcount_mpz.Set(&BSGS_N);
+	debugcount_mpz.SetInt32(0x400);
 	seconds.SetInt32(0);
 	do	{
 		sleep_ms(1000);
 		seconds.AddOne();
-		check_flag = 1;
-		for(j = 0; j <NTHREADS && check_flag; j++) {
-			check_flag &= ends[j];
-		}
+		check_flag = 1 & ends[0];
 		if(check_flag)	{
 			continue_flag = 0;
 		}
@@ -389,11 +327,10 @@ int main(int argc, char **argv)	{
 			MPZAUX.Mod(&OUTPUTSECONDS);
 			if(MPZAUX.IsZero()) {
 				total.SetInt32(0);
-				for(j = 0; j < NTHREADS; j++) {
-					pretotal.Set(&debugcount_mpz);
-					pretotal.Mult(steps[j]);
-					total.Add(&pretotal);
-				}
+
+				pretotal.Set(&debugcount_mpz);
+				pretotal.Mult(steps[0]);
+				total.Add(&pretotal);
 
 				total.Mult(2);
 
@@ -422,12 +359,7 @@ int main(int argc, char **argv)	{
 					div_pretotal.Set(&pretotal);
 					div_pretotal.Div(&int_limits[salir ? i : i-1]);
 					str_divpretotal = div_pretotal.GetBase10();
-					if(THREADOUTPUT == 1)	{
-						sprintf(buffer,"\r[+] Total %s keys in %s seconds: ~%s %s (%s keys/s)\r",str_total,str_seconds,str_divpretotal,str_limits_prefixs[salir ? i : i-1],str_pretotal);
-					}
-					else	{
-						sprintf(buffer,"\r[+] Total %s keys in %s seconds: ~%s %s (%s keys/s)\r",str_total,str_seconds,str_divpretotal,str_limits_prefixs[salir ? i : i-1],str_pretotal);
-					}
+					sprintf(buffer,"\r[+] Total %s keys in %s seconds: ~%s %s (%s keys/s)\r",str_total,str_seconds,str_divpretotal,str_limits_prefixs[salir ? i : i-1],str_pretotal);
 					free(str_divpretotal);
 
 				}
@@ -448,7 +380,7 @@ int main(int argc, char **argv)	{
 void rmd160toaddress_dst(char *rmd,char *dst){
 	char digest[60];
 	size_t pubaddress_size = 40;
-	digest[0] = byte_encode_crypto;
+	digest[0] = 0x00;
 	memcpy(digest+1,rmd,20);
 	sha256((uint8_t*)digest, 21,(uint8_t*) digest+21);
 	sha256((uint8_t*)digest+21, 32,(uint8_t*) digest+21);
@@ -485,13 +417,13 @@ int searchbinary(struct address_value *buffer,char *data,int64_t array_length) {
 
 void *thread_process(void *vargp)	{
 	struct tothread *tt;
-	Point pts[CPU_GRP_SIZE];
-	Point endomorphism_beta[CPU_GRP_SIZE];
-	Point endomorphism_beta2[CPU_GRP_SIZE];
+	Point pts[1024];
+	Point endomorphism_beta[1024];
+	Point endomorphism_beta2[1024];
 	Point endomorphism_negeted_point[4];
 
-	Int dx[CPU_GRP_SIZE / 2 + 1];
-	IntGroup *grp = new IntGroup(CPU_GRP_SIZE / 2 + 1);
+	Int dx[513];
+	IntGroup *grp = new IntGroup(513);
 	Point startP;
 	Int dy;
 	Int dyn;
@@ -499,7 +431,7 @@ void *thread_process(void *vargp)	{
 	Int _p;
 	Point pp;
 	Point pn;
-	int i,l,pp_offset,pn_offset,hLength = (CPU_GRP_SIZE / 2 - 1);
+	int i,l,pp_offset,pn_offset,hLength = (511);
 	uint64_t j,count;
 	Point R,temporal,publickey;
 	int r,thread_number,continue_flag = 1,k;
@@ -533,7 +465,7 @@ void *thread_process(void *vargp)	{
 			free(hextemp);
 			THREADOUTPUT = 1;
 			do {
-				temp_stride.SetInt32(CPU_GRP_SIZE / 2);
+				temp_stride.SetInt32(512);
 				temp_stride.Mult(&stride);
 				key_mpz.Add(&temp_stride);
 	 			startP = secp->ComputePublicKey(&key_mpz);
@@ -547,7 +479,7 @@ void *thread_process(void *vargp)	{
 				dx[i + 1].ModSub(&_2Gn.x,&startP.x); // For the next center point
 				grp->ModInv();
 
-				pts[CPU_GRP_SIZE / 2] = startP;
+				pts[512] = startP;
 
 				for(i = 0; i<hLength; i++) {
 					pp = startP;
@@ -574,8 +506,8 @@ void *thread_process(void *vargp)	{
 					pn.x.ModAdd(&_p);
 					pn.x.ModSub(&Gn[i].x);          // rx = pow2(s) - p1.x - p2.x;
 
-					pp_offset = CPU_GRP_SIZE / 2 + (i + 1);
-					pn_offset = CPU_GRP_SIZE / 2 - (i + 1);
+					pp_offset = 512 + (i + 1);
+					pn_offset = 512 - (i + 1);
 
 					pts[pp_offset] = pp;
 					pts[pn_offset] = pn;
@@ -596,7 +528,7 @@ void *thread_process(void *vargp)	{
 
 				pts[0] = pn;
 
-				for(j = 0; j < CPU_GRP_SIZE/4;j++){
+				for(j = 0; j < 256;j++){
 					secp->GetHash160_fromX(P2PKH,0x02,&pts[(j*4)].x,&pts[(j*4)+1].x,&pts[(j*4)+2].x,&pts[(j*4)+3].x,(uint8_t*)publickeyhashrmd160_endomorphism[0][0],(uint8_t*)publickeyhashrmd160_endomorphism[0][1],(uint8_t*)publickeyhashrmd160_endomorphism[0][2],(uint8_t*)publickeyhashrmd160_endomorphism[0][3]);
 					secp->GetHash160_fromX(P2PKH,0x03,&pts[(j*4)].x,&pts[(j*4)+1].x,&pts[(j*4)+2].x,&pts[(j*4)+3].x,(uint8_t*)publickeyhashrmd160_endomorphism[1][0],(uint8_t*)publickeyhashrmd160_endomorphism[1][1],(uint8_t*)publickeyhashrmd160_endomorphism[1][2],(uint8_t*)publickeyhashrmd160_endomorphism[1][3]);
 
@@ -772,23 +704,15 @@ void init_generator()	{
 	Point G = secp->ComputePublicKey(&stride);
 	Point g;
 	g.Set(G);
-	Gn.reserve(CPU_GRP_SIZE / 2);
+	Gn.reserve(512);
 	Gn[0] = g;
 	g = secp->DoubleDirect(g);
 	Gn[1] = g;
-	for(int i = 2; i < CPU_GRP_SIZE / 2; i++) {
+	for(int i = 2; i < 512; i++) {
 		g = secp->AddDirect(g,G);
 		Gn[i] = g;
 	}
-	_2Gn = secp->DoubleDirect(Gn[CPU_GRP_SIZE / 2 - 1]);
-}
-
-/* This function perform the KECCAK Opetation*/
-void KECCAK_256(uint8_t *source, size_t size,uint8_t *dst)	{
-	SHA3_256_CTX ctx;
-	SHA3_256_Init(&ctx);
-	SHA3_256_Update(&ctx,source,size);
-	KECCAK_256_Final(dst,&ctx);
+	_2Gn = secp->DoubleDirect(Gn[511]);
 }
 
 void checkpointer(void *ptr,const char *file,const char *function,const  char *name,int line)	{
@@ -937,7 +861,7 @@ bool initBloomFilter(struct bloom *bloom_arg,uint64_t items_bloom)	{
 		}
 	}
 	else	{
-		if(bloom_init2(bloom_arg,FLAGBLOOMMULTIPLIER*items_bloom,0.000001)	== 1){
+		if(bloom_init2(bloom_arg,items_bloom,0.000001)	== 1){
 			fprintf(stderr,"[E] error bloom_init for %" PRIu64 " elements.\n",items_bloom);
 			r = false;
 		}
@@ -1028,16 +952,5 @@ void writeFileIfNeeded(const char *fileName)	{
 			fclose(fileDescriptor);
 			printf("\n");
 		}
-	}
-}
-
-void calcualteindex(int i,Int *key)	{
-	if(i == 0)	{
-		key->Set(&BSGS_M3);
-	}
-	else	{
-		key->SetInt32(i);
-		key->Mult(&BSGS_M3_double);
-		key->Add(&BSGS_M3);
 	}
 }
