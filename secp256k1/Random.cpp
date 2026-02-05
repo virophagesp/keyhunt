@@ -18,10 +18,7 @@
 
 #include "Random.h"
 
-#if defined(_WIN64)
-#else
 #include <sys/random.h>
-#endif
 
 #ifdef __unix__
 #include <linux/random.h>
@@ -62,11 +59,6 @@ void rk_seed(unsigned long seed, rk_state *state)
 #define MATRIX_A 0x9908b0dfUL
 #define UPPER_MASK 0x80000000UL
 #define LOWER_MASK 0x7fffffffUL
-
-#ifdef _WIN64
-// Disable "unary minus operator applied to unsigned type, result still unsigned" warning.
-#pragma warning(disable : 4146)
-#endif
 
 /* Slightly optimised reference implementation of the Mersenne Twister */
 inline unsigned long rk_random(rk_state *state)
@@ -117,11 +109,6 @@ void rseed(unsigned long seed) {
 	//srand(seed);
 }
 
-#if defined(_WIN64)
-unsigned long rndl() {
-	return rk_random(&localState);
-}
-#else
 unsigned long rndl() {
 	unsigned long r;
 	int bytes_read = getrandom(&r, sizeof(unsigned long), GRND_NONBLOCK );
@@ -133,8 +120,6 @@ unsigned long rndl() {
 		return rk_random(&localState);
 	}
 }
-	
-#endif
 
 // Returns a uniform distributed double value in the interval ]0,1[
 double rnd() {

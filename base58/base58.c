@@ -5,11 +5,7 @@
  * under the terms of the standard MIT license.  See COPYING for more details.
  */
 
-#ifndef _WIN64
 #include <arpa/inet.h>
-#else
-#include <winsock2.h>
-#endif
 
 #include <stdbool.h>
 #include <stddef.h>

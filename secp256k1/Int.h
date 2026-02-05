@@ -195,8 +195,6 @@ private:
 
 // Inline routines
 
-#ifndef _WIN64
-
 // Missing intrinsics
 static uint64_t inline _umul128(uint64_t a, uint64_t b, uint64_t *h) {
   uint64_t rhi;
@@ -222,9 +220,6 @@ static uint64_t inline __shiftleft128(uint64_t a, uint64_t b,unsigned char n) {
 #define _subborrow_u64(a,b,c,d) __builtin_ia32_sbb_u64(a,b,c,(long long unsigned int*)d);
 #define _addcarry_u64(a,b,c,d) __builtin_ia32_addcarryx_u64(a,b,c,(long long unsigned int*)d);
 #define _byteswap_uint64 __builtin_bswap64
-#else
-#include <intrin.h>
-#endif
 
 static void inline imm_mul(uint64_t *x, uint64_t y, uint64_t *dst) {
 

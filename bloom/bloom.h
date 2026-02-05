@@ -8,10 +8,6 @@
 #ifndef _BLOOM_H
 #define _BLOOM_H
 
-#ifdef _WIN64
-#include <windows.h>
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif

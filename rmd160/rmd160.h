@@ -28,12 +28,9 @@ typedef struct RMD160Context {
 
 #define RIPEMD160Context RMD160Context
 
-#ifdef _WIN64
-#else
 #include <sys/cdefs.h>
 
 __BEGIN_DECLS
-#endif
 
 void   RMD160Init(RMD160_CTX *);
 void   RMD160Update(RMD160_CTX *, const unsigned char *, unsigned int);
@@ -41,10 +38,7 @@ void   RMD160Final(unsigned char [RMD160_HASHBYTES], RMD160_CTX *);
 char * RMD160End(RMD160_CTX *, char *);
 char * RMD160File(const char *, char *);
 void RMD160Data(const unsigned char *, unsigned int, char *);
-#ifdef _WIN64
-#else
-__END_DECLS
 
-#endif
+__END_DECLS
 
 #endif /* _RMD160_H_ */

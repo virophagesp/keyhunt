@@ -852,15 +852,11 @@ void Int::MontgomeryMult(Int *a, Int *b) {
 
 void Int::ModMulK1(Int *a, Int *b) {
 
-#ifndef _WIN64
 #if (__GNUC__ > 7) || (__GNUC__ == 7 && (__GNUC_MINOR__ > 2))
   unsigned char c;
 #else
   #warning "GCC lass than 7.3 detected, upgrade gcc to get best perfromance"
   volatile unsigned char c;
-#endif
-#else
-  unsigned char c;
 #endif
 
 
@@ -914,15 +910,11 @@ void Int::ModMulK1(Int *a, Int *b) {
 
 void Int::ModMulK1(Int *a) {
 
-#ifndef _WIN64
 #if (__GNUC__ > 7) || (__GNUC__ == 7 && (__GNUC_MINOR__ > 2))
   unsigned char c;
 #else
   #warning "GCC lass than 7.3 detected, upgrade gcc to get best perfromance"
   volatile unsigned char c;
-#endif
-#else
-  unsigned char c;
 #endif
 
   uint64_t ah, al;
@@ -974,15 +966,11 @@ void Int::ModMulK1(Int *a) {
 
 void Int::ModSquareK1(Int *a) {
 
-#ifndef _WIN64
 #if (__GNUC__ > 7) || (__GNUC__ == 7 && (__GNUC_MINOR__ > 2))
   unsigned char c;
 #else
   #warning "GCC lass than 7.3 detected, upgrade gcc to get best perfromance"
   volatile unsigned char c;
-#endif
-#else
-  unsigned char c;
 #endif
 
   uint64_t r512[8];
