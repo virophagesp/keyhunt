@@ -160,21 +160,12 @@ uint64_t bytes;
 char checksum[32];
 struct address_value *addressTable;
 
-uint64_t bsgs_m = 4194304;
-uint64_t bsgs_m2;
-uint64_t bsgs_m3;
-uint64_t bsgs_aux;
-uint32_t bsgs_point_number;
-
 const char *str_limits_prefixs[7] = {"Mkeys/s","Gkeys/s","Tkeys/s","Pkeys/s","Ekeys/s","Zkeys/s","Ykeys/s"};
 const char *str_limits[7] = {"1000000","1000000000","1000000000000","1000000000000000","1000000000000000000","1000000000000000000000","1000000000000000000000000"};
 Int int_limits[7];
 
 Int BSGS_GROUP_SIZE;
-Int BSGS_AUX;
 Int BSGS_N;
-Int BSGS_M;					//M is squareroot(N)
-Int BSGS_M2;				//M2 is M/32
 Int BSGS_M3;				//M3 is M2/32
 Int BSGS_M3_double;			//M3_double is M3 * 2
 
@@ -967,12 +958,6 @@ bool isValidBase58String(char *str)	{
 }
 
 bool readFileAddress(char *fileName)	{
-	FILE *fileDescriptor;
-	char fileBloomName[30];	/* Actually it is Bloom and Table but just to keep the variable name short*/
-	uint8_t checksum[32],hexPrefix[9];
-	char dataChecksum[32],bloomChecksum[32];
-	size_t bytesRead;
-	uint64_t dataSize;
 	if(!FLAGREADEDFILE1)	{
 		/*
 			if the data_ file doesn't exist we need read it first:
