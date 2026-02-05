@@ -55,8 +55,6 @@ struct __attribute__((__packed__)) publickey {
 	} X;
 };
 
-const char *version = "0.2.230519 Satoshi Quest";
-
 #define CPU_GRP_SIZE 1024
 
 std::vector<Point> Gn;
@@ -210,7 +208,7 @@ int main(int argc, char **argv)	{
 		rseed(clock() + time(NULL) + rand()*rand());
 	}
 
-	printf("[+] Version %s, developed by AlbertoBSD\n",version);
+	printf("[+] Version 0.1 bitcoin hunt, developed by virophagesp based upon 0.2.230519 Satoshi Quest by AlbertoBSD\n");
 
 	while ((c = getopt(argc, argv, "f:n:r:")) != -1) {
 		switch(c) {
