@@ -143,7 +143,6 @@ int FLAGBLOOMMULTIPLIER = 1;
 int MAXLENGTHADDRESS = -1;
 int NTHREADS = 1;
 
-int FLAGSAVEREADFILE = 0;
 int FLAGREADEDFILE1 = 0;
 int FLAGREADEDFILE2 = 0;
 int FLAGREADEDFILE3 = 0;
@@ -296,7 +295,7 @@ int main(int argc, char **argv)	{
 
 	printf("[+] Version %s, developed by AlbertoBSD\n",version);
 
-	while ((c = getopt(argc, argv, "S:b:E:f:I:N:n:p:r:s:t:G:z:")) != -1) {
+	while ((c = getopt(argc, argv, "b:E:f:I:N:n:p:r:s:t:G:z:")) != -1) {
 		switch(c) {
 			case 'b':
 				bitrange = strtol(optarg,NULL,10);
@@ -379,9 +378,6 @@ int main(int argc, char **argv)	{
 					printf("[+] Stats output every %s seconds\n",hextemp);
 					free(hextemp);
 				}
-			break;
-			case 'S':
-				FLAGSAVEREADFILE = 1;
 			break;
 			case 't':
 				NTHREADS = strtol(optarg,NULL,10);
@@ -1057,118 +1053,6 @@ bool readFileAddress(char *fileName)	{
 	char dataChecksum[32],bloomChecksum[32];
 	size_t bytesRead;
 	uint64_t dataSize;
-	/*
-		if the FLAGSAVEREADFILE is Set to 1 we need to the checksum and check if we have that information already saved
-	*/
-	if(FLAGSAVEREADFILE)	{	/* if the flag is set to REAd and SAVE the file firs we need to check it the file exist*/
-		if(!sha256_file((const char*)fileName,checksum)){
-			fprintf(stderr,"[E] sha256_file error line %i\n",__LINE__ - 1);
-			return false;
-		}
-		tohex_dst((char*)checksum,4,(char*)hexPrefix); // we save the prefix (last fourt bytes) hexadecimal value
-		snprintf(fileBloomName,30,"data_%s.dat",hexPrefix);
-		fileDescriptor = fopen(fileBloomName,"rb");
-		if(fileDescriptor != NULL)	{
-			printf("[+] Reading file %s\n",fileBloomName);
-
-			//read bloom checksum (expected value to be checked)
-			//read bloom filter structure
-			//read bloom filter data
-			//calculate checksum of the current readed data
-			//Compare checksums
-			//read data checksum (expected value to be checked)
-			//read data size
-			//read data
-			//compare the expected datachecksum againts the current data checksum
-			//compare the expected bloom checksum againts the current bloom checksum
-
-			//read bloom checksum (expected value to be checked)
-			bytesRead = fread(bloomChecksum,1,32,fileDescriptor);
-			if(bytesRead != 32)	{
-				fprintf(stderr,"[E] Errore reading file, code line %i\n",__LINE__ - 2);
-				fclose(fileDescriptor);
-				return false;
-			}
-
-			//read bloom filter structure
-			bytesRead = fread(&bloom,1,sizeof(struct bloom),fileDescriptor);
-			if(bytesRead != sizeof(struct bloom))	{
-				fprintf(stderr,"[E] Error reading file, code line %i\n",__LINE__ - 2);
-				fclose(fileDescriptor);
-				return false;
-			}
-
-			printf("[+] Bloom filter for %" PRIu64 " elements.\n",bloom.entries);
-
-			bloom.bf = (uint8_t*) malloc(bloom.bytes);
-			if(bloom.bf == NULL)	{
-				fprintf(stderr,"[E] Error allocating memory, code line %i\n",__LINE__ - 2);
-				fclose(fileDescriptor);
-				return false;
-			}
-
-			//read bloom filter data
-			bytesRead = fread(bloom.bf,1,bloom.bytes,fileDescriptor);
-			if(bytesRead != bloom.bytes)	{
-				fprintf(stderr,"[E] Error reading file, code line %i\n",__LINE__ - 2);
-				fclose(fileDescriptor);
-				return false;
-			}
-
-			//calculate checksum of the current readed data
-			sha256((uint8_t*)bloom.bf,bloom.bytes,(uint8_t*)checksum);
-
-			//Compare checksums
-			if(memcmp(checksum,bloomChecksum,32) != 0)	{
-				fprintf(stderr,"[E] Error checksum mismatch, code line %i\n",__LINE__ - 2);
-				fclose(fileDescriptor);
-				return false;
-			}
-
-			bytesRead = fread(dataChecksum,1,32,fileDescriptor);
-			if(bytesRead != 32)	{
-				fprintf(stderr,"[E] Errore reading file, code line %i\n",__LINE__ - 2);
-				fclose(fileDescriptor);
-				return false;
-			}
-
-			bytesRead = fread(&dataSize,1,sizeof(uint64_t),fileDescriptor);
-			if(bytesRead != sizeof(uint64_t))	{
-				fprintf(stderr,"[E] Errore reading file, code line %i\n",__LINE__ - 2);
-				fclose(fileDescriptor);
-				return false; 
-			}
-			N = dataSize / sizeof(struct address_value);
-
-			printf("[+] Allocating memory for %" PRIu64 " elements: %.2f MB\n",N,(double)(((double) sizeof(struct address_value)*N)/(double)1048576));
-
-			addressTable = (struct address_value*) malloc(dataSize);
-			if(addressTable == NULL)	{
-				fprintf(stderr,"[E] Error allocating memory, code line %i\n",__LINE__ - 2);
-				fclose(fileDescriptor);
-				return false;
-			}
-
-			bytesRead = fread(addressTable,1,dataSize,fileDescriptor);
-			if(bytesRead != dataSize)	{
-				fprintf(stderr,"[E] Error reading file, code line %i\n",__LINE__ - 2);
-				fclose(fileDescriptor);
-				return false;
-			}
-
-			sha256((uint8_t*)addressTable,dataSize,(uint8_t*)checksum);
-			if(memcmp(checksum,dataChecksum,32) != 0)	{
-				fprintf(stderr,"[E] Error checksum mismatch, code line %i\n",__LINE__ - 2);
-				fclose(fileDescriptor);
-				return false;
-			}
-
-			//printf("[D] bloom.bf points to %p\n",bloom.bf);
-			FLAGREADEDFILE1 = 1;	/* We mark the file as readed*/
-			fclose(fileDescriptor);
-			MAXLENGTHADDRESS = sizeof(struct address_value);
-		}
-	}
 	if(!FLAGREADEDFILE1)	{
 		/*
 			if the data_ file doesn't exist we need read it first:
@@ -1275,8 +1159,7 @@ bool initBloomFilter(struct bloom *bloom_arg,uint64_t items_bloom)	{
 }
 
 void writeFileIfNeeded(const char *fileName)	{
-	//printf("[D] FLAGSAVEREADFILE %i, FLAGREADEDFILE1 %i\n",FLAGSAVEREADFILE,FLAGREADEDFILE1);
-	if(FLAGSAVEREADFILE && !FLAGREADEDFILE1)	{
+	if(!FLAGREADEDFILE1)	{
 		FILE *fileDescriptor;
 		char fileBloomName[30];
 		uint8_t checksum[32],hexPrefix[9];
