@@ -41,7 +41,6 @@ email: albertobsd@gmail.com
 #define MODE_XPOINT 0
 #define MODE_ADDRESS 1
 #define MODE_BSGS 2
-#define MODE_RMD160 3
 
 #define SEARCH_UNCOMPRESS 0
 #define SEARCH_COMPRESS 1
@@ -485,11 +484,6 @@ int main(int argc, char **argv)	{
 						FLAGMODE = MODE_BSGS;
 						//printf("[+] Mode BSGS\n");
 					break;
-					case MODE_RMD160:
-						FLAGMODE = MODE_RMD160;
-						FLAGCRYPTO = CRYPTO_BTC;
-						printf("[+] Mode rmd160\n");
-					break;
 					default:
 						fprintf(stderr,"[E] Unknow mode value %s\n",optarg);
 						exit(EXIT_FAILURE);
@@ -703,7 +697,6 @@ int main(int argc, char **argv)	{
 		free(hextemp);
 
 		switch(FLAGMODE)	{
-			case MODE_RMD160:
 			case MODE_ADDRESS:
 			case MODE_XPOINT:
 				if(!readFileAddress(fileName))	{
@@ -1746,7 +1739,6 @@ int main(int argc, char **argv)	{
 			switch(FLAGMODE)	{
 				case MODE_ADDRESS:
 				case MODE_XPOINT:
-				case MODE_RMD160:
 					s = pthread_create(&tid[j],NULL,thread_process,(void *)tt);
 				break;
 			}
@@ -2112,7 +2104,6 @@ void *thread_process(void *vargp)	{
 
 				for(j = 0; j < CPU_GRP_SIZE/4;j++){
 					switch(FLAGMODE)	{
-						case MODE_RMD160:
 						case MODE_ADDRESS:
 							if(FLAGCRYPTO == CRYPTO_BTC){
 
@@ -2184,7 +2175,6 @@ void *thread_process(void *vargp)	{
 					}
 
 					switch(FLAGMODE)	{
-						case MODE_RMD160:
 						case MODE_ADDRESS:
 							if( FLAGCRYPTO  == CRYPTO_BTC) {
 
@@ -4568,9 +4558,6 @@ bool readFileAddress(char *fileName)	{
 				if(FLAGCRYPTO == CRYPTO_ETH)	{
 					return forceReadFileAddressEth(fileName);
 				}
-			break;
-			case MODE_RMD160:
-				return forceReadFileAddress(fileName);
 			break;
 			case MODE_XPOINT:
 				return forceReadFileXPoint(fileName);
