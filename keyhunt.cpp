@@ -215,7 +215,7 @@ int main(int argc, char **argv)	{
 
 	printf("[+] Version %s, developed by AlbertoBSD\n",version);
 
-	while ((c = getopt(argc, argv, "b:E:f:N:n:p:r:s:G:z:")) != -1) {
+	while ((c = getopt(argc, argv, "b:E:f:N:n:p:r:s:z:")) != -1) {
 		switch(c) {
 			case 'b':
 				bitrange = strtol(optarg,NULL,10);
