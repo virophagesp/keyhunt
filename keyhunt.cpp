@@ -142,8 +142,6 @@ Int OUTPUTSECONDS;
 int FLAGENDOMORPHISM = 0;
 
 int FLAGBLOOMMULTIPLIER = 1;
-int FLAGBASEMINIKEY = 0;
-int FLAGQUIET = 0;
 int KFACTOR = 1;
 int MAXLENGTHADDRESS = -1;
 int NTHREADS = 1;
@@ -303,7 +301,7 @@ int main(int argc, char **argv)	{
 
 	printf("[+] Version %s, developed by AlbertoBSD\n",version);
 
-	while ((c = getopt(argc, argv, "eqS:b:E:f:I:k:N:n:p:r:s:t:G:z:")) != -1) {
+	while ((c = getopt(argc, argv, "eS:b:E:f:I:k:N:n:p:r:s:t:G:z:")) != -1) {
 		switch(c) {
 			case 'b':
 				bitrange = strtol(optarg,NULL,10);
@@ -352,10 +350,6 @@ int main(int argc, char **argv)	{
 			case 'n':
 				FLAG_N = 1;
 				str_N = optarg;
-			break;
-			case 'q':
-				FLAGQUIET	= 1;
-				printf("[+] Quiet thread output\n");
 			break;
 			case 'r':
 				if(optarg != NULL)	{
@@ -730,13 +724,11 @@ void *thread_process(void *vargp)	{
 		}
 		if(continue_flag)	{
 			count = 0;
-			if(FLAGQUIET == 0){
-				hextemp = key_mpz.GetBase16();
-				printf("\rBase key: %s     \r",hextemp);
-				fflush(stdout);
-				free(hextemp);
-				THREADOUTPUT = 1;
-			}
+			hextemp = key_mpz.GetBase16();
+			printf("\rBase key: %s     \r",hextemp);
+			fflush(stdout);
+			free(hextemp);
+			THREADOUTPUT = 1;
 			do {
 				temp_stride.SetInt32(CPU_GRP_SIZE / 2);
 				temp_stride.Mult(&stride);
