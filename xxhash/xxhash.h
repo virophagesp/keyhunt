@@ -594,7 +594,6 @@ XXH_errorcode XXH3_128bits_update (XXH3_state_t* statePtr, const void* input, si
 
 
 
-#if defined(XXH_STATIC_LINKING_ONLY) && !defined(XXHASH_H_STATIC_13879238742)
 #define XXHASH_H_STATIC_13879238742
 /* ****************************************************************************
  * This section contains declarations which are not guaranteed to remain stable.
@@ -769,8 +768,6 @@ XXH128_hash_t XXH128(const void* data, size_t len, XXH64_hash_t seed);
 
 #endif  /* XXH_NO_LONG_LONG */
 
-#endif  /* defined(XXH_STATIC_LINKING_ONLY) && !defined(XXHASH_H_STATIC_13879238742) */
-
 
 /* ======================================================================== */
 /* ======================================================================== */
@@ -799,15 +796,9 @@ XXH128_hash_t XXH128(const void* data, size_t len, XXH64_hash_t seed);
  * which can then be linked into the final binary.
  ************************************************************************/
 
-#ifdef XXH_PRIVATE_API
-#  error "XXH_PRIVATE_API is supported"
-#  define XXH_IMPLEMENTATION
-#endif
 #ifdef XXH_IMPLEM_13a8737387
 #  error "XXH_IMPLEM_13a8737387 is supported"
 #endif
-#if ( defined(XXH_PRIVATE_API) \
-   || defined(XXH_IMPLEMENTATION) ) && !defined(XXH_IMPLEM_13a8737387)
 #  define XXH_IMPLEM_13a8737387
 
 /* *************************************
@@ -4781,11 +4772,6 @@ XXH3_128bits_update(XXH3_state_t* state, const void* input, size_t len)
 #pragma GCC pop_options
 
 #endif  /* XXH_NO_LONG_LONG */
-
-/*!
- * @}
- */
-#endif  /* XXH_IMPLEMENTATION */
 
 
 #if defined (__cplusplus)
