@@ -53,7 +53,6 @@ email: albertobsd@gmail.com
 #define MODE_BSGS 2
 #define MODE_RMD160 3
 #define MODE_PUB2RMD 4
-#define MODE_MINIKEYS 5
 
 #define SEARCH_UNCOMPRESS 0
 #define SEARCH_COMPRESS 1
@@ -113,14 +112,6 @@ struct __attribute__((__packed__)) publickey {
 };
 #endif
 
-const char *Ccoinbuffer_default = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
-
-char *Ccoinbuffer = (char*) Ccoinbuffer_default;
-char *str_baseminikey = NULL;
-char *raw_baseminikey = NULL;
-char *minikeyN = NULL;
-int minikey_n_limit;
-
 const char *version = "0.2.230519 Satoshi Quest";
 
 #define CPU_GRP_SIZE 1024
@@ -156,9 +147,6 @@ int bsgs_searchbinary(struct bsgs_xvalue *arr,char *data,int64_t array_length,ui
 int bsgs_secondcheck(Int *start_range,uint32_t a,uint32_t k_index,Int *privatekey);
 int bsgs_thirdcheck(Int *start_range,uint32_t a,uint32_t k_index,Int *privatekey);
 
-void sha256sse_22(uint8_t *src0, uint8_t *src1, uint8_t *src2, uint8_t *src3, uint8_t *dst0, uint8_t *dst1, uint8_t *dst2, uint8_t *dst3);
-void sha256sse_23(uint8_t *src0, uint8_t *src1, uint8_t *src2, uint8_t *src3, uint8_t *dst0, uint8_t *dst1, uint8_t *dst2, uint8_t *dst3);
-
 int minimum_same_bytes(unsigned char* A,unsigned char* B, int length);
 
 void writekey(bool compressed,Int *key);
@@ -180,7 +168,6 @@ void writeFileIfNeeded(const char *fileName);
 
 void calcualteindex(int i,Int *key);
 #if defined(_WIN64) && !defined(__CYGWIN__)
-DWORD WINAPI thread_process_minikeys(LPVOID vargp);
 DWORD WINAPI thread_process(LPVOID vargp);
 DWORD WINAPI thread_process_bsgs(LPVOID vargp);
 DWORD WINAPI thread_process_bsgs_backward(LPVOID vargp);
@@ -190,7 +177,6 @@ DWORD WINAPI thread_process_bsgs_dance(LPVOID vargp);
 DWORD WINAPI thread_bPload(LPVOID vargp);
 DWORD WINAPI thread_bPload_2blooms(LPVOID vargp);
 #else
-void *thread_process_minikeys(void *vargp);
 void *thread_process(void *vargp);
 void *thread_process_bsgs(void *vargp);
 void *thread_process_bsgs_backward(void *vargp);
@@ -204,9 +190,6 @@ void *thread_bPload_2blooms(void *vargp);
 char *pubkeytopubaddress(char *pkey,int length);
 void pubkeytopubaddress_dst(char *pkey,int length,char *dst);
 void rmd160toaddress_dst(char *rmd,char *dst);
-void set_minikey(char *buffer,char *rawbuffer,int length);
-bool increment_minikey_index(char *buffer,char *rawbuffer,int index);
-void increment_minikey_N(char *rawbuffer);
 
 void KECCAK_256(uint8_t *source, size_t size,uint8_t *dst);
 void generate_binaddress_eth(Point &publickey,unsigned char *dst_address);
@@ -216,7 +199,7 @@ char *bit_range_str_min;
 char *bit_range_str_max;
 
 const char *bsgs_modes[5] = {"sequential","backward","both","random","dance"};
-const char *modes[6] = {"xpoint","address","bsgs","rmd160","pub2rmd","minikeys"};
+const char *modes[5] = {"xpoint","address","bsgs","rmd160","pub2rmd"};
 const char *cryptos[3] = {"btc","eth","all"};
 const char *publicsearch[3] = {"uncompress","compress","both"};
 const char *default_fileName = "addresses.txt";
@@ -454,7 +437,7 @@ int main(int argc, char **argv)	{
 
 	printf("[+] Version %s, developed by AlbertoBSD\n",version);
 
-	while ((c = getopt(argc, argv, "eqRSB:b:c:C:E:f:I:k:l:m:N:n:p:r:s:t:G:8:z:")) != -1) {
+	while ((c = getopt(argc, argv, "eqRSB:b:c:E:f:I:k:l:m:N:n:p:r:s:t:G:z:")) != -1) {
 		switch(c) {
 			case 'B':
 				index_value = indexOf(optarg,bsgs_modes,5);
@@ -507,31 +490,6 @@ int main(int argc, char **argv)	{
 						exit(EXIT_FAILURE);
 					break;
 				}
-			break;
-			case 'C':
-				if(strlen(optarg) == 22)	{
-					FLAGBASEMINIKEY = 1;
-					str_baseminikey = (char*) malloc(23);
-					checkpointer((void *)str_baseminikey,__FILE__,"malloc","str_baseminikey" ,__LINE__ - 1);
-					raw_baseminikey = (char*) malloc(23);
-					checkpointer((void *)raw_baseminikey,__FILE__,"malloc","raw_baseminikey" ,__LINE__ - 1);
-					strncpy(str_baseminikey,optarg,22);
-					for(i = 0; i< 21; i++)	{
-						if(strchr(Ccoinbuffer,str_baseminikey[i+1]) != NULL)	{
-							raw_baseminikey[i] = (int)(strchr(Ccoinbuffer,str_baseminikey[i+1]) - Ccoinbuffer) % 58;
-						}
-						else	{
-							fprintf(stderr,"[E] invalid character in minikey\n");
-							exit(EXIT_FAILURE);
-						}
-
-					}
-				}
-				else	{
-					fprintf(stderr,"[E] Invalid Minikey length %li : %s\n",strlen(optarg),optarg);
-					exit(EXIT_FAILURE);
-				}
-
 			break;
 			case 'e':
 				FLAGENDOMORPHISM = 1;
@@ -596,10 +554,6 @@ int main(int argc, char **argv)	{
 						FLAGMODE = MODE_PUB2RMD;
 						printf("[+] Mode pub2rmd was removed\n");
 						exit(0);
-					break;
-					case MODE_MINIKEYS:
-						FLAGMODE = MODE_MINIKEYS;
-						printf("[+] Mode minikeys\n");
 					break;
 					default:
 						fprintf(stderr,"[E] Unknow mode value %s\n",optarg);
@@ -679,16 +633,6 @@ int main(int argc, char **argv)	{
 				}
 				printf((NTHREADS > 1) ? "[+] Threads : %u\n": "[+] Thread : %u\n",NTHREADS);
 			break;
-			case '8':
-				if(strlen(optarg) == 58)	{
-					Ccoinbuffer = optarg; 
-					printf("[+] Base58 for Minikeys %s\n",Ccoinbuffer);
-				}
-				else	{
-					fprintf(stderr,"[E] The base58 alphabet must be 58 characters long.\n");
-					exit(EXIT_FAILURE);
-				}
-			break;
 			case 'z':
 				FLAGBLOOMMULTIPLIER= strtol(optarg,NULL,10);
 				if(FLAGBLOOMMULTIPLIER <= 0)	{
@@ -765,7 +709,7 @@ int main(int argc, char **argv)	{
 			FLAGRANGE = 0;
 		}
 	}
-	if(FLAGMODE != MODE_BSGS && FLAGMODE != MODE_MINIKEYS)	{
+	if(FLAGMODE != MODE_BSGS)	{
 		BSGS_N.SetInt32(DEBUGCOUNT);
 		if(FLAGRANGE == 0 && FLAGBITRANGE == 0)	{
 			n_range_start.SetInt32(1);
@@ -810,56 +754,20 @@ int main(int argc, char **argv)	{
 			}
 		}
 		printf("[+] N = %p\n",(void*)N_SEQUENTIAL_MAX);
-		if(FLAGMODE == MODE_MINIKEYS)	{
-			BSGS_N.SetInt32(DEBUGCOUNT);
-			if(FLAGBASEMINIKEY)	{
-				printf("[+] Base Minikey : %s\n",str_baseminikey);
-			}
-			minikeyN = (char*) malloc(22);
-			checkpointer((void *)minikeyN,__FILE__,"malloc","minikeyN" ,__LINE__ -1);
-			i =0;
-			int58.SetInt32(58);
-			int_aux.SetInt64(N_SEQUENTIAL_MAX);
-			int_aux.Mult(253);
-			/* We get approximately one valid mini key for each 256 candidates mini keys since this is only statistics we multiply N_SEQUENTIAL_MAX by 253 to ensure not missed one one candidate minikey between threads... in this approach we repeat from 1 to 3 candidates in each N_SEQUENTIAL_MAX cycle IF YOU FOUND some other workaround please let me know */
-			i = 20;
-			salir = 0;
-			do	{
-				if(!int_aux.IsZero())	{
-					int_r.Set(&int_aux);
-					int_r.Mod(&int58);
-					int_q.Set(&int_aux);
-					minikeyN[i] = (uint8_t)int_r.GetInt64();
-					int_q.Sub(&int_r);
-					int_q.Div(&int58);
-					int_aux.Set(&int_q);
-					i--;
-				}
-				else	{
-					salir =1;
-				}
-			}while(!salir && i > 0);
-			minikey_n_limit = 21 -i;
+		if(FLAGBITRANGE)	{	// Bit Range
+			printf("[+] Bit Range %i\n",bitrange);
 		}
 		else	{
-			if(FLAGBITRANGE)	{	// Bit Range
-				printf("[+] Bit Range %i\n",bitrange);
-			}
-			else	{
-				printf("[+] Range \n");
-			}
+			printf("[+] Range \n");
 		}
-		if(FLAGMODE != MODE_MINIKEYS)	{
-			hextemp = n_range_start.GetBase16();
-			printf("[+] -- from : 0x%s\n",hextemp);
-			free(hextemp);
-			hextemp = n_range_end.GetBase16();
-			printf("[+] -- to   : 0x%s\n",hextemp);
-			free(hextemp);
-		}
+		hextemp = n_range_start.GetBase16();
+		printf("[+] -- from : 0x%s\n",hextemp);
+		free(hextemp);
+		hextemp = n_range_end.GetBase16();
+		printf("[+] -- to   : 0x%s\n",hextemp);
+		free(hextemp);
 
 		switch(FLAGMODE)	{
-			case MODE_MINIKEYS:
 			case MODE_RMD160:
 			case MODE_ADDRESS:
 			case MODE_XPOINT:
@@ -2002,17 +1910,11 @@ int main(int argc, char **argv)	{
 				case MODE_RMD160:
 					tid[j] = CreateThread(NULL, 0, thread_process, (void*)tt, 0, &s);
 				break;
-				case MODE_MINIKEYS:
-					tid[j] = CreateThread(NULL, 0, thread_process_minikeys, (void*)tt, 0, &s);
-				break;
 #else
 				case MODE_ADDRESS:
 				case MODE_XPOINT:
 				case MODE_RMD160:
 					s = pthread_create(&tid[j],NULL,thread_process,(void *)tt);
-				break;
-				case MODE_MINIKEYS:
-					s = pthread_create(&tid[j],NULL,thread_process_minikeys,(void *)tt);
 				break;
 #endif
 			}
@@ -2201,170 +2103,6 @@ int searchbinary(struct address_value *buffer,char *data,int64_t array_length) {
 		}
 	}
 	return r;
-}
-
-#if defined(_WIN64) && !defined(__CYGWIN__)
-DWORD WINAPI thread_process_minikeys(LPVOID vargp) {
-#else
-void *thread_process_minikeys(void *vargp)	{
-#endif
-	FILE *keys;
-	Point publickey[4];
-	Int key_mpz[4];
-	struct tothread *tt;
-	uint64_t count;
-	char publickeyhashrmd160_uncompress[4][20];
-	char public_key_uncompressed_hex[131];
-	char address[4][40],minikey[4][24],minikeys[8][24],buffer_b58[21],minikey2check[24],rawvalue[4][32];
-	char *hextemp,*rawbuffer;
-	int r,thread_number,continue_flag = 1,k,j,count_valid;
-	Int counter;
-	tt = (struct tothread *)vargp;
-	thread_number = tt->nt;
-	free(tt);
-	rawbuffer = (char*) &counter.bits64;
-	count_valid = 0;
-	for(k = 0; k < 4; k++)	{
-		minikey[k][0] = 'S';
-		minikey[k][22] = '?';
-		minikey[k][23] = 0x00;
-	}
-	minikey2check[0] = 'S';
-	minikey2check[22] = '?';
-	minikey2check[23] = 0x00;
-
-	do	{
-		if(FLAGRANDOM)	{
-			counter.Rand(256);
-			for(k = 0; k < 21; k++)	{
-				buffer_b58[k] =(uint8_t)((uint8_t) rawbuffer[k] % 58);
-			}
-		}
-		else	{
-			if(FLAGBASEMINIKEY)	{
-#if defined(_WIN64) && !defined(__CYGWIN__)
-				WaitForSingleObject(write_random, INFINITE);
-				memcpy(buffer_b58,raw_baseminikey,21);
-				increment_minikey_N(raw_baseminikey);
-				ReleaseMutex(write_random);
-#else
-				pthread_mutex_lock(&write_random);
-				memcpy(buffer_b58,raw_baseminikey,21);
-				increment_minikey_N(raw_baseminikey);
-				pthread_mutex_unlock(&write_random);
-#endif
-			}
-			else	{
-#if defined(_WIN64) && !defined(__CYGWIN__)
-				WaitForSingleObject(write_random, INFINITE);
-#else
-				pthread_mutex_lock(&write_random);
-#endif
-				if(raw_baseminikey == NULL){
-					raw_baseminikey = (char *) malloc(22);
-					checkpointer((void *)raw_baseminikey,__FILE__,"malloc","raw_baseminikey" ,__LINE__ -1 );
-					counter.Rand(256);
-					for(k = 0; k < 21; k++)	{
-						raw_baseminikey[k] =(uint8_t)((uint8_t) rawbuffer[k] % 58);
-					}
-					memcpy(buffer_b58,raw_baseminikey,21);
-					increment_minikey_N(raw_baseminikey);
-
-				}
-				else	{
-					memcpy(buffer_b58,raw_baseminikey,21);
-					increment_minikey_N(raw_baseminikey);
-				}
-#if defined(_WIN64) && !defined(__CYGWIN__)
-				ReleaseMutex(write_random);
-#else
-				pthread_mutex_unlock(&write_random);
-#endif
-
-			}
-		}
-		set_minikey(minikey2check+1,buffer_b58,21);
-		if(continue_flag)	{
-			count = 0;
-			if(!FLAGQUIET)	{
-				printf("\r[+] Base minikey: %s     \r",minikey2check);
-				fflush(stdout);
-			}
-			do {
-				for(j = 0;j<256; j++)	{
-
-					if(count_valid > 0)	{
-						for(k = 0; k < count_valid ; k++)	{
-							memcpy(minikeys[k],minikeys[4+k],22);
-						}
-					}
-					do	{
-						increment_minikey_index(minikey2check+1,buffer_b58,20);
-						memcpy(minikey[0]+1,minikey2check+1,21);
-						increment_minikey_index(minikey2check+1,buffer_b58,20);
-						memcpy(minikey[1]+1,minikey2check+1,21);
-						increment_minikey_index(minikey2check+1,buffer_b58,20);
-						memcpy(minikey[2]+1,minikey2check+1,21);
-						increment_minikey_index(minikey2check+1,buffer_b58,20);
-						memcpy(minikey[3]+1,minikey2check+1,21);
-
-						sha256sse_23((uint8_t*)minikey[0],(uint8_t*)minikey[1],(uint8_t*)minikey[2],(uint8_t*)minikey[3],(uint8_t*)rawvalue[0],(uint8_t*)rawvalue[1],(uint8_t*)rawvalue[2],(uint8_t*)rawvalue[3]);
-						for(k = 0; k < 4; k++){
-							if(rawvalue[k][0] == 0x00)	{
-								memcpy(minikeys[count_valid],minikey[k],22);
-								count_valid++;
-							}
-						}
-					}while(count_valid < 4);
-					count_valid-=4;
-					sha256sse_22((uint8_t*)minikeys[0],(uint8_t*)minikeys[1],(uint8_t*)minikeys[2],(uint8_t*)minikeys[3],(uint8_t*)rawvalue[0],(uint8_t*)rawvalue[1],(uint8_t*)rawvalue[2],(uint8_t*)rawvalue[3]);
-
-					for(k = 0; k < 4; k++)	{
-						key_mpz[k].Set32Bytes((uint8_t*)rawvalue[k]);
-						publickey[k] = secp->ComputePublicKey(&key_mpz[k]);
-					}
-
-					secp->GetHash160(P2PKH,false,publickey[0],publickey[1],publickey[2],publickey[3],(uint8_t*)publickeyhashrmd160_uncompress[0],(uint8_t*)publickeyhashrmd160_uncompress[1],(uint8_t*)publickeyhashrmd160_uncompress[2],(uint8_t*)publickeyhashrmd160_uncompress[3]);
-
-					for(k = 0; k < 4; k++)	{
-						r = bloom_check(&bloom,publickeyhashrmd160_uncompress[k],20);
-						if(r) {
-							r = searchbinary(addressTable,publickeyhashrmd160_uncompress[k],N);
-							if(r) {
-								/* hit */
-								hextemp = key_mpz[k].GetBase16();
-								secp->GetPublicKeyHex(false,publickey[k],public_key_uncompressed_hex);
-#if defined(_WIN64) && !defined(__CYGWIN__)
-								WaitForSingleObject(write_keys, INFINITE);
-#else
-								pthread_mutex_lock(&write_keys);
-#endif
-
-								keys = fopen("KEYFOUNDKEYFOUND.txt","a+");
-								rmd160toaddress_dst(publickeyhashrmd160_uncompress[k],address[k]);
-								minikeys[k][22] = '\0';
-								if(keys != NULL)	{
-									fprintf(keys,"Private Key: %s\npubkey: %s\nminikey: %s\naddress: %s\n",hextemp,public_key_uncompressed_hex,minikeys[k],address[k]);
-									fclose(keys);
-								}
-								printf("\nHIT!! Private Key: %s\npubkey: %s\nminikey: %s\naddress: %s\n",hextemp,public_key_uncompressed_hex,minikeys[k],address[k]);
-#if defined(_WIN64) && !defined(__CYGWIN__)
-								ReleaseMutex(write_keys);
-#else
-								pthread_mutex_unlock(&write_keys);
-#endif
-
-								free(hextemp);
-							}
-						}
-					}
-				}
-				steps[thread_number]++;
-				count+=1024;
-			}while(count < N_SEQUENTIAL_MAX && continue_flag);
-		}
-	}while(continue_flag);
-	return NULL;
 }
 
 #if defined(_WIN64) && !defined(__CYGWIN__)
@@ -4954,131 +4692,6 @@ void *thread_process_bsgs_both(void *vargp)	{
 	return NULL;
 }
 
-/* This function takes in three parameters:
-
-buffer: a pointer to a char array where the minikey will be stored.
-rawbuffer: a pointer to a char array that contains the raw data.
-length: an integer representing the length of the raw data.
-The function is designed to convert the raw data using a lookup table (Ccoinbuffer) and store the result in the buffer. 
-*/
-void set_minikey(char *buffer,char *rawbuffer,int length)	{
-	for(int i = 0;  i < length; i++)	{
-		buffer[i] = Ccoinbuffer[(uint8_t)rawbuffer[i]];
-	}
-}
-
-/* This function takes in three parameters:
-
-buffer: a pointer to a char array where the minikey will be stored.
-rawbuffer: a pointer to a char array that contains the raw data.
-index: an integer representing the index of the raw data array to be incremented.
-The function is designed to increment the value at the specified index in the raw data array,
-and update the corresponding value in the buffer using a lookup table (Ccoinbuffer).
-If the value at the specified index exceeds 57, it is reset to 0x00 and the function recursively
-calls itself to increment the value at the previous index, unless the index is already 0, in which
-case the function returns false. The function returns true otherwise. 
-*/
-
-bool increment_minikey_index(char *buffer,char *rawbuffer,int index)	{
-	if(rawbuffer[index] < 57){
-		rawbuffer[index]++;
-		buffer[index] = Ccoinbuffer[(uint8_t)rawbuffer[index]];
-	}
-	else	{
-		rawbuffer[index] = 0x00;
-		buffer[index] = Ccoinbuffer[0];
-		if(index>0)	{
-			return increment_minikey_index(buffer,rawbuffer,index-1);
-		}
-		else	{
-			return false;
-		}
-	}
-	return true;
-}
-
-/* This function takes in a single parameter:
-
-rawbuffer: a pointer to a char array that contains the raw data.
-The function is designed to increment the values in the raw data array
-using a lookup table (minikeyN), while also handling carry-over to the
-previous element in the array if necessary. The maximum number of iterations
-is limited by minikey_n_limit. 
-
-*/
-void increment_minikey_N(char *rawbuffer)	{
-	int i = 20,j = 0;
-	while( i > 0 && j < minikey_n_limit)	{
-		rawbuffer[i] = rawbuffer[i] + minikeyN[i];
-		if(rawbuffer[i] > 57)	{	 // Handling carry-over if value exceeds 57
-			rawbuffer[i] = rawbuffer[i] % 58;
-			rawbuffer[i-1]++;
-		}
-		i--;
-		j++;
-	}
-}
-
-#define BUFFMINIKEY(buff,src) \
-(buff)[ 0] = (uint32_t)src[ 0] << 24 | (uint32_t)src[ 1] << 16 | (uint32_t)src[ 2] << 8 | (uint32_t)src[ 3]; \
-(buff)[ 1] = (uint32_t)src[ 4] << 24 | (uint32_t)src[ 5] << 16 | (uint32_t)src[ 6] << 8 | (uint32_t)src[ 7]; \
-(buff)[ 2] = (uint32_t)src[ 8] << 24 | (uint32_t)src[ 9] << 16 | (uint32_t)src[10] << 8 | (uint32_t)src[11]; \
-(buff)[ 3] = (uint32_t)src[12] << 24 | (uint32_t)src[13] << 16 | (uint32_t)src[14] << 8 | (uint32_t)src[15]; \
-(buff)[ 4] = (uint32_t)src[16] << 24 | (uint32_t)src[17] << 16 | (uint32_t)src[18] << 8 | (uint32_t)src[19]; \
-(buff)[ 5] = (uint32_t)src[20] << 24 | (uint32_t)src[21] << 16 | 0x8000; \
-(buff)[ 6] = 0; \
-(buff)[ 7] = 0; \
-(buff)[ 8] = 0; \
-(buff)[ 9] = 0; \
-(buff)[10] = 0; \
-(buff)[11] = 0; \
-(buff)[12] = 0; \
-(buff)[13] = 0; \
-(buff)[14] = 0; \
-(buff)[15] = 0xB0;	//176 bits => 22 BYTES
-
-void sha256sse_22(uint8_t *src0, uint8_t *src1, uint8_t *src2, uint8_t *src3, uint8_t *dst0, uint8_t *dst1, uint8_t *dst2, uint8_t *dst3)	{
-  uint32_t b0[16];
-  uint32_t b1[16];
-  uint32_t b2[16];
-  uint32_t b3[16];
-  BUFFMINIKEY(b0, src0);
-  BUFFMINIKEY(b1, src1);
-  BUFFMINIKEY(b2, src2);
-  BUFFMINIKEY(b3, src3);
-  sha256sse_1B(b0, b1, b2, b3, dst0, dst1, dst2, dst3);
-}
-
-#define BUFFMINIKEYCHECK(buff,src) \
-(buff)[ 0] = (uint32_t)src[ 0] << 24 | (uint32_t)src[ 1] << 16 | (uint32_t)src[ 2] << 8 | (uint32_t)src[ 3]; \
-(buff)[ 1] = (uint32_t)src[ 4] << 24 | (uint32_t)src[ 5] << 16 | (uint32_t)src[ 6] << 8 | (uint32_t)src[ 7]; \
-(buff)[ 2] = (uint32_t)src[ 8] << 24 | (uint32_t)src[ 9] << 16 | (uint32_t)src[10] << 8 | (uint32_t)src[11]; \
-(buff)[ 3] = (uint32_t)src[12] << 24 | (uint32_t)src[13] << 16 | (uint32_t)src[14] << 8 | (uint32_t)src[15]; \
-(buff)[ 4] = (uint32_t)src[16] << 24 | (uint32_t)src[17] << 16 | (uint32_t)src[18] << 8 | (uint32_t)src[19]; \
-(buff)[ 5] = (uint32_t)src[20] << 24 | (uint32_t)src[21] << 16 | (uint32_t)src[22] << 8 | 0x80; \
-(buff)[ 6] = 0; \
-(buff)[ 7] = 0; \
-(buff)[ 8] = 0; \
-(buff)[ 9] = 0; \
-(buff)[10] = 0; \
-(buff)[11] = 0; \
-(buff)[12] = 0; \
-(buff)[13] = 0; \
-(buff)[14] = 0; \
-(buff)[15] = 0xB8;	//184 bits => 23 BYTES
-
-void sha256sse_23(uint8_t *src0, uint8_t *src1, uint8_t *src2, uint8_t *src3, uint8_t *dst0, uint8_t *dst1, uint8_t *dst2, uint8_t *dst3)	{
-  uint32_t b0[16];
-  uint32_t b1[16];
-  uint32_t b2[16];
-  uint32_t b3[16];
-  BUFFMINIKEYCHECK(b0, src0);
-  BUFFMINIKEYCHECK(b1, src1);
-  BUFFMINIKEYCHECK(b2, src2);
-  BUFFMINIKEYCHECK(b3, src3);
-  sha256sse_1B(b0, b1, b2, b3, dst0, dst1, dst2, dst3);
-}
-
 /*
 A and B are binary o string data pointers
 length the max lenght to check.
@@ -5319,7 +4932,6 @@ bool readFileAddress(char *fileName)	{
 					return forceReadFileAddressEth(fileName);
 				}
 			break;
-			case MODE_MINIKEYS:
 			case MODE_RMD160:
 				return forceReadFileAddress(fileName);
 			break;
