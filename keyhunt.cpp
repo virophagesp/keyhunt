@@ -38,7 +38,6 @@ email: albertobsd@gmail.com
 #define CRYPTO_ETH 2
 #define CRYPTO_ALL 3
 
-#define MODE_XPOINT 0
 #define MODE_ADDRESS 1
 
 #define SEARCH_UNCOMPRESS 0
@@ -134,7 +133,6 @@ bool isValidBase58String(char *str);
 bool readFileAddress(char *fileName);
 bool forceReadFileAddress(char *fileName);
 bool forceReadFileAddressEth(char *fileName);
-bool forceReadFileXPoint(char *fileName);
 
 bool initBloomFilter(struct bloom *bloom_arg,uint64_t items_bloom);
 
@@ -162,8 +160,6 @@ int THREADOUTPUT = 0;
 char *bit_range_str_min;
 char *bit_range_str_max;
 
-const char *bsgs_modes[5] = {"sequential","backward","both","random","dance"};
-const char *modes[2] = {"xpoint","address"};
 const char *cryptos[3] = {"btc","eth","all"};
 const char *publicsearch[3] = {"uncompress","compress","both"};
 const char *default_fileName = "addresses.txt";
@@ -458,20 +454,8 @@ int main(int argc, char **argv)	{
 				}
 			break;
 			case 'm':
-				switch(indexOf(optarg,modes,7)) {
-					case MODE_XPOINT: //xpoint
-						FLAGMODE = MODE_XPOINT;
-						printf("[+] Mode xpoint\n");
-					break;
-					case MODE_ADDRESS: //address
-						FLAGMODE = MODE_ADDRESS;
-						printf("[+] Mode address\n");
-					break;
-					default:
-						fprintf(stderr,"[E] Unknow mode value %s\n",optarg);
-						exit(EXIT_FAILURE);
-					break;
-				}
+				FLAGMODE = MODE_ADDRESS;
+				printf("[+] Mode address\n");
 			break;
 			case 'n':
 				FLAG_N = 1;
@@ -661,7 +645,6 @@ int main(int argc, char **argv)	{
 
 	switch(FLAGMODE)	{
 		case MODE_ADDRESS:
-		case MODE_XPOINT:
 			if(!readFileAddress(fileName))	{
 				fprintf(stderr,"[E] Unenexpected error\n");
 				exit(EXIT_FAILURE);
@@ -690,7 +673,6 @@ int main(int argc, char **argv)	{
 		s = 0;
 		switch(FLAGMODE)	{
 			case MODE_ADDRESS:
-			case MODE_XPOINT:
 				s = pthread_create(&tid[j],NULL,thread_process,(void *)tt);
 			break;
 		}
@@ -731,12 +713,7 @@ int main(int argc, char **argv)	{
 				}
 
 				if(FLAGENDOMORPHISM)	{
-					if(FLAGMODE == MODE_XPOINT)	{
-						total.Mult(3);
-					}
-					else	{
-						total.Mult(6);
-					}
+					total.Mult(6);
 				}
 				else	{
 					if(FLAGSEARCH == SEARCH_COMPRESS)	{
@@ -1332,64 +1309,6 @@ void *thread_process(void *vargp)	{
 												keyfound.Add(&key_mpz);
 												writekeyeth(&keyfound);
 											}
-										}
-									}
-								}
-							}
-						break;
-						case MODE_XPOINT:
-							for(k = 0; k < 4;k++)	{
-								if(FLAGENDOMORPHISM)	{
-									pts[(4*j)+k].x.Get32Bytes((unsigned char *)rawvalue);
-									r = bloom_check(&bloom,rawvalue,MAXLENGTHADDRESS);
-									if(r) {
-										r = searchbinary(addressTable,rawvalue,N);
-										if(r) {
-											keyfound.SetInt32(k);
-											keyfound.Mult(&stride);
-											keyfound.Add(&key_mpz);
-
-											writekey(false,&keyfound);
-										}
-									}
-									endomorphism_beta[(j*4)+k].x.Get32Bytes((unsigned char *)rawvalue);
-									r = bloom_check(&bloom,rawvalue,MAXLENGTHADDRESS);
-									if(r) {
-										r = searchbinary(addressTable,rawvalue,N);
-										if(r) {
-											keyfound.SetInt32(k);
-											keyfound.Mult(&stride);
-											keyfound.Add(&key_mpz);
-											keyfound.ModMulK1order(&lambda);
-
-											writekey(false,&keyfound);
-										}
-									}
-
-									endomorphism_beta2[(j*4)+k].x.Get32Bytes((unsigned char *)rawvalue);
-									r = bloom_check(&bloom,rawvalue,MAXLENGTHADDRESS);
-									if(r) {
-										r = searchbinary(addressTable,rawvalue,N);
-										if(r) {
-											keyfound.SetInt32(k);
-											keyfound.Mult(&stride);
-											keyfound.Add(&key_mpz);
-											keyfound.ModMulK1order(&lambda2);
-											writekey(false,&keyfound);
-										}
-									}
-								}
-								else	{
-									pts[(4*j)+k].x.Get32Bytes((unsigned char *)rawvalue);
-									r = bloom_check(&bloom,rawvalue,MAXLENGTHADDRESS);
-									if(r) {
-										r = searchbinary(addressTable,rawvalue,N);
-										if(r) {
-											keyfound.SetInt32(k);
-											keyfound.Mult(&stride);
-											keyfound.Add(&key_mpz);
-
-											writekey(false,&keyfound);
 										}
 									}
 								}
@@ -3505,9 +3424,6 @@ bool readFileAddress(char *fileName)	{
 					return forceReadFileAddressEth(fileName);
 				}
 			break;
-			case MODE_XPOINT:
-				return forceReadFileXPoint(fileName);
-			break;
 			default:
 				return false;
 			break;
@@ -3662,106 +3578,6 @@ bool forceReadFileAddressEth(char *fileName)	{
 		}
 	}
 
-	fclose(fileDescriptor);
-	return true;
-}
-
-bool forceReadFileXPoint(char *fileName)	{
-	/* Here we read the original file as usual */
-	FILE *fileDescriptor;
-	uint64_t numberItems,i;
-	size_t r,lenaux;
-	uint8_t rawvalue[100];
-	char aux[1000],*hextemp;
-	Tokenizer tokenizer_xpoint;	//tokenizer
-	fileDescriptor = fopen(fileName,"r");
-	if(fileDescriptor == NULL)	{
-		fprintf(stderr,"[E] Error opening the file %s, line %i\n",fileName,__LINE__ - 2);
-		return false;
-	}
-	/*Count lines in the file*/
-	numberItems = 0;
-	while(!feof(fileDescriptor))	{
-		hextemp = fgets(aux,1000,fileDescriptor);
-		trim(aux," \t\n\r");
-		if(hextemp == aux)	{
-			r = strlen(aux);
-			if(r >= 40)	{ 
-				numberItems++;
-			}
-		}
-	}
-	fseek(fileDescriptor,0,SEEK_SET);
-
-	MAXLENGTHADDRESS = 20;		/*20 bytes beacuase we only need the data in binary*/
-
-	printf("[+] Allocating memory for %" PRIu64 " elements: %.2f MB\n",numberItems,(double)(((double) sizeof(struct address_value)*numberItems)/(double)1048576));
-	addressTable = (struct address_value*) malloc(sizeof(struct address_value)*numberItems);
-	checkpointer((void *)addressTable,__FILE__,"malloc","addressTable" ,__LINE__ - 1);
-
-	N = numberItems;
-
-	if(!initBloomFilter(&bloom,N))
-		return false;
-
-	i= 0;
-	while(i < N)	{
-		memset(aux,0,1000);
-		hextemp = fgets(aux,1000,fileDescriptor);
-		memset((void *)&addressTable[i],0,sizeof(struct address_value));
-		if(hextemp == aux)	{
-			trim(aux," \t\n\r");
-			stringtokenizer(aux,&tokenizer_xpoint);
-			hextemp = nextToken(&tokenizer_xpoint);
-			lenaux = strlen(hextemp);
-			if(isValidHex(hextemp)) {
-				switch(lenaux)	{
-					case 64:	/*X value*/
-						r = hexs2bin(aux,(uint8_t*) rawvalue);
-						if(r)	{
-							memcpy(addressTable[i].value,rawvalue,20);
-							bloom_add(&bloom,rawvalue,MAXLENGTHADDRESS);
-						}
-						else	{
-							fprintf(stderr,"[E] error hexs2bin\n");
-						}
-					break;
-					case 66:	/*Compress publickey*/
-						r = hexs2bin(aux+2, (uint8_t*)rawvalue);
-						if(r)	{
-							memcpy(addressTable[i].value,rawvalue,20);
-							bloom_add(&bloom,rawvalue,MAXLENGTHADDRESS);
-						}
-						else	{
-							fprintf(stderr,"[E] error hexs2bin\n");
-						}
-					break;
-					case 130:	/* Uncompress publickey length*/
-						r = hexs2bin(aux, (uint8_t*) rawvalue);
-						if(r)	{
-								memcpy(addressTable[i].value,rawvalue+2,20);
-								bloom_add(&bloom,rawvalue,MAXLENGTHADDRESS);
-						}
-						else	{
-							fprintf(stderr,"[E] error hexs2bin\n");
-						}
-					break;
-					default:
-						fprintf(stderr,"[E] Omiting line unknow length size %li: %s\n",lenaux,aux);
-					break;
-				}
-			}
-			else	{
-				fprintf(stderr,"[E] Ignoring invalid hexvalue %s\n",aux);
-			}
-			freetokenizer(&tokenizer_xpoint);
-		}
-		else	{
-			fprintf(stderr,"[E] Omiting line : %s\n",aux);
-			N--;
-		}
-		i++;
-	}
 	fclose(fileDescriptor);
 	return true;
 }
