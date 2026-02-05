@@ -42,7 +42,6 @@ email: albertobsd@gmail.com
 #define MODE_ADDRESS 1
 #define MODE_BSGS 2
 #define MODE_RMD160 3
-#define MODE_PUB2RMD 4
 
 #define SEARCH_UNCOMPRESS 0
 #define SEARCH_COMPRESS 1
@@ -490,11 +489,6 @@ int main(int argc, char **argv)	{
 						FLAGMODE = MODE_RMD160;
 						FLAGCRYPTO = CRYPTO_BTC;
 						printf("[+] Mode rmd160\n");
-					break;
-					case MODE_PUB2RMD:
-						FLAGMODE = MODE_PUB2RMD;
-						printf("[+] Mode pub2rmd was removed\n");
-						exit(0);
 					break;
 					default:
 						fprintf(stderr,"[E] Unknow mode value %s\n",optarg);
