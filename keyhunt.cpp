@@ -80,7 +80,6 @@ void _myheapsort(struct address_value	*arr, int64_t n);
 void _heapify(struct address_value *arr, int64_t n, int64_t i);
 
 void writekey(bool compressed,Int *key);
-void writekeyeth(Int *key);
 
 void checkpointer(void *ptr,const char *file,const char *function,const  char *name,int line);
 
@@ -101,7 +100,6 @@ void *thread_process(void *vargp);
 void rmd160toaddress_dst(char *rmd,char *dst);
 
 void KECCAK_256(uint8_t *source, size_t size,uint8_t *dst);
-void generate_binaddress_eth(Point &publickey,unsigned char *dst_address);
 
 int THREADOUTPUT = 0;
 char *bit_range_str_min;
@@ -115,14 +113,6 @@ pthread_t *tid = NULL;
 pthread_mutex_t write_keys;
 pthread_mutex_t write_random;
 pthread_mutex_t bsgs_thread;
-pthread_mutex_t *bPload_mutex = NULL;
-
-uint64_t FINISHED_THREADS_COUNTER = 0;
-uint64_t FINISHED_THREADS_BP = 0;
-uint64_t THREADCYCLES = 0;
-uint64_t THREADCOUNTER = 0;
-uint64_t FINISHED_ITEMS = 0;
-uint64_t OLDFINISHED_ITEMS = -1;
 
 uint8_t byte_encode_crypto = 0x00;		/* Bitcoin  */
 
@@ -134,7 +124,6 @@ uint64_t N = 0;
 
 uint64_t N_SEQUENTIAL_MAX = 0x100000000;
 uint64_t DEBUGCOUNT = 0x400;
-uint64_t u64range;
 
 Int OUTPUTSECONDS;
 
@@ -156,7 +145,6 @@ char *range_end;
 Int stride;
 
 uint64_t bytes;
-char checksum[32];
 struct address_value *addressTable;
 
 const char *str_limits_prefixs[7] = {"Mkeys/s","Gkeys/s","Tkeys/s","Pkeys/s","Ekeys/s","Zkeys/s","Ykeys/s"};
@@ -868,23 +856,6 @@ void KECCAK_256(uint8_t *source, size_t size,uint8_t *dst)	{
 	KECCAK_256_Final(dst,&ctx);
 }
 
-/* This function takes in two parameters:
-
-publickey: a reference to a Point object representing a public key.
-dst_address: a pointer to an unsigned char array where the generated binary address will be stored.
-The function is designed to generate a binary address for Ethereum using the given public key.
-It first extracts the x and y coordinates of the public key as 32-byte arrays, and concatenates them
-to form a 64-byte array called bin_publickey. Then, it applies the KECCAK-256 hashing algorithm to
-bin_publickey to generate the binary address, which is stored in dst_address. */
-
-void generate_binaddress_eth(Point &publickey,unsigned char *dst_address)	{
-	unsigned char bin_publickey[64];
-	publickey.x.Get32Bytes(bin_publickey);
-	publickey.y.Get32Bytes(bin_publickey+32);
-	KECCAK_256(bin_publickey, 64, bin_publickey);
-	memcpy(dst_address,bin_publickey+12,20);
-}
-
 void checkpointer(void *ptr,const char *file,const char *function,const  char *name,int line)	{
 	if(ptr == NULL)	{
 		fprintf(stderr,"[E] error in file %s, %s pointer %s on line %i\n",file,function,name,line); 
@@ -916,28 +887,6 @@ void writekey(bool compressed,Int *key)	{
 	pthread_mutex_unlock(&write_keys);
 	free(hextemp);
 	free(hexrmd);
-}
-
-void writekeyeth(Int *key)	{
-	Point publickey;
-	FILE *keys;
-	char *hextemp,address[43],hash[20];
-	hextemp = key->GetBase16();
-	publickey = secp->ComputePublicKey(key);
-	generate_binaddress_eth(publickey,(unsigned char*)hash);
-	address[0] = '0';
-	address[1] = 'x';
-	tohex_dst(hash,20,address+2);
-
-	pthread_mutex_lock(&write_keys);
-	keys = fopen("KEYFOUNDKEYFOUND.txt","a+");
-	if(keys != NULL)	{
-		fprintf(keys,"Private Key: %s\naddress: %s\n",hextemp,address);
-		fclose(keys);
-	}
-	printf("\n Hit!!!! Private Key: %s\naddress: %s\n",hextemp,address);
-	pthread_mutex_unlock(&write_keys);
-	free(hextemp);
 }
 
 bool isBase58(char c) {
