@@ -1687,11 +1687,7 @@ void *thread_process_bsgs(void *vargp)	{
 						pp.x.ModNeg();
 						pp.x.ModAdd(&_p);
 						pp.x.ModSub(&GSn[i].x);           // rx = pow2(s) - p1.x - p2.x;
-#if 0
-  pp.y.ModSub(&GSn[i].x,&pp.x);
-  pp.y.ModMulK1(&_s);
-  pp.y.ModSub(&GSn[i].y);           // ry = - p2.y - s*(ret.x-p2.x);  
-#endif
+
 						// P = startP - i*G  , if (x,y) = i*G then (x,-y) = -i*G
 						dyn.Set(&GSn[i].y);
 						dyn.ModNeg();
@@ -1703,12 +1699,6 @@ void *thread_process_bsgs(void *vargp)	{
 						pn.x.ModNeg();
 						pn.x.ModAdd(&_p);
 						pn.x.ModSub(&GSn[i].x);          // rx = pow2(s) - p1.x - p2.x;
-
-#if 0
-  pn.y.ModSub(&GSn[i].x,&pn.x);
-  pn.y.ModMulK1(&_s);
-  pn.y.ModAdd(&GSn[i].y);          // ry = - p2.y - s*(ret.x-p2.x);  
-#endif
 
 						pts[CPU_GRP_SIZE / 2 + (i + 1)] = pp;
 						pts[CPU_GRP_SIZE / 2 - (i + 1)] = pn;
@@ -1726,11 +1716,6 @@ void *thread_process_bsgs(void *vargp)	{
 					pn.x.ModAdd(&_p);
 					pn.x.ModSub(&GSn[i].x);
 
-#if 0
-pn.y.ModSub(&GSn[i].x,&pn.x);
-pn.y.ModMulK1(&_s);
-pn.y.ModAdd(&GSn[i].y);
-#endif
 					pts[0] = pn;
 					for(int i = 0; i<CPU_GRP_SIZE && bsgs_found[k]== 0; i++) {
 						pts[i].x.Get32Bytes((unsigned char*)xpoint_raw);
@@ -1897,12 +1882,6 @@ void *thread_process_bsgs_random(void *vargp)	{
 						pp.x.ModAdd(&_p);
 						pp.x.ModSub(&GSn[i].x);           // rx = pow2(s) - p1.x - p2.x;
 
-#if 0
-  pp.y.ModSub(&GSn[i].x,&pp.x);
-  pp.y.ModMulK1(&_s);
-  pp.y.ModSub(&GSn[i].y);           // ry = - p2.y - s*(ret.x-p2.x);  
-#endif
-
 						// P = startP - i*G  , if (x,y) = i*G then (x,-y) = -i*G
 						dyn.Set(&GSn[i].y);
 						dyn.ModNeg();
@@ -1914,12 +1893,6 @@ void *thread_process_bsgs_random(void *vargp)	{
 						pn.x.ModNeg();
 						pn.x.ModAdd(&_p);
 						pn.x.ModSub(&GSn[i].x);          // rx = pow2(s) - p1.x - p2.x;
-
-#if 0
-  pn.y.ModSub(&GSn[i].x,&pn.x);
-  pn.y.ModMulK1(&_s);
-  pn.y.ModAdd(&GSn[i].y);          // ry = - p2.y - s*(ret.x-p2.x);  
-#endif
 
 						pts[CPU_GRP_SIZE / 2 + (i + 1)] = pp;
 						pts[CPU_GRP_SIZE / 2 - (i + 1)] = pn;
@@ -1938,12 +1911,6 @@ void *thread_process_bsgs_random(void *vargp)	{
 					pn.x.ModNeg();
 					pn.x.ModAdd(&_p);
 					pn.x.ModSub(&GSn[i].x);
-
-#if 0
-pn.y.ModSub(&GSn[i].x,&pn.x);
-pn.y.ModMulK1(&_s);
-pn.y.ModAdd(&GSn[i].y);
-#endif
 
 					pts[0] = pn;
 
@@ -2200,12 +2167,6 @@ void *thread_bPload(void *vargp)	{
 			pp.x.ModAdd(&_p);
 			pp.x.ModSub(&Gn[i].x);           // rx = pow2(s) - p1.x - p2.x;
 
-#if 0
-			pp.y.ModSub(&Gn[i].x,&pp.x);
-			pp.y.ModMulK1(&_s);
-			pp.y.ModSub(&Gn[i].y);           // ry = - p2.y - s*(ret.x-p2.x);
-#endif
-
 			// P = startP - i*G  , if (x,y) = i*G then (x,-y) = -i*G
 			dyn.Set(&Gn[i].y);
 			dyn.ModNeg();
@@ -2217,12 +2178,6 @@ void *thread_bPload(void *vargp)	{
 			pn.x.ModNeg();
 			pn.x.ModAdd(&_p);
 			pn.x.ModSub(&Gn[i].x);          // rx = pow2(s) - p1.x - p2.x;
-
-#if 0
-			pn.y.ModSub(&Gn[i].x,&pn.x);
-			pn.y.ModMulK1(&_s);
-			pn.y.ModAdd(&Gn[i].y);          // ry = - p2.y - s*(ret.x-p2.x);
-#endif
 
 			pts[CPU_GRP_SIZE / 2 + (i + 1)] = pp;
 			pts[CPU_GRP_SIZE / 2 - (i + 1)] = pn;
@@ -2240,12 +2195,6 @@ void *thread_bPload(void *vargp)	{
 		pn.x.ModNeg();
 		pn.x.ModAdd(&_p);
 		pn.x.ModSub(&Gn[i].x);
-
-#if 0
-		pn.y.ModSub(&Gn[i].x,&pn.x);
-		pn.y.ModMulK1(&_s);
-		pn.y.ModAdd(&Gn[i].y);
-#endif
 
 		pts[0] = pn;
 		for(j=0;j<CPU_GRP_SIZE;j++)	{
@@ -2354,12 +2303,6 @@ void *thread_bPload_2blooms(void *vargp)	{
 			pp.x.ModAdd(&_p);
 			pp.x.ModSub(&Gn[i].x);           // rx = pow2(s) - p1.x - p2.x;
 
-#if 0
-			pp.y.ModSub(&Gn[i].x,&pp.x);
-			pp.y.ModMulK1(&_s);
-			pp.y.ModSub(&Gn[i].y);           // ry = - p2.y - s*(ret.x-p2.x);
-#endif
-
 			// P = startP - i*G  , if (x,y) = i*G then (x,-y) = -i*G
 			dyn.Set(&Gn[i].y);
 			dyn.ModNeg();
@@ -2371,12 +2314,6 @@ void *thread_bPload_2blooms(void *vargp)	{
 			pn.x.ModNeg();
 			pn.x.ModAdd(&_p);
 			pn.x.ModSub(&Gn[i].x);          // rx = pow2(s) - p1.x - p2.x;
-
-#if 0
-			pn.y.ModSub(&Gn[i].x,&pn.x);
-			pn.y.ModMulK1(&_s);
-			pn.y.ModAdd(&Gn[i].y);          // ry = - p2.y - s*(ret.x-p2.x);
-#endif
 
 			pts[CPU_GRP_SIZE / 2 + (i + 1)] = pp;
 			pts[CPU_GRP_SIZE / 2 - (i + 1)] = pn;
@@ -2394,12 +2331,6 @@ void *thread_bPload_2blooms(void *vargp)	{
 		pn.x.ModNeg();
 		pn.x.ModAdd(&_p);
 		pn.x.ModSub(&Gn[i].x);
-
-#if 0
-		pn.y.ModSub(&Gn[i].x,&pn.x);
-		pn.y.ModMulK1(&_s);
-		pn.y.ModAdd(&Gn[i].y);
-#endif
 
 		pts[0] = pn;
 		for(j=0;j<CPU_GRP_SIZE;j++)	{
@@ -2607,12 +2538,6 @@ void *thread_process_bsgs_dance(void *vargp)	{
 						pp.x.ModAdd(&_p);
 						pp.x.ModSub(&GSn[i].x);           // rx = pow2(s) - p1.x - p2.x;
 
-#if 0
-  pp.y.ModSub(&GSn[i].x,&pp.x);
-  pp.y.ModMulK1(&_s);
-  pp.y.ModSub(&GSn[i].y);           // ry = - p2.y - s*(ret.x-p2.x);  
-#endif
-
 						// P = startP - i*G  , if (x,y) = i*G then (x,-y) = -i*G
 						dyn.Set(&GSn[i].y);
 						dyn.ModNeg();
@@ -2624,12 +2549,6 @@ void *thread_process_bsgs_dance(void *vargp)	{
 						pn.x.ModNeg();
 						pn.x.ModAdd(&_p);
 						pn.x.ModSub(&GSn[i].x);          // rx = pow2(s) - p1.x - p2.x;
-
-#if 0
-  pn.y.ModSub(&GSn[i].x,&pn.x);
-  pn.y.ModMulK1(&_s);
-  pn.y.ModAdd(&GSn[i].y);          // ry = - p2.y - s*(ret.x-p2.x);  
-#endif
 
 						pts[CPU_GRP_SIZE / 2 + (i + 1)] = pp;
 						pts[CPU_GRP_SIZE / 2 - (i + 1)] = pn;
@@ -2648,12 +2567,6 @@ void *thread_process_bsgs_dance(void *vargp)	{
 					pn.x.ModNeg();
 					pn.x.ModAdd(&_p);
 					pn.x.ModSub(&GSn[i].x);
-
-#if 0
-pn.y.ModSub(&GSn[i].x,&pn.x);
-pn.y.ModMulK1(&_s);
-pn.y.ModAdd(&GSn[i].y);
-#endif
 
 					pts[0] = pn;
 
@@ -2835,12 +2748,6 @@ void *thread_process_bsgs_backward(void *vargp)	{
 						pp.x.ModAdd(&_p);
 						pp.x.ModSub(&GSn[i].x);           // rx = pow2(s) - p1.x - p2.x;
 
-#if 0
-  pp.y.ModSub(&GSn[i].x,&pp.x);
-  pp.y.ModMulK1(&_s);
-  pp.y.ModSub(&GSn[i].y);           // ry = - p2.y - s*(ret.x-p2.x);  
-#endif
-
 						// P = startP - i*G  , if (x,y) = i*G then (x,-y) = -i*G
 						dyn.Set(&GSn[i].y);
 						dyn.ModNeg();
@@ -2852,12 +2759,6 @@ void *thread_process_bsgs_backward(void *vargp)	{
 						pn.x.ModNeg();
 						pn.x.ModAdd(&_p);
 						pn.x.ModSub(&GSn[i].x);          // rx = pow2(s) - p1.x - p2.x;
-
-#if 0
-  pn.y.ModSub(&GSn[i].x,&pn.x);
-  pn.y.ModMulK1(&_s);
-  pn.y.ModAdd(&GSn[i].y);          // ry = - p2.y - s*(ret.x-p2.x);  
-#endif
 
 						pts[CPU_GRP_SIZE / 2 + (i + 1)] = pp;
 						pts[CPU_GRP_SIZE / 2 - (i + 1)] = pn;
@@ -2876,12 +2777,6 @@ void *thread_process_bsgs_backward(void *vargp)	{
 					pn.x.ModNeg();
 					pn.x.ModAdd(&_p);
 					pn.x.ModSub(&GSn[i].x);
-
-#if 0
-pn.y.ModSub(&GSn[i].x,&pn.x);
-pn.y.ModMulK1(&_s);
-pn.y.ModAdd(&GSn[i].y);
-#endif
 
 					pts[0] = pn;
 
@@ -3087,12 +2982,6 @@ void *thread_process_bsgs_both(void *vargp)	{
 							pp.x.ModAdd(&_p);
 							pp.x.ModSub(&GSn[i].x);           // rx = pow2(s) - p1.x - p2.x;
 
-#if 0
-	  pp.y.ModSub(&GSn[i].x,&pp.x);
-	  pp.y.ModMulK1(&_s);
-	  pp.y.ModSub(&GSn[i].y);           // ry = - p2.y - s*(ret.x-p2.x);  
-#endif
-
 							// P = startP - i*G  , if (x,y) = i*G then (x,-y) = -i*G
 							dyn.Set(&GSn[i].y);
 							dyn.ModNeg();
@@ -3104,12 +2993,6 @@ void *thread_process_bsgs_both(void *vargp)	{
 							pn.x.ModNeg();
 							pn.x.ModAdd(&_p);
 							pn.x.ModSub(&GSn[i].x);          // rx = pow2(s) - p1.x - p2.x;
-
-#if 0
-	  pn.y.ModSub(&GSn[i].x,&pn.x);
-	  pn.y.ModMulK1(&_s);
-	  pn.y.ModAdd(&GSn[i].y);          // ry = - p2.y - s*(ret.x-p2.x);  
-#endif
 
 							pts[CPU_GRP_SIZE / 2 + (i + 1)] = pp;
 							pts[CPU_GRP_SIZE / 2 - (i + 1)] = pn;
@@ -3128,12 +3011,6 @@ void *thread_process_bsgs_both(void *vargp)	{
 						pn.x.ModNeg();
 						pn.x.ModAdd(&_p);
 						pn.x.ModSub(&GSn[i].x);
-
-#if 0
-	pn.y.ModSub(&GSn[i].x,&pn.x);
-	pn.y.ModMulK1(&_s);
-	pn.y.ModAdd(&GSn[i].y);
-#endif
 
 						pts[0] = pn;
 
