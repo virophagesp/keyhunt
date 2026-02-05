@@ -144,19 +144,11 @@ int MAXLENGTHADDRESS = -1;
 int NTHREADS = 1;
 
 int FLAGREADEDFILE1 = 0;
-int FLAGREADEDFILE2 = 0;
-int FLAGREADEDFILE3 = 0;
-int FLAGREADEDFILE4 = 0;
-int FLAGUPDATEFILE1 = 0;
 
-int FLAGSTRIDE = 0;
-int FLAGSEARCH = 2;
 int FLAGBITRANGE = 0;
 int FLAGRANGE = 0;
 int FLAGFILE = 0;
-int FLAGRAWDATA	= 0;
 int FLAG_N = 0;
-int FLAGPRECALCUTED_P_FILE = 0;
 
 int bitrange;
 char *str_N;
@@ -164,39 +156,10 @@ char *range_start;
 char *range_end;
 Int stride;
 
-uint64_t BSGS_XVALUE_RAM = 6;
-uint64_t BSGS_BUFFERXPOINTLENGTH = 32;
-uint64_t BSGS_BUFFERREGISTERLENGTH = 36;
-
-/*
-BSGS Variables
-*/
-int *bsgs_found;
-std::vector<Point> OriginalPointsBSGS;
-bool *OriginalPointsBSGScompressed;
-
 uint64_t bytes;
-char checksum[32],checksum_backup[32];
-char buffer_bloom_file[1024];
+char checksum[32];
 struct address_value *addressTable;
 
-struct oldbloom oldbloom_bP;
-
-struct bloom *bloom_bP;
-struct bloom *bloom_bPx2nd; //2nd Bloom filter check
-struct bloom *bloom_bPx3rd; //3rd Bloom filter check
-
-struct checksumsha256 *bloom_bP_checksums;
-struct checksumsha256 *bloom_bPx2nd_checksums;
-struct checksumsha256 *bloom_bPx3rd_checksums;
-
-pthread_mutex_t *bloom_bP_mutex;
-pthread_mutex_t *bloom_bPx2nd_mutex;
-pthread_mutex_t *bloom_bPx3rd_mutex;
-
-uint64_t bloom_bP_totalbytes = 0;
-uint64_t bloom_bP2_totalbytes = 0;
-uint64_t bloom_bP3_totalbytes = 0;
 uint64_t bsgs_m = 4194304;
 uint64_t bsgs_m2;
 uint64_t bsgs_m3;
@@ -208,35 +171,16 @@ const char *str_limits[7] = {"1000000","1000000000","1000000000000","10000000000
 Int int_limits[7];
 
 Int BSGS_GROUP_SIZE;
-Int BSGS_CURRENT;
-Int BSGS_R;
 Int BSGS_AUX;
 Int BSGS_N;
-Int BSGS_N_double;
 Int BSGS_M;					//M is squareroot(N)
-Int BSGS_M_double;
 Int BSGS_M2;				//M2 is M/32
-Int BSGS_M2_double;			//M2_double is M2 * 2
 Int BSGS_M3;				//M3 is M2/32
 Int BSGS_M3_double;			//M3_double is M3 * 2
 
 Int ONE;
 Int ZERO;
 Int MPZAUX;
-
-Point BSGS_P;			//Original P is actually G, but this P value change over time for calculations
-Point BSGS_MP;			//MP values this is m * P
-Point BSGS_MP2;			//MP2 values this is m2 * P
-Point BSGS_MP3;			//MP3 values this is m3 * P
-
-Point BSGS_MP_double;			//MP2 values this is m2 * P * 2
-Point BSGS_MP2_double;			//MP2 values this is m2 * P * 2
-Point BSGS_MP3_double;			//MP3 values this is m3 * P * 2
-
-std::vector<Point> BSGS_AMP2;
-std::vector<Point> BSGS_AMP3;
-
-Point point_temp,point_temp2;	//Temp value for some process
 
 Int n_range_start;
 Int n_range_end;
@@ -294,7 +238,7 @@ int main(int argc, char **argv)	{
 
 	printf("[+] Version %s, developed by AlbertoBSD\n",version);
 
-	while ((c = getopt(argc, argv, "b:E:f:N:n:p:r:s:t:G:z:")) != -1) {
+	while ((c = getopt(argc, argv, "b:E:f:N:n:p:r:s:G:z:")) != -1) {
 		switch(c) {
 			case 'b':
 				bitrange = strtol(optarg,NULL,10);
@@ -373,13 +317,6 @@ int main(int argc, char **argv)	{
 					printf("[+] Stats output every %s seconds\n",hextemp);
 					free(hextemp);
 				}
-			break;
-			case 't':
-				NTHREADS = strtol(optarg,NULL,10);
-				if(NTHREADS <= 0)	{
-					NTHREADS = 1;
-				}
-				printf((NTHREADS > 1) ? "[+] Threads : %u\n": "[+] Thread : %u\n",NTHREADS);
 			break;
 			case 'z':
 				FLAGBLOOMMULTIPLIER= strtol(optarg,NULL,10);
