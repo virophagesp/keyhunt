@@ -72,7 +72,7 @@ static int oldbloom_check_add(struct oldbloom * bloom, const void * buffer, int 
   int r;
   for (i = 0; i < bloom->hashes; i++) {
     x = (a + b*i) % bloom->bits;
-#if defined(_WIN64) && !defined(__CYGWIN__)
+#if defined(_WIN64)
 	WaitForSingleObject(bloom->mutex, INFINITE);
 	r = oldtest_bit_set_bit(bloom->bf, x, add);
 	ReleaseMutex(bloom->mutex);

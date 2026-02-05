@@ -18,16 +18,13 @@
 
 #include "Random.h"
 
-#if defined(_WIN64) && !defined(__CYGWIN__)
+#if defined(_WIN64)
 #else
 #include <sys/random.h>
 #endif
 
 #ifdef __unix__
-#ifdef __CYGWIN__
-#else
 #include <linux/random.h>
-#endif
 #endif
 
 #define  RK_STATE_LEN 624
@@ -120,7 +117,7 @@ void rseed(unsigned long seed) {
 	//srand(seed);
 }
 
-#if defined(_WIN64) && !defined(__CYGWIN__)
+#if defined(_WIN64)
 unsigned long rndl() {
 	return rk_random(&localState);
 }

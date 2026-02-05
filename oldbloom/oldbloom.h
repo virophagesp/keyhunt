@@ -8,7 +8,7 @@
 #ifndef _OLDBLOOM_H
 #define _OLDBLOOM_H
 
-#if defined(_WIN64) && !defined(__CYGWIN__)
+#if defined(_WIN64)
 #include <windows.h>
 #else
 #endif
@@ -44,7 +44,7 @@ struct oldbloom
   uint8_t checksum[32];
   uint8_t checksum_backup[32];
   uint8_t *bf;
-#if defined(_WIN64) && !defined(__CYGWIN__)
+#if defined(_WIN64)
   HANDLE mutex;
 #else
   pthread_mutex_t mutex;
