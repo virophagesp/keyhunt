@@ -139,8 +139,6 @@ uint64_t u64range;
 
 Int OUTPUTSECONDS;
 
-int FLAGENDOMORPHISM = 0;
-
 int FLAGBLOOMMULTIPLIER = 1;
 int KFACTOR = 1;
 int MAXLENGTHADDRESS = -1;
@@ -248,8 +246,6 @@ Int n_range_end;
 Int n_range_diff;
 Int n_range_aux;
 
-Int lambda,lambda2,beta,beta2;
-
 Secp256K1 *secp;
 
 int main(int argc, char **argv)	{
@@ -301,7 +297,7 @@ int main(int argc, char **argv)	{
 
 	printf("[+] Version %s, developed by AlbertoBSD\n",version);
 
-	while ((c = getopt(argc, argv, "eS:b:E:f:I:k:N:n:p:r:s:t:G:z:")) != -1) {
+	while ((c = getopt(argc, argv, "S:b:E:f:I:k:N:n:p:r:s:t:G:z:")) != -1) {
 		switch(c) {
 			case 'b':
 				bitrange = strtol(optarg,NULL,10);
@@ -322,14 +318,6 @@ int main(int argc, char **argv)	{
 				else	{
 					fprintf(stderr,"[E] invalid bits param: %s.\n",optarg);
 				}
-			break;
-			case 'e':
-				FLAGENDOMORPHISM = 1;
-				printf("[+] Endomorphism enabled\n");
-				lambda.SetBase16("5363ad4cc05c30e0a5261c028812645a122e22ea20816678df02967c1b23bd72");
-				lambda2.SetBase16("ac9c52b33fa3cf1f5ad9e3fd77ed9ba4a880b9fc8ec739c2e0cfc810b51283ce");
-				beta.SetBase16("7ae96a2b657c07106e64479eac3434e99cf0497512f58995c1396c28719501ee");
-				beta2.SetBase16("851695d49a83f8ef919bb86153cbcb16630fb68aed0a766a3ec693d68e6afa40");
 			break;
 			case 'f':
 				FLAGFILE = 1;
@@ -586,12 +574,7 @@ int main(int argc, char **argv)	{
 					total.Add(&pretotal);
 				}
 
-				if(FLAGENDOMORPHISM)	{
-					total.Mult(6);
-				}
-				else	{
-					total.Mult(2);
-				}
+				total.Mult(2);
 
 				pthread_mutex_lock(&bsgs_thread);
 				pretotal.Set(&total);
@@ -702,7 +685,6 @@ void *thread_process(void *vargp)	{
 	char *hextemp = NULL;
 
 	char publickeyhashrmd160[20];
-	char publickeyhashrmd160_uncompress[4][20];
 
 	char publickeyhashrmd160_endomorphism[12][4][20];
 
@@ -776,28 +758,6 @@ void *thread_process(void *vargp)	{
 
 					pts[pp_offset] = pp;
 					pts[pn_offset] = pn;
-
-					if(FLAGENDOMORPHISM)	{
-						/*
-							Q = (x,y)
-							For any point Q
-							Q*lambda = (x*beta mod p ,y)
-							Q*lambda is a Scalar Multiplication
-							x*beta is just a Multiplication (Very fast)
-						*/
-
-						endomorphism_beta[pp_offset].x.ModMulK1(&pp.x, &beta);
-						endomorphism_beta[pn_offset].x.ModMulK1(&pn.x, &beta);
-						endomorphism_beta2[pp_offset].x.ModMulK1(&pp.x, &beta2);
-						endomorphism_beta2[pn_offset].x.ModMulK1(&pn.x, &beta2);
-					}
-				}
-				/*
-					Half point for endomorphism because pts[CPU_GRP_SIZE / 2] was not calcualte in the previous cycle
-				*/
-				if(FLAGENDOMORPHISM)	{
-					endomorphism_beta[CPU_GRP_SIZE / 2].x.ModMulK1(&pts[CPU_GRP_SIZE / 2].x, &beta);
-					endomorphism_beta2[CPU_GRP_SIZE / 2].x.ModMulK1(&pts[CPU_GRP_SIZE / 2].x, &beta2);
 				}
 
 				// First point (startP - (GRP_SZIE/2)*G)
@@ -815,112 +775,27 @@ void *thread_process(void *vargp)	{
 
 				pts[0] = pn;
 
-				/*
-					First point for endomorphism because pts[0] was not calcualte previously
-				*/
-				if(FLAGENDOMORPHISM)	{
-					endomorphism_beta[0].x.ModMulK1(&pn.x, &beta);
-					endomorphism_beta2[0].x.ModMulK1(&pn.x, &beta2);
-				}
-
 				for(j = 0; j < CPU_GRP_SIZE/4;j++){
-					if(FLAGENDOMORPHISM)	{
-						secp->GetHash160_fromX(P2PKH,0x02,&pts[(j*4)].x,&pts[(j*4)+1].x,&pts[(j*4)+2].x,&pts[(j*4)+3].x,(uint8_t*)publickeyhashrmd160_endomorphism[0][0],(uint8_t*)publickeyhashrmd160_endomorphism[0][1],(uint8_t*)publickeyhashrmd160_endomorphism[0][2],(uint8_t*)publickeyhashrmd160_endomorphism[0][3]);
-						secp->GetHash160_fromX(P2PKH,0x03,&pts[(j*4)].x,&pts[(j*4)+1].x,&pts[(j*4)+2].x,&pts[(j*4)+3].x,(uint8_t*)publickeyhashrmd160_endomorphism[1][0],(uint8_t*)publickeyhashrmd160_endomorphism[1][1],(uint8_t*)publickeyhashrmd160_endomorphism[1][2],(uint8_t*)publickeyhashrmd160_endomorphism[1][3]);
-
-						secp->GetHash160_fromX(P2PKH,0x02,&endomorphism_beta[(j*4)].x,&endomorphism_beta[(j*4)+1].x,&endomorphism_beta[(j*4)+2].x,&endomorphism_beta[(j*4)+3].x,(uint8_t*)publickeyhashrmd160_endomorphism[2][0],(uint8_t*)publickeyhashrmd160_endomorphism[2][1],(uint8_t*)publickeyhashrmd160_endomorphism[2][2],(uint8_t*)publickeyhashrmd160_endomorphism[2][3]);
-						secp->GetHash160_fromX(P2PKH,0x03,&endomorphism_beta[(j*4)].x,&endomorphism_beta[(j*4)+1].x,&endomorphism_beta[(j*4)+2].x,&endomorphism_beta[(j*4)+3].x,(uint8_t*)publickeyhashrmd160_endomorphism[3][0],(uint8_t*)publickeyhashrmd160_endomorphism[3][1],(uint8_t*)publickeyhashrmd160_endomorphism[3][2],(uint8_t*)publickeyhashrmd160_endomorphism[3][3]);
-
-						secp->GetHash160_fromX(P2PKH,0x02,&endomorphism_beta2[(j*4)].x,&endomorphism_beta2[(j*4)+1].x,&endomorphism_beta2[(j*4)+2].x,&endomorphism_beta2[(j*4)+3].x,(uint8_t*)publickeyhashrmd160_endomorphism[4][0],(uint8_t*)publickeyhashrmd160_endomorphism[4][1],(uint8_t*)publickeyhashrmd160_endomorphism[4][2],(uint8_t*)publickeyhashrmd160_endomorphism[4][3]);
-						secp->GetHash160_fromX(P2PKH,0x03,&endomorphism_beta2[(j*4)].x,&endomorphism_beta2[(j*4)+1].x,&endomorphism_beta2[(j*4)+2].x,&endomorphism_beta2[(j*4)+3].x,(uint8_t*)publickeyhashrmd160_endomorphism[5][0],(uint8_t*)publickeyhashrmd160_endomorphism[5][1],(uint8_t*)publickeyhashrmd160_endomorphism[5][2],(uint8_t*)publickeyhashrmd160_endomorphism[5][3]);
-					}
-					else	{
-						secp->GetHash160_fromX(P2PKH,0x02,&pts[(j*4)].x,&pts[(j*4)+1].x,&pts[(j*4)+2].x,&pts[(j*4)+3].x,(uint8_t*)publickeyhashrmd160_endomorphism[0][0],(uint8_t*)publickeyhashrmd160_endomorphism[0][1],(uint8_t*)publickeyhashrmd160_endomorphism[0][2],(uint8_t*)publickeyhashrmd160_endomorphism[0][3]);
-						secp->GetHash160_fromX(P2PKH,0x03,&pts[(j*4)].x,&pts[(j*4)+1].x,&pts[(j*4)+2].x,&pts[(j*4)+3].x,(uint8_t*)publickeyhashrmd160_endomorphism[1][0],(uint8_t*)publickeyhashrmd160_endomorphism[1][1],(uint8_t*)publickeyhashrmd160_endomorphism[1][2],(uint8_t*)publickeyhashrmd160_endomorphism[1][3]);
-					}
+					secp->GetHash160_fromX(P2PKH,0x02,&pts[(j*4)].x,&pts[(j*4)+1].x,&pts[(j*4)+2].x,&pts[(j*4)+3].x,(uint8_t*)publickeyhashrmd160_endomorphism[0][0],(uint8_t*)publickeyhashrmd160_endomorphism[0][1],(uint8_t*)publickeyhashrmd160_endomorphism[0][2],(uint8_t*)publickeyhashrmd160_endomorphism[0][3]);
+					secp->GetHash160_fromX(P2PKH,0x03,&pts[(j*4)].x,&pts[(j*4)+1].x,&pts[(j*4)+2].x,&pts[(j*4)+3].x,(uint8_t*)publickeyhashrmd160_endomorphism[1][0],(uint8_t*)publickeyhashrmd160_endomorphism[1][1],(uint8_t*)publickeyhashrmd160_endomorphism[1][2],(uint8_t*)publickeyhashrmd160_endomorphism[1][3]);
 
 					for(k = 0; k < 4;k++)	{
-						if(FLAGENDOMORPHISM)	{
-							for(l = 0;l < 6; l++)	{
-								r = bloom_check(&bloom,publickeyhashrmd160_endomorphism[l][k],MAXLENGTHADDRESS);
+						for(l = 0;l < 2; l++)	{
+							r = bloom_check(&bloom,publickeyhashrmd160_endomorphism[l][k],MAXLENGTHADDRESS);
+							if(r) {
+								r = searchbinary(addressTable,publickeyhashrmd160_endomorphism[l][k],N);
 								if(r) {
-									r = searchbinary(addressTable,publickeyhashrmd160_endomorphism[l][k],N);
-									if(r) {
-										keyfound.SetInt32(k);
-										keyfound.Mult(&stride);
-										keyfound.Add(&key_mpz);
-										publickey = secp->ComputePublicKey(&keyfound);
-										switch(l)	{
-											case 0:	//Original point, prefix 02
-												if(publickey.y.IsOdd())	{	//if the current publickey is odd that means, we need to negate the keyfound to get the correct key
-													keyfound.Neg();
-													keyfound.Add(&secp->order);
-												}
-												// else we dont need to chage the current keyfound because it already have prefix 02
-											break;
-											case 1:	//Original point, prefix 03
-												if(publickey.y.IsEven())	{	//if the current publickey is even that means, we need to negate the keyfound to get the correct key
-													keyfound.Neg();
-													keyfound.Add(&secp->order);
-												}
-												// else we dont need to chage the current keyfound because it already have prefix 03
-											break;
-											case 2:	//Beta point, prefix 02
-												keyfound.ModMulK1order(&lambda);
-												if(publickey.y.IsOdd())	{	//if the current publickey is odd that means, we need to negate the keyfound to get the correct key
-													keyfound.Neg();
-													keyfound.Add(&secp->order);
-												}
-												// else we dont need to chage the current keyfound because it already have prefix 02
-											break;
-											case 3:	//Beta point, prefix 03
-												keyfound.ModMulK1order(&lambda);
-												if(publickey.y.IsEven())	{	//if the current publickey is even that means, we need to negate the keyfound to get the correct key
-													keyfound.Neg();
-													keyfound.Add(&secp->order);
-												}
-												// else we dont need to chage the current keyfound because it already have prefix 02
-											break;
-											case 4:	//Beta^2 point, prefix 02
-												keyfound.ModMulK1order(&lambda2);
-												if(publickey.y.IsOdd())	{	//if the current publickey is odd that means, we need to negate the keyfound to get the correct key
-													keyfound.Neg();
-													keyfound.Add(&secp->order);
-												}
-												// else we dont need to chage the current keyfound because it already have prefix 02
-											break;
-											case 5:	//Beta^2 point, prefix 03
-												keyfound.ModMulK1order(&lambda2);
-												if(publickey.y.IsEven())	{	//if the current publickey is even that means, we need to negate the keyfound to get the correct key
-													keyfound.Neg();
-													keyfound.Add(&secp->order);
-												}
-												// else we dont need to chage the current keyfound because it already have prefix 02
-											break;
-										}
-										writekey(true,&keyfound);
-									}
-								}
-							}
-						}
-						else	{
-							for(l = 0;l < 2; l++)	{
-								r = bloom_check(&bloom,publickeyhashrmd160_endomorphism[l][k],MAXLENGTHADDRESS);
-								if(r) {
-									r = searchbinary(addressTable,publickeyhashrmd160_endomorphism[l][k],N);
-									if(r) {
-										keyfound.SetInt32(k);
-										keyfound.Mult(&stride);
-										keyfound.Add(&key_mpz);
+									keyfound.SetInt32(k);
+									keyfound.Mult(&stride);
+									keyfound.Add(&key_mpz);
 
-										publickey = secp->ComputePublicKey(&keyfound);
-										secp->GetHash160(P2PKH,true,publickey,(uint8_t*)publickeyhashrmd160);
-										if(memcmp(publickeyhashrmd160_endomorphism[l][k],publickeyhashrmd160,20) != 0)	{
-											keyfound.Neg();
-											keyfound.Add(&secp->order);
-										}
-										writekey(true,&keyfound);
+									publickey = secp->ComputePublicKey(&keyfound);
+									secp->GetHash160(P2PKH,true,publickey,(uint8_t*)publickeyhashrmd160);
+									if(memcmp(publickeyhashrmd160_endomorphism[l][k],publickeyhashrmd160,20) != 0)	{
+										keyfound.Neg();
+										keyfound.Add(&secp->order);
 									}
+									writekey(true,&keyfound);
 								}
 							}
 						}
