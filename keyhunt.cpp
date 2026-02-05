@@ -40,7 +40,6 @@ email: albertobsd@gmail.com
 
 #define MODE_XPOINT 0
 #define MODE_ADDRESS 1
-#define MODE_BSGS 2
 
 #define SEARCH_UNCOMPRESS 0
 #define SEARCH_COMPRESS 1
@@ -164,7 +163,7 @@ char *bit_range_str_min;
 char *bit_range_str_max;
 
 const char *bsgs_modes[5] = {"sequential","backward","both","random","dance"};
-const char *modes[5] = {"xpoint","address","bsgs","rmd160","pub2rmd"};
+const char *modes[2] = {"xpoint","address"};
 const char *cryptos[3] = {"btc","eth","all"};
 const char *publicsearch[3] = {"uncompress","compress","both"};
 const char *default_fileName = "addresses.txt";
@@ -200,7 +199,6 @@ int FLAGENDOMORPHISM = 0;
 
 int FLAGBLOOMMULTIPLIER = 1;
 int FLAGBASEMINIKEY = 0;
-int FLAGBSGSMODE = 0;
 int FLAGQUIET = 0;
 int KFACTOR = 1;
 int MAXLENGTHADDRESS = -1;
@@ -221,7 +219,6 @@ int FLAGFILE = 0;
 int FLAGMODE = MODE_ADDRESS;
 int FLAGCRYPTO = 0;
 int FLAGRAWDATA	= 0;
-int FLAGRANDOM = 0;
 int FLAG_N = 0;
 int FLAGPRECALCUTED_P_FILE = 0;
 
@@ -376,18 +373,8 @@ int main(int argc, char **argv)	{
 
 	printf("[+] Version %s, developed by AlbertoBSD\n",version);
 
-	while ((c = getopt(argc, argv, "eqRSB:b:c:E:f:I:k:l:m:N:n:p:r:s:t:G:z:")) != -1) {
+	while ((c = getopt(argc, argv, "eqS:b:c:E:f:I:k:l:m:N:n:p:r:s:t:G:z:")) != -1) {
 		switch(c) {
-			case 'B':
-				index_value = indexOf(optarg,bsgs_modes,5);
-				if(index_value >= 0 && index_value <= 4)	{
-					FLAGBSGSMODE = index_value;
-					//printf("[+] BSGS mode %s\n",optarg);
-				}
-				else	{
-					fprintf(stderr,"[W] Ignoring unknow bsgs mode %s\n",optarg);
-				}
-			break;
 			case 'b':
 				bitrange = strtol(optarg,NULL,10);
 				if(bitrange > 0 && bitrange <=256 )	{
@@ -480,10 +467,6 @@ int main(int argc, char **argv)	{
 						FLAGMODE = MODE_ADDRESS;
 						printf("[+] Mode address\n");
 					break;
-					case MODE_BSGS:
-						FLAGMODE = MODE_BSGS;
-						//printf("[+] Mode BSGS\n");
-					break;
 					default:
 						fprintf(stderr,"[E] Unknow mode value %s\n",optarg);
 						exit(EXIT_FAILURE);
@@ -497,11 +480,6 @@ int main(int argc, char **argv)	{
 			case 'q':
 				FLAGQUIET	= 1;
 				printf("[+] Quiet thread output\n");
-			break;
-			case 'R':
-				printf("[+] Random mode\n");
-				FLAGRANDOM = 1;
-				FLAGBSGSMODE =  3;
 			break;
 			case 'r':
 				if(optarg != NULL)	{
@@ -576,15 +554,6 @@ int main(int argc, char **argv)	{
 		}
 	}
 
-	if(  FLAGBSGSMODE == MODE_BSGS && FLAGENDOMORPHISM)	{
-		fprintf(stderr,"[E] Endomorphism doesn't work with BSGS\n");
-		exit(EXIT_FAILURE);
-	}
-
-	if(  FLAGBSGSMODE == MODE_BSGS  && FLAGSTRIDE)	{
-		fprintf(stderr,"[E] Stride doesn't work with BSGS\n");
-		exit(EXIT_FAILURE);
-	}
 	if(FLAGSTRIDE)	{
 		if(str_stride[0] == '0' && str_stride[1] == 'x')	{
 			stride.SetBase16(str_stride+2);
@@ -599,9 +568,6 @@ int main(int argc, char **argv)	{
 		stride.Set(&ONE);
 	}
 	init_generator();
-	if(FLAGMODE == MODE_BSGS )	{
-		printf("[+] Mode BSGS %s\n",bsgs_modes[FLAGBSGSMODE]);
-	}
 
 	if(FLAGFILE == 0) {
 		fileName =(char*) default_fileName;
@@ -638,1114 +604,99 @@ int main(int argc, char **argv)	{
 			FLAGRANGE = 0;
 		}
 	}
-	if(FLAGMODE != MODE_BSGS)	{
-		BSGS_N.SetInt32(DEBUGCOUNT);
-		if(FLAGRANGE == 0 && FLAGBITRANGE == 0)	{
-			n_range_start.SetInt32(1);
-			n_range_end.Set(&secp->order);
+	BSGS_N.SetInt32(DEBUGCOUNT);
+	if(FLAGRANGE == 0 && FLAGBITRANGE == 0)	{
+		n_range_start.SetInt32(1);
+		n_range_end.Set(&secp->order);
+		n_range_diff.Set(&n_range_end);
+		n_range_diff.Sub(&n_range_start);
+	}
+	else	{
+		if(FLAGBITRANGE)	{
+			n_range_start.SetBase16(bit_range_str_min);
+			n_range_end.SetBase16(bit_range_str_max);
 			n_range_diff.Set(&n_range_end);
 			n_range_diff.Sub(&n_range_start);
 		}
 		else	{
-			if(FLAGBITRANGE)	{
-				n_range_start.SetBase16(bit_range_str_min);
-				n_range_end.SetBase16(bit_range_str_max);
-				n_range_diff.Set(&n_range_end);
-				n_range_diff.Sub(&n_range_start);
-			}
-			else	{
-				if(FLAGRANGE == 0)	{
-					fprintf(stderr,"[W] WTF!\n");
-				}
+			if(FLAGRANGE == 0)	{
+				fprintf(stderr,"[W] WTF!\n");
 			}
 		}
 	}
 	N = 0;
 
-	if(FLAGMODE != MODE_BSGS )	{
-		if(FLAG_N){
-			if(str_N[0] == '0' && str_N[1] == 'x')	{
-				N_SEQUENTIAL_MAX =strtol(str_N,NULL,16);
-			}
-			else	{
-				N_SEQUENTIAL_MAX =strtol(str_N,NULL,10);
-			}
-
-			if(N_SEQUENTIAL_MAX < 1024)	{
-				fprintf(stderr,"[I] n value need to be equal or great than 1024, back to defaults\n");
-				FLAG_N = 0;
-				N_SEQUENTIAL_MAX = 0x100000000;
-			}
-			if(N_SEQUENTIAL_MAX % 1024 != 0)	{
-				fprintf(stderr,"[I] n value need to be multiplier of  1024\n");
-				FLAG_N = 0;
-				N_SEQUENTIAL_MAX = 0x100000000;
-			}
-		}
-		printf("[+] N = %p\n",(void*)N_SEQUENTIAL_MAX);
-		if(FLAGBITRANGE)	{	// Bit Range
-			printf("[+] Bit Range %i\n",bitrange);
+	if(FLAG_N){
+		if(str_N[0] == '0' && str_N[1] == 'x')	{
+			N_SEQUENTIAL_MAX =strtol(str_N,NULL,16);
 		}
 		else	{
-			printf("[+] Range \n");
+			N_SEQUENTIAL_MAX =strtol(str_N,NULL,10);
 		}
-		hextemp = n_range_start.GetBase16();
-		printf("[+] -- from : 0x%s\n",hextemp);
-		free(hextemp);
-		hextemp = n_range_end.GetBase16();
-		printf("[+] -- to   : 0x%s\n",hextemp);
-		free(hextemp);
 
+		if(N_SEQUENTIAL_MAX < 1024)	{
+			fprintf(stderr,"[I] n value need to be equal or great than 1024, back to defaults\n");
+			FLAG_N = 0;
+			N_SEQUENTIAL_MAX = 0x100000000;
+		}
+		if(N_SEQUENTIAL_MAX % 1024 != 0)	{
+			fprintf(stderr,"[I] n value need to be multiplier of  1024\n");
+			FLAG_N = 0;
+			N_SEQUENTIAL_MAX = 0x100000000;
+		}
+	}
+	printf("[+] N = %p\n",(void*)N_SEQUENTIAL_MAX);
+	if(FLAGBITRANGE)	{	// Bit Range
+		printf("[+] Bit Range %i\n",bitrange);
+	}
+	else	{
+		printf("[+] Range \n");
+	}
+	hextemp = n_range_start.GetBase16();
+	printf("[+] -- from : 0x%s\n",hextemp);
+	free(hextemp);
+	hextemp = n_range_end.GetBase16();
+	printf("[+] -- to   : 0x%s\n",hextemp);
+	free(hextemp);
+
+	switch(FLAGMODE)	{
+		case MODE_ADDRESS:
+		case MODE_XPOINT:
+			if(!readFileAddress(fileName))	{
+				fprintf(stderr,"[E] Unenexpected error\n");
+				exit(EXIT_FAILURE);
+			}
+		break;
+	}
+
+	if(!FLAGREADEDFILE1)	{
+		printf("[+] Sorting data ...");
+		_sort(addressTable,N);
+		printf(" done! %" PRIu64 " values were loaded and sorted\n",N);
+		writeFileIfNeeded(fileName);
+	}
+
+	steps = (uint64_t *) calloc(NTHREADS,sizeof(uint64_t));
+	checkpointer((void *)steps,__FILE__,"calloc","steps" ,__LINE__ -1 );
+	ends = (unsigned int *) calloc(NTHREADS,sizeof(int));
+	checkpointer((void *)ends,__FILE__,"calloc","ends" ,__LINE__ -1 );
+	tid = (pthread_t *) calloc(NTHREADS,sizeof(pthread_t));
+	checkpointer((void *)tid,__FILE__,"calloc","tid" ,__LINE__ -1 );
+	for(j= 0;j < NTHREADS; j++)	{
+		tt = (tothread*) malloc(sizeof(struct tothread));
+		checkpointer((void *)tt,__FILE__,"malloc","tt" ,__LINE__ -1 );
+		tt->nt = j;
+		steps[j] = 0;
+		s = 0;
 		switch(FLAGMODE)	{
 			case MODE_ADDRESS:
 			case MODE_XPOINT:
-				if(!readFileAddress(fileName))	{
-					fprintf(stderr,"[E] Unenexpected error\n");
-					exit(EXIT_FAILURE);
-				}
+				s = pthread_create(&tid[j],NULL,thread_process,(void *)tt);
 			break;
 		}
-
-		if(!FLAGREADEDFILE1)	{
-			printf("[+] Sorting data ...");
-			_sort(addressTable,N);
-			printf(" done! %" PRIu64 " values were loaded and sorted\n",N);
-			writeFileIfNeeded(fileName);
-		}
-	}
-
-	if(FLAGMODE == MODE_BSGS )	{
-		printf("[+] Opening file %s\n",fileName);
-		fd = fopen(fileName,"rb");
-		if(fd == NULL)	{
-			fprintf(stderr,"[E] Can't open file %s\n",fileName);
+		if(s != 0)	{
+			fprintf(stderr,"[E] pthread_create thread_process\n");
 			exit(EXIT_FAILURE);
-		}
-		aux = (char*) malloc(1024);
-		checkpointer((void *)aux,__FILE__,"malloc","aux" ,__LINE__ - 1);
-		while(!feof(fd))	{
-			if(fgets(aux,1022,fd) == aux)	{
-				trim(aux," \t\n\r");
-				if(strlen(aux) >= 128)	{	//Length of a full address in hexadecimal without 04
-						N++;
-				}else	{
-					if(strlen(aux) >= 66)	{
-						N++;
-					}
-				}
-			}
-		}
-		if(N == 0)	{
-			fprintf(stderr,"[E] There is no valid data in the file\n");
-			exit(EXIT_FAILURE);
-		}
-		bsgs_found = (int*) calloc(N,sizeof(int));
-		checkpointer((void *)bsgs_found,__FILE__,"calloc","bsgs_found" ,__LINE__ -1 );
-		OriginalPointsBSGS.reserve(N);
-		OriginalPointsBSGScompressed = (bool*) malloc(N*sizeof(bool));
-		checkpointer((void *)OriginalPointsBSGScompressed,__FILE__,"malloc","OriginalPointsBSGScompressed" ,__LINE__ -1 );
-		pointx_str = (char*) malloc(65);
-		checkpointer((void *)pointx_str,__FILE__,"malloc","pointx_str" ,__LINE__ -1 );
-		pointy_str = (char*) malloc(65);
-		checkpointer((void *)pointy_str,__FILE__,"malloc","pointy_str" ,__LINE__ -1 );
-		fseek(fd,0,SEEK_SET);
-		i = 0;
-		while(!feof(fd))	{
-			if(fgets(aux,1022,fd) == aux)	{
-				trim(aux," \t\n\r");
-				if(strlen(aux) >= 66)	{
-					stringtokenizer(aux,&tokenizerbsgs);
-					aux2 = nextToken(&tokenizerbsgs);
-					memset(pointx_str,0,65);
-					memset(pointy_str,0,65);
-					switch(strlen(aux2))	{
-						case 66:	//Compress
-
-							if(secp->ParsePublicKeyHex(aux2,OriginalPointsBSGS[i],OriginalPointsBSGScompressed[i]))	{
-								i++;
-							}
-							else	{
-								N--;
-							}
-
-						break;
-						case 130:	//With the 04
-
-							if(secp->ParsePublicKeyHex(aux2,OriginalPointsBSGS[i],OriginalPointsBSGScompressed[i]))	{
-								i++;
-							}
-							else	{
-								N--;
-							}
-
-						break;
-						default:
-							printf("Invalid length: %s\n",aux2);
-							N--;
-						break;
-					}
-					freetokenizer(&tokenizerbsgs);
-				}
-			}
-		}
-		fclose(fd);
-		bsgs_point_number = N;
-		if(bsgs_point_number > 0)	{
-			printf("[+] Added %u points from file\n",bsgs_point_number);
-		}
-		else	{
-			fprintf(stderr,"[E] The file don't have any valid publickeys\n");
-			exit(EXIT_FAILURE);
-		}
-		BSGS_N.SetInt32(0);
-		BSGS_M.SetInt32(0);
-
-		BSGS_M.SetInt64(bsgs_m);
-
-		if(FLAG_N)	{	//Custom N by the -n param
-
-			/* Here we need to validate if the given string is a valid hexadecimal number or a base 10 number*/
-
-			/* Now the conversion*/
-			if(str_N[0] == '0' && str_N[1] == 'x' )	{	/*We expected a hexadecimal value after 0x  -> str_N +2 */
-				BSGS_N.SetBase16((char*)(str_N+2));
-			}
-			else	{
-				BSGS_N.SetBase10(str_N);
-			}
-
-		}
-		else	{	//Default N
-			BSGS_N.SetInt64((uint64_t)0x100000000000);
-		}
-
-		if(BSGS_N.HasSqrt())	{	//If the root is exact
-			BSGS_M.Set(&BSGS_N);
-			BSGS_M.ModSqrt();
-		}
-		else	{
-			fprintf(stderr,"[E] -n param doesn't have exact square root\n");
-			exit(EXIT_FAILURE);
-		}
-
-		BSGS_AUX.Set(&BSGS_M);
-		BSGS_AUX.Mod(&BSGS_GROUP_SIZE);
-
-		if(!BSGS_AUX.IsZero()){ //If M is not divisible by  BSGS_GROUP_SIZE (1024) 
-			hextemp = BSGS_GROUP_SIZE.GetBase10();
-			fprintf(stderr,"[E] M value is not divisible by %s\n",hextemp);
-			exit(EXIT_FAILURE);
-		}
-
-		bsgs_m = BSGS_M.GetInt64();
-
-		if(FLAGRANGE || FLAGBITRANGE)	{
-			if(FLAGBITRANGE)	{	// Bit Range
-				n_range_start.SetBase16(bit_range_str_min);
-				n_range_end.SetBase16(bit_range_str_max);
-
-				n_range_diff.Set(&n_range_end);
-				n_range_diff.Sub(&n_range_start);
-				printf("[+] Bit Range %i\n",bitrange);
-				printf("[+] -- from : 0x%s\n",bit_range_str_min);
-				printf("[+] -- to   : 0x%s\n",bit_range_str_max);
-			}
-			else	{
-				printf("[+] Range \n");
-				printf("[+] -- from : 0x%s\n",range_start);
-				printf("[+] -- to   : 0x%s\n",range_end);
-			}
-		}
-		else	{	//Random start
-
-			n_range_start.SetInt32(1);
-			n_range_end.Set(&secp->order);
-			n_range_diff.Rand(&n_range_start,&n_range_end);
-			n_range_start.Set(&n_range_diff);
-		}
-		BSGS_CURRENT.Set(&n_range_start);
-
-		if(n_range_diff.IsLower(&BSGS_N) )	{
-			fprintf(stderr,"[E] the given range is small\n");
-			exit(EXIT_FAILURE);
-		}
-
-		/*
-	M	2199023255552
-		109951162777.6
-	M2	109951162778
-		5497558138.9
-	M3	5497558139
-		*/
-
-		BSGS_M.Mult((uint64_t)KFACTOR);
-		BSGS_AUX.SetInt32(32);
-		BSGS_R.Set(&BSGS_M);
-		BSGS_R.Mod(&BSGS_AUX);
-		BSGS_M2.Set(&BSGS_M);
-		BSGS_M2.Div(&BSGS_AUX);
-
-		if(!BSGS_R.IsZero())	{ /* If BSGS_M modulo 32 is not 0*/
-			BSGS_M2.AddOne();
-		}
-
-		BSGS_M_double.SetInt32(2);
-		BSGS_M_double.Mult(&BSGS_M);
-
-		BSGS_M2_double.SetInt32(2);
-		BSGS_M2_double.Mult(&BSGS_M2);
-
-		BSGS_R.Set(&BSGS_M2);
-		BSGS_R.Mod(&BSGS_AUX);
-
-		BSGS_M3.Set(&BSGS_M2);
-		BSGS_M3.Div(&BSGS_AUX);
-
-		if(!BSGS_R.IsZero())	{ /* If BSGS_M2 modulo 32 is not 0*/
-			BSGS_M3.AddOne();
-		}
-
-		BSGS_M3_double.SetInt32(2);
-		BSGS_M3_double.Mult(&BSGS_M3);
-
-		bsgs_m2 =  BSGS_M2.GetInt64();
-		bsgs_m3 =  BSGS_M3.GetInt64();
-
-		BSGS_AUX.Set(&BSGS_N);
-		BSGS_AUX.Div(&BSGS_M);
-
-		BSGS_R.Set(&BSGS_N);
-		BSGS_R.Mod(&BSGS_M);
-
-		if(!BSGS_R.IsZero())	{ /* if BSGS_N modulo BSGS_M is not 0*/
-			BSGS_N.Set(&BSGS_M);
-			BSGS_N.Mult(&BSGS_AUX);
-		}
-
-		bsgs_m = BSGS_M.GetInt64();
-		bsgs_aux = BSGS_AUX.GetInt64();
-
-		BSGS_N_double.SetInt32(2);
-		BSGS_N_double.Mult(&BSGS_N);
-
-		hextemp = BSGS_N.GetBase16();
-		printf("[+] N = 0x%s\n",hextemp);
-		free(hextemp);
-		if(((uint64_t)(bsgs_m/256)) > 10000)	{
-			itemsbloom = (uint64_t)(bsgs_m / 256);
-			if(bsgs_m % 256 != 0 )	{
-				itemsbloom++;
-			}
-		}
-		else{
-			itemsbloom = 1000;
-		}
-
-		if(((uint64_t)(bsgs_m2/256)) > 1000)	{
-			itemsbloom2 = (uint64_t)(bsgs_m2 / 256);
-			if(bsgs_m2 % 256 != 0)	{
-				itemsbloom2++;
-			}
-		}
-		else	{
-			itemsbloom2 = 1000;
-		}
-
-		if(((uint64_t)(bsgs_m3/256)) > 1000)	{
-			itemsbloom3 = (uint64_t)(bsgs_m3/256);
-			if(bsgs_m3 % 256 != 0 )	{
-				itemsbloom3++;
-			}
-		}
-		else	{
-			itemsbloom3 = 1000;
-		}
-
-		printf("[+] Bloom filter for %" PRIu64 " elements ",bsgs_m);
-		bloom_bP = (struct bloom*)calloc(256,sizeof(struct bloom));
-		checkpointer((void *)bloom_bP,__FILE__,"calloc","bloom_bP" ,__LINE__ -1 );
-		bloom_bP_checksums = (struct checksumsha256*)calloc(256,sizeof(struct checksumsha256));
-		checkpointer((void *)bloom_bP_checksums,__FILE__,"calloc","bloom_bP_checksums" ,__LINE__ -1 );
-
-		bloom_bP_mutex = (pthread_mutex_t*) calloc(256,sizeof(pthread_mutex_t));
-
-		checkpointer((void *)bloom_bP_mutex,__FILE__,"calloc","bloom_bP_mutex" ,__LINE__ -1 );
-
-		fflush(stdout);
-		bloom_bP_totalbytes = 0;
-		for(i=0; i< 256; i++)	{
-			pthread_mutex_init(&bloom_bP_mutex[i],NULL);
-			if(bloom_init2(&bloom_bP[i],itemsbloom,0.000001)	== 1){
-				fprintf(stderr,"[E] error bloom_init _ [%" PRIu64 "]\n",i);
-				exit(EXIT_FAILURE);
-			}
-			bloom_bP_totalbytes += bloom_bP[i].bytes;
-		}
-		printf(": %.2f MB\n",(float)((float)(uint64_t)bloom_bP_totalbytes/(float)(uint64_t)1048576));
-
-		printf("[+] Bloom filter for %" PRIu64 " elements ",bsgs_m2);
-
-		bloom_bPx2nd_mutex = (pthread_mutex_t*) calloc(256,sizeof(pthread_mutex_t));
-		checkpointer((void *)bloom_bPx2nd_mutex,__FILE__,"calloc","bloom_bPx2nd_mutex" ,__LINE__ -1 );
-		bloom_bPx2nd = (struct bloom*)calloc(256,sizeof(struct bloom));
-		checkpointer((void *)bloom_bPx2nd,__FILE__,"calloc","bloom_bPx2nd" ,__LINE__ -1 );
-		bloom_bPx2nd_checksums = (struct checksumsha256*) calloc(256,sizeof(struct checksumsha256));
-		checkpointer((void *)bloom_bPx2nd_checksums,__FILE__,"calloc","bloom_bPx2nd_checksums" ,__LINE__ -1 );
-		bloom_bP2_totalbytes = 0;
-		for(i=0; i< 256; i++)	{
-			pthread_mutex_init(&bloom_bPx2nd_mutex[i],NULL);
-			if(bloom_init2(&bloom_bPx2nd[i],itemsbloom2,0.000001)	== 1){
-				fprintf(stderr,"[E] error bloom_init _ [%" PRIu64 "]\n",i);
-				exit(EXIT_FAILURE);
-			}
-			bloom_bP2_totalbytes += bloom_bPx2nd[i].bytes;
-		}
-		printf(": %.2f MB\n",(float)((float)(uint64_t)bloom_bP2_totalbytes/(float)(uint64_t)1048576));
-
-		bloom_bPx3rd_mutex = (pthread_mutex_t*) calloc(256,sizeof(pthread_mutex_t));
-		checkpointer((void *)bloom_bPx3rd_mutex,__FILE__,"calloc","bloom_bPx3rd_mutex" ,__LINE__ -1 );
-		bloom_bPx3rd = (struct bloom*)calloc(256,sizeof(struct bloom));
-		checkpointer((void *)bloom_bPx3rd,__FILE__,"calloc","bloom_bPx3rd" ,__LINE__ -1 );
-		bloom_bPx3rd_checksums = (struct checksumsha256*) calloc(256,sizeof(struct checksumsha256));
-		checkpointer((void *)bloom_bPx3rd_checksums,__FILE__,"calloc","bloom_bPx3rd_checksums" ,__LINE__ -1 );
-
-		printf("[+] Bloom filter for %" PRIu64 " elements ",bsgs_m3);
-		bloom_bP3_totalbytes = 0;
-		for(i=0; i< 256; i++)	{
-			pthread_mutex_init(&bloom_bPx3rd_mutex[i],NULL);
-			if(bloom_init2(&bloom_bPx3rd[i],itemsbloom3,0.000001)	== 1){
-				fprintf(stderr,"[E] error bloom_init [%" PRIu64 "]\n",i);
-				exit(EXIT_FAILURE);
-			}
-			bloom_bP3_totalbytes += bloom_bPx3rd[i].bytes;
-		}
-		printf(": %.2f MB\n",(float)((float)(uint64_t)bloom_bP3_totalbytes/(float)(uint64_t)1048576));
-
-		BSGS_MP = secp->ComputePublicKey(&BSGS_M);
-		BSGS_MP_double = secp->ComputePublicKey(&BSGS_M_double);
-		BSGS_MP2 = secp->ComputePublicKey(&BSGS_M2);
-		BSGS_MP2_double = secp->ComputePublicKey(&BSGS_M2_double);
-		BSGS_MP3 = secp->ComputePublicKey(&BSGS_M3);
-		BSGS_MP3_double = secp->ComputePublicKey(&BSGS_M3_double);
-
-		BSGS_AMP2.reserve(32);
-		BSGS_AMP3.reserve(32);
-		GSn.reserve(CPU_GRP_SIZE/2);
-
-		i= 0;
-
-		/* New aMP table just to keep the same code of JLP */
-		/* Auxiliar Points to speed up calculations for the main bloom filter check */
-		Point bsP = secp->Negation(BSGS_MP_double);
-		Point g = bsP;
-		GSn[0] = g;
-
-		g = secp->DoubleDirect(g);
-		GSn[1] = g;
-
-		for(int i = 2; i < CPU_GRP_SIZE / 2; i++) {
-			g = secp->AddDirect(g,bsP);
-			GSn[i] = g;
-		}
-
-		/* For next center point */
-		_2GSn = secp->DoubleDirect(GSn[CPU_GRP_SIZE / 2 - 1]);
-
-		i = 0;
-		point_temp.Set(BSGS_MP2);
-		BSGS_AMP2[0] = secp->Negation(point_temp);
-		BSGS_AMP2[0].Reduce();
-		point_temp.Set(BSGS_MP2_double);
-		point_temp = secp->Negation(point_temp);
-		point_temp.Reduce();
-
-		for(i = 1; i < 32; i++)	{
-			BSGS_AMP2[i] = secp->AddDirect(BSGS_AMP2[i-1],point_temp);
-			BSGS_AMP2[i].Reduce();
-		}
-
-		i  = 0;
-		point_temp.Set(BSGS_MP3);
-		BSGS_AMP3[0] = secp->Negation(point_temp);
-		BSGS_AMP3[0].Reduce();
-		point_temp.Set(BSGS_MP3_double);
-		point_temp = secp->Negation(point_temp);
-		point_temp.Reduce();
-
-		for(i = 1; i < 32; i++)	{
-			BSGS_AMP3[i] = secp->AddDirect(BSGS_AMP3[i-1],point_temp);
-			BSGS_AMP3[i].Reduce();
-		}
-
-		bytes = (uint64_t)bsgs_m3 * (uint64_t) sizeof(struct bsgs_xvalue);
-		printf("[+] Allocating %.2f MB for %" PRIu64  " bP Points\n",(double)(bytes/1048576),bsgs_m3);
-
-		bPtable = (struct bsgs_xvalue*) malloc(bytes);
-		checkpointer((void *)bPtable,__FILE__,"malloc","bPtable" ,__LINE__ -1 );
-		memset(bPtable,0,bytes);
-
-		if(FLAGSAVEREADFILE)	{
-			/*Reading file for 1st bloom filter */
-
-			snprintf(buffer_bloom_file,1024,"keyhunt_bsgs_4_%" PRIu64 ".blm",bsgs_m);
-			fd_aux1 = fopen(buffer_bloom_file,"rb");
-			if(fd_aux1 != NULL)	{
-				printf("[+] Reading bloom filter from file %s ",buffer_bloom_file);
-				fflush(stdout);
-				for(i = 0; i < 256;i++)	{
-					bf_ptr = (char*) bloom_bP[i].bf;	/*We need to save the current bf pointer*/
-					readed = fread(&bloom_bP[i],sizeof(struct bloom),1,fd_aux1);
-					if(readed != 1)	{
-						fprintf(stderr,"[E] Error reading the file %s\n",buffer_bloom_file);
-						exit(EXIT_FAILURE);
-					}
-					bloom_bP[i].bf = (uint8_t*)bf_ptr;	/* Restoring the bf pointer*/
-					readed = fread(bloom_bP[i].bf,bloom_bP[i].bytes,1,fd_aux1);
-					if(readed != 1)	{
-						fprintf(stderr,"[E] Error reading the file %s\n",buffer_bloom_file);
-						exit(EXIT_FAILURE);
-					}
-					readed = fread(&bloom_bP_checksums[i],sizeof(struct checksumsha256),1,fd_aux1);
-					if(readed != 1)	{
-						fprintf(stderr,"[E] Error reading the file %s\n",buffer_bloom_file);
-						exit(EXIT_FAILURE);
-					}
-
-					sha256((uint8_t*)bloom_bP[i].bf,bloom_bP[i].bytes,(uint8_t*)rawvalue);
-					if(memcmp(bloom_bP_checksums[i].data,rawvalue,32) != 0 || memcmp(bloom_bP_checksums[i].backup,rawvalue,32) != 0 )	{	/* Verification */
-						fprintf(stderr,"[E] Error checksum file mismatch! %s\n",buffer_bloom_file);
-						exit(EXIT_FAILURE);
-					}
-
-					if(i % 64 == 0 )	{
-						printf(".");
-						fflush(stdout);
-					}
-				}
-				printf(" Done!\n");
-				fclose(fd_aux1);
-				memset(buffer_bloom_file,0,1024);
-				snprintf(buffer_bloom_file,1024,"keyhunt_bsgs_3_%" PRIu64 ".blm",bsgs_m);
-				fd_aux1 = fopen(buffer_bloom_file,"rb");
-				if(fd_aux1 != NULL)	{
-					printf("[W] Unused file detected %s you can delete it without worry\n",buffer_bloom_file);
-					fclose(fd_aux1);
-				}
-				FLAGREADEDFILE1 = 1;
-			}
-			else	{	/*Checking for old file    keyhunt_bsgs_3_   */
-				snprintf(buffer_bloom_file,1024,"keyhunt_bsgs_3_%" PRIu64 ".blm",bsgs_m);
-				fd_aux1 = fopen(buffer_bloom_file,"rb");
-				if(fd_aux1 != NULL)	{
-					printf("[+] Reading bloom filter from file %s ",buffer_bloom_file);
-					fflush(stdout);
-					for(i = 0; i < 256;i++)	{
-						bf_ptr = (char*) bloom_bP[i].bf;	/*We need to save the current bf pointer*/
-						readed = fread(&oldbloom_bP,sizeof(struct oldbloom),1,fd_aux1);
-
-						if(readed != 1)	{
-							fprintf(stderr,"[E] Error reading the file %s\n",buffer_bloom_file);
-							exit(EXIT_FAILURE);
-						}
-						memcpy(&bloom_bP[i],&oldbloom_bP,sizeof(struct bloom));//We only need to copy the part data to the new bloom size, not from the old size
-						bloom_bP[i].bf = (uint8_t*)bf_ptr;	/* Restoring the bf pointer*/
-
-						readed = fread(bloom_bP[i].bf,bloom_bP[i].bytes,1,fd_aux1);
-						if(readed != 1)	{
-							fprintf(stderr,"[E] Error reading the file %s\n",buffer_bloom_file);
-							exit(EXIT_FAILURE);
-						}
-						memcpy(bloom_bP_checksums[i].data,oldbloom_bP.checksum,32);
-						memcpy(bloom_bP_checksums[i].backup,oldbloom_bP.checksum_backup,32);
-						memset(rawvalue,0,32);
-
-						sha256((uint8_t*)bloom_bP[i].bf,bloom_bP[i].bytes,(uint8_t*)rawvalue);
-						if(memcmp(bloom_bP_checksums[i].data,rawvalue,32) != 0 || memcmp(bloom_bP_checksums[i].backup,rawvalue,32) != 0 )	{	/* Verification */
-							fprintf(stderr,"[E] Error checksum file mismatch! %s\n",buffer_bloom_file);
-							exit(EXIT_FAILURE);
-						}
-
-						if(i % 32 == 0 )	{
-							printf(".");
-							fflush(stdout);
-						}
-					}
-					printf(" Done!\n");
-					fclose(fd_aux1);
-					FLAGUPDATEFILE1 = 1;	/* Flag to migrate the data to the new File keyhunt_bsgs_4_ */
-					FLAGREADEDFILE1 = 1;
-
-				}
-				else	{
-					FLAGREADEDFILE1 = 0;
-					//Flag to make the new file
-				}
-			}
-
-			/*Reading file for 2nd bloom filter */
-			snprintf(buffer_bloom_file,1024,"keyhunt_bsgs_6_%" PRIu64 ".blm",bsgs_m2);
-			fd_aux2 = fopen(buffer_bloom_file,"rb");
-			if(fd_aux2 != NULL)	{
-				printf("[+] Reading bloom filter from file %s ",buffer_bloom_file);
-				fflush(stdout);
-				for(i = 0; i < 256;i++)	{
-					bf_ptr = (char*) bloom_bPx2nd[i].bf;	/*We need to save the current bf pointer*/
-					readed = fread(&bloom_bPx2nd[i],sizeof(struct bloom),1,fd_aux2);
-					if(readed != 1)	{
-						fprintf(stderr,"[E] Error reading the file %s\n",buffer_bloom_file);
-						exit(EXIT_FAILURE);
-					}
-					bloom_bPx2nd[i].bf = (uint8_t*)bf_ptr;	/* Restoring the bf pointer*/
-					readed = fread(bloom_bPx2nd[i].bf,bloom_bPx2nd[i].bytes,1,fd_aux2);
-					if(readed != 1)	{
-						fprintf(stderr,"[E] Error reading the file %s\n",buffer_bloom_file);
-						exit(EXIT_FAILURE);
-					}
-					readed = fread(&bloom_bPx2nd_checksums[i],sizeof(struct checksumsha256),1,fd_aux2);
-					if(readed != 1)	{
-						fprintf(stderr,"[E] Error reading the file %s\n",buffer_bloom_file);
-						exit(EXIT_FAILURE);
-					}
-					memset(rawvalue,0,32);
-
-					sha256((uint8_t*)bloom_bPx2nd[i].bf,bloom_bPx2nd[i].bytes,(uint8_t*)rawvalue);
-					if(memcmp(bloom_bPx2nd_checksums[i].data,rawvalue,32) != 0 || memcmp(bloom_bPx2nd_checksums[i].backup,rawvalue,32) != 0 )	{		/* Verification */
-						fprintf(stderr,"[E] Error checksum file mismatch! %s\n",buffer_bloom_file);
-						exit(EXIT_FAILURE);
-					}
-
-					if(i % 64 == 0)	{
-						printf(".");
-						fflush(stdout);
-					}
-				}
-				fclose(fd_aux2);
-				printf(" Done!\n");
-				memset(buffer_bloom_file,0,1024);
-				snprintf(buffer_bloom_file,1024,"keyhunt_bsgs_5_%" PRIu64 ".blm",bsgs_m2);
-				fd_aux2 = fopen(buffer_bloom_file,"rb");
-				if(fd_aux2 != NULL)	{
-					printf("[W] Unused file detected %s you can delete it without worry\n",buffer_bloom_file);
-					fclose(fd_aux2);
-				}
-				memset(buffer_bloom_file,0,1024);
-				snprintf(buffer_bloom_file,1024,"keyhunt_bsgs_1_%" PRIu64 ".blm",bsgs_m2);
-				fd_aux2 = fopen(buffer_bloom_file,"rb");
-				if(fd_aux2 != NULL)	{
-					printf("[W] Unused file detected %s you can delete it without worry\n",buffer_bloom_file);
-					fclose(fd_aux2);
-				}
-				FLAGREADEDFILE2 = 1;
-			}
-			else	{
-				FLAGREADEDFILE2 = 0;
-			}
-
-			/*Reading file for bPtable */
-			snprintf(buffer_bloom_file,1024,"keyhunt_bsgs_2_%" PRIu64 ".tbl",bsgs_m3);
-			fd_aux3 = fopen(buffer_bloom_file,"rb");
-			if(fd_aux3 != NULL)	{
-				printf("[+] Reading bP Table from file %s .",buffer_bloom_file);
-				fflush(stdout);
-				rsize = fread(bPtable,bytes,1,fd_aux3);
-				if(rsize != 1)	{
-					fprintf(stderr,"[E] Error reading the file %s\n",buffer_bloom_file);
-					exit(EXIT_FAILURE);
-				}
-				rsize = fread(checksum,32,1,fd_aux3);
-				if(rsize != 1)	{
-					fprintf(stderr,"[E] Error reading the file %s\n",buffer_bloom_file);
-					exit(EXIT_FAILURE);
-				}
-
-				sha256((uint8_t*)bPtable,bytes,(uint8_t*)checksum_backup);
-				if(memcmp(checksum,checksum_backup,32) != 0)	{
-					fprintf(stderr,"[E] Error checksum file mismatch! %s\n",buffer_bloom_file);
-					exit(EXIT_FAILURE);
-				}
-
-				printf("... Done!\n");
-				fclose(fd_aux3);
-				FLAGREADEDFILE3 = 1;
-			}
-			else	{
-				FLAGREADEDFILE3 = 0;
-			}
-
-			/*Reading file for 3rd bloom filter */
-			snprintf(buffer_bloom_file,1024,"keyhunt_bsgs_7_%" PRIu64 ".blm",bsgs_m3);
-			fd_aux2 = fopen(buffer_bloom_file,"rb");
-			if(fd_aux2 != NULL)	{
-				printf("[+] Reading bloom filter from file %s ",buffer_bloom_file);
-				fflush(stdout);
-				for(i = 0; i < 256;i++)	{
-					bf_ptr = (char*) bloom_bPx3rd[i].bf;	/*We need to save the current bf pointer*/
-					readed = fread(&bloom_bPx3rd[i],sizeof(struct bloom),1,fd_aux2);
-					if(readed != 1)	{
-						fprintf(stderr,"[E] Error reading the file %s\n",buffer_bloom_file);
-						exit(EXIT_FAILURE);
-					}
-					bloom_bPx3rd[i].bf = (uint8_t*)bf_ptr;	/* Restoring the bf pointer*/
-					readed = fread(bloom_bPx3rd[i].bf,bloom_bPx3rd[i].bytes,1,fd_aux2);
-					if(readed != 1)	{
-						fprintf(stderr,"[E] Error reading the file %s\n",buffer_bloom_file);
-						exit(EXIT_FAILURE);
-					}
-					readed = fread(&bloom_bPx3rd_checksums[i],sizeof(struct checksumsha256),1,fd_aux2);
-					if(readed != 1)	{
-						fprintf(stderr,"[E] Error reading the file %s\n",buffer_bloom_file);
-						exit(EXIT_FAILURE);
-					}
-					memset(rawvalue,0,32);
-					sha256((uint8_t*)bloom_bPx3rd[i].bf,bloom_bPx3rd[i].bytes,(uint8_t*)rawvalue);
-					if(memcmp(bloom_bPx3rd_checksums[i].data,rawvalue,32) != 0 || memcmp(bloom_bPx3rd_checksums[i].backup,rawvalue,32) != 0 )	{		/* Verification */
-						fprintf(stderr,"[E] Error checksum file mismatch! %s\n",buffer_bloom_file);
-						exit(EXIT_FAILURE);
-					}
-					if(i % 64 == 0)	{
-						printf(".");
-						fflush(stdout);
-					}
-				}
-				fclose(fd_aux2);
-				printf(" Done!\n");
-				FLAGREADEDFILE4 = 1;
-			}
-			else	{
-				FLAGREADEDFILE4 = 0;
-			}
-
-		}
-
-		if(!FLAGREADEDFILE1 || !FLAGREADEDFILE2 || !FLAGREADEDFILE3 || !FLAGREADEDFILE4)	{
-			if(FLAGREADEDFILE1 == 1)	{
-				/* 
-					We need just to make File 2 to File 4 this is
-					- Second bloom filter 5%
-					- third  bloom fitler 0.25 %
-					- bp Table 0.25 %
-				*/
-				printf("[I] We need to recalculate some files, don't worry this is only 3%% of the previous work\n");
-				FINISHED_THREADS_COUNTER = 0;
-				FINISHED_THREADS_BP = 0;
-				FINISHED_ITEMS = 0;
-				salir = 0;
-				BASE = 0;
-				THREADCOUNTER = 0;
-				if(THREADBPWORKLOAD >= bsgs_m2)	{
-					THREADBPWORKLOAD = bsgs_m2;
-				}
-				THREADCYCLES = bsgs_m2 / THREADBPWORKLOAD;
-				PERTHREAD_R = bsgs_m2 % THREADBPWORKLOAD;
-				if(PERTHREAD_R != 0)	{
-					THREADCYCLES++;
-				}
-
-				printf("\r[+] processing %lu/%lu bP points : %i%%\r",FINISHED_ITEMS,bsgs_m,(int) (((double)FINISHED_ITEMS/(double)bsgs_m)*100));
-				fflush(stdout);
-
-				tid = (pthread_t *) calloc(NTHREADS,sizeof(pthread_t));
-				bPload_mutex = (pthread_mutex_t*) calloc(NTHREADS,sizeof(pthread_mutex_t));
-				checkpointer((void *)bPload_mutex,__FILE__,"calloc","bPload_mutex" ,__LINE__ -1 );
-				bPload_temp_ptr = (struct bPload*) calloc(NTHREADS,sizeof(struct bPload));
-				checkpointer((void *)bPload_temp_ptr,__FILE__,"calloc","bPload_temp_ptr" ,__LINE__ -1 );
-				bPload_threads_available = (char*) calloc(NTHREADS,sizeof(char));
-				checkpointer((void *)bPload_threads_available,__FILE__,"calloc","bPload_threads_available" ,__LINE__ -1 );
-
-				memset(bPload_threads_available,1,NTHREADS);
-
-				for(j = 0; j < NTHREADS; j++)	{
-					pthread_mutex_init(&bPload_mutex[j],NULL);
-				}
-
-				do	{
-					for(j = 0; j < NTHREADS && !salir; j++)	{
-
-						if(bPload_threads_available[j] && !salir)	{
-							bPload_threads_available[j] = 0;
-							bPload_temp_ptr[j].from = BASE;
-							bPload_temp_ptr[j].threadid = j;
-							bPload_temp_ptr[j].finished = 0;
-							if( THREADCOUNTER < THREADCYCLES-1)	{
-								bPload_temp_ptr[j].to = BASE + THREADBPWORKLOAD;
-								bPload_temp_ptr[j].workload = THREADBPWORKLOAD;
-							}
-							else	{
-								bPload_temp_ptr[j].to = BASE + THREADBPWORKLOAD + PERTHREAD_R;
-								bPload_temp_ptr[j].workload = THREADBPWORKLOAD + PERTHREAD_R;
-								salir = 1;
-							}
-							s = pthread_create(&tid[j],NULL,thread_bPload_2blooms,(void*) &bPload_temp_ptr[j]);
-							pthread_detach(tid[j]);
-							BASE+=THREADBPWORKLOAD;
-							THREADCOUNTER++;
-						}
-					}
-
-					if(OLDFINISHED_ITEMS != FINISHED_ITEMS)	{
-						printf("\r[+] processing %lu/%lu bP points : %i%%\r",FINISHED_ITEMS,bsgs_m2,(int) (((double)FINISHED_ITEMS/(double)bsgs_m2)*100));
-						fflush(stdout);
-						OLDFINISHED_ITEMS = FINISHED_ITEMS;
-					}
-
-					for(j = 0 ; j < NTHREADS ; j++)	{
-
-						pthread_mutex_lock(&bPload_mutex[j]);
-						finished = bPload_temp_ptr[j].finished;
-						pthread_mutex_unlock(&bPload_mutex[j]);
-						if(finished)	{
-							bPload_temp_ptr[j].finished = 0;
-							bPload_threads_available[j] = 1;
-							FINISHED_ITEMS += bPload_temp_ptr[j].workload;
-							FINISHED_THREADS_COUNTER++;
-						}
-					}
-				}while(FINISHED_THREADS_COUNTER < THREADCYCLES);
-				printf("\r[+] processing %lu/%lu bP points : 100%%     \n",bsgs_m2,bsgs_m2);
-
-				free(tid);
-				free(bPload_mutex);
-				free(bPload_temp_ptr);
-				free(bPload_threads_available);
-			}
-			else{
-				/* We need just to do all the files 
-					- first  bllom filter 100% 
-					- Second bloom filter 5%
-					- third  bloom fitler 0.25 %
-					- bp Table 0.25 %
-				*/
-				FINISHED_THREADS_COUNTER = 0;
-				FINISHED_THREADS_BP = 0;
-				FINISHED_ITEMS = 0;
-				salir = 0;
-				BASE = 0;
-				THREADCOUNTER = 0;
-				if(THREADBPWORKLOAD >= bsgs_m)	{
-					THREADBPWORKLOAD = bsgs_m;
-				}
-				THREADCYCLES = bsgs_m / THREADBPWORKLOAD;
-				PERTHREAD_R = bsgs_m % THREADBPWORKLOAD;
-				if(PERTHREAD_R != 0)	{
-					THREADCYCLES++;
-				}
-
-				printf("\r[+] processing %lu/%lu bP points : %i%%\r",FINISHED_ITEMS,bsgs_m,(int) (((double)FINISHED_ITEMS/(double)bsgs_m)*100));
-				fflush(stdout);
-
-				tid = (pthread_t *) calloc(NTHREADS,sizeof(pthread_t));
-				bPload_mutex = (pthread_mutex_t*) calloc(NTHREADS,sizeof(pthread_mutex_t));
-				checkpointer((void *)tid,__FILE__,"calloc","tid" ,__LINE__ -1 );
-				checkpointer((void *)bPload_mutex,__FILE__,"calloc","bPload_mutex" ,__LINE__ -1 );
-
-				bPload_temp_ptr = (struct bPload*) calloc(NTHREADS,sizeof(struct bPload));
-				checkpointer((void *)bPload_temp_ptr,__FILE__,"calloc","bPload_temp_ptr" ,__LINE__ -1 );
-				bPload_threads_available = (char*) calloc(NTHREADS,sizeof(char));
-				checkpointer((void *)bPload_threads_available,__FILE__,"calloc","bPload_threads_available" ,__LINE__ -1 );
-
-				memset(bPload_threads_available,1,NTHREADS);
-
-				for(j = 0; j < NTHREADS; j++)	{
-					pthread_mutex_init(&bPload_mutex[j],NULL);
-				}
-
-				do	{
-					for(j = 0; j < NTHREADS && !salir; j++)	{
-
-						if(bPload_threads_available[j] && !salir)	{
-							bPload_threads_available[j] = 0;
-							bPload_temp_ptr[j].from = BASE;
-							bPload_temp_ptr[j].threadid = j;
-							bPload_temp_ptr[j].finished = 0;
-							if( THREADCOUNTER < THREADCYCLES-1)	{
-								bPload_temp_ptr[j].to = BASE + THREADBPWORKLOAD;
-								bPload_temp_ptr[j].workload = THREADBPWORKLOAD;
-							}
-							else	{
-								bPload_temp_ptr[j].to = BASE + THREADBPWORKLOAD + PERTHREAD_R;
-								bPload_temp_ptr[j].workload = THREADBPWORKLOAD + PERTHREAD_R;
-								salir = 1;
-							}
-							s = pthread_create(&tid[j],NULL,thread_bPload,(void*) &bPload_temp_ptr[j]);
-							pthread_detach(tid[j]);
-							BASE+=THREADBPWORKLOAD;
-							THREADCOUNTER++;
-						}
-					}
-					if(OLDFINISHED_ITEMS != FINISHED_ITEMS)	{
-						printf("\r[+] processing %lu/%lu bP points : %i%%\r",FINISHED_ITEMS,bsgs_m,(int) (((double)FINISHED_ITEMS/(double)bsgs_m)*100));
-						fflush(stdout);
-						OLDFINISHED_ITEMS = FINISHED_ITEMS;
-					}
-
-					for(j = 0 ; j < NTHREADS ; j++)	{
-						pthread_mutex_lock(&bPload_mutex[j]);
-						finished = bPload_temp_ptr[j].finished;
-						pthread_mutex_unlock(&bPload_mutex[j]);
-						if(finished)	{
-							bPload_temp_ptr[j].finished = 0;
-							bPload_threads_available[j] = 1;
-							FINISHED_ITEMS += bPload_temp_ptr[j].workload;
-							FINISHED_THREADS_COUNTER++;
-						}
-					}
-
-				}while(FINISHED_THREADS_COUNTER < THREADCYCLES);
-				printf("\r[+] processing %lu/%lu bP points : 100%%     \n",bsgs_m,bsgs_m);
-
-				free(tid);
-				free(bPload_mutex);
-				free(bPload_temp_ptr);
-				free(bPload_threads_available);
-			}
-		}
-
-		if(!FLAGREADEDFILE1 || !FLAGREADEDFILE2 || !FLAGREADEDFILE4)	{
-			printf("[+] Making checkums .. ");
-			fflush(stdout);
-		}
-		if(!FLAGREADEDFILE1)	{
-			for(i = 0; i < 256 ; i++)	{
-				sha256((uint8_t*)bloom_bP[i].bf, bloom_bP[i].bytes,(uint8_t*) bloom_bP_checksums[i].data);
-				memcpy(bloom_bP_checksums[i].backup,bloom_bP_checksums[i].data,32);
-			}
-			printf(".");
-		}
-		if(!FLAGREADEDFILE2)	{
-			for(i = 0; i < 256 ; i++)	{
-				sha256((uint8_t*)bloom_bPx2nd[i].bf, bloom_bPx2nd[i].bytes,(uint8_t*) bloom_bPx2nd_checksums[i].data);
-				memcpy(bloom_bPx2nd_checksums[i].backup,bloom_bPx2nd_checksums[i].data,32);
-			}
-			printf(".");
-		}
-		if(!FLAGREADEDFILE4)	{
-			for(i = 0; i < 256 ; i++)	{
-				sha256((uint8_t*)bloom_bPx3rd[i].bf, bloom_bPx3rd[i].bytes,(uint8_t*) bloom_bPx3rd_checksums[i].data);
-				memcpy(bloom_bPx3rd_checksums[i].backup,bloom_bPx3rd_checksums[i].data,32);
-			}
-			printf(".");
-		}
-		if(!FLAGREADEDFILE1 || !FLAGREADEDFILE2 || !FLAGREADEDFILE4)	{
-			printf(" done\n");
-			fflush(stdout);
-		}
-		if(!FLAGREADEDFILE3)	{
-			printf("[+] Sorting %lu elements... ",bsgs_m3);
-			fflush(stdout);
-			bsgs_sort(bPtable,bsgs_m3);
-			sha256((uint8_t*)bPtable, bytes,(uint8_t*) checksum);
-			memcpy(checksum_backup,checksum,32);
-			printf("Done!\n");
-			fflush(stdout);
-		}
-		if(FLAGSAVEREADFILE || FLAGUPDATEFILE1 )	{
-			if(!FLAGREADEDFILE1 || FLAGUPDATEFILE1)	{
-				snprintf(buffer_bloom_file,1024,"keyhunt_bsgs_4_%" PRIu64 ".blm",bsgs_m);
-
-				if(FLAGUPDATEFILE1)	{
-					printf("[W] Updating old file into a new one\n");
-				}
-
-				/* Writing file for 1st bloom filter */
-
-				fd_aux1 = fopen(buffer_bloom_file,"wb");
-				if(fd_aux1 != NULL)	{
-					printf("[+] Writing bloom filter to file %s ",buffer_bloom_file);
-					fflush(stdout);
-					for(i = 0; i < 256;i++)	{
-						readed = fwrite(&bloom_bP[i],sizeof(struct bloom),1,fd_aux1);
-						if(readed != 1)	{
-							fprintf(stderr,"[E] Error writing the file %s please delete it\n",buffer_bloom_file);
-							exit(EXIT_FAILURE);
-						}
-						readed = fwrite(bloom_bP[i].bf,bloom_bP[i].bytes,1,fd_aux1);
-						if(readed != 1)	{
-							fprintf(stderr,"[E] Error writing the file %s please delete it\n",buffer_bloom_file);
-							exit(EXIT_FAILURE);
-						}
-						readed = fwrite(&bloom_bP_checksums[i],sizeof(struct checksumsha256),1,fd_aux1);
-						if(readed != 1)	{
-							fprintf(stderr,"[E] Error writing the file %s please delete it\n",buffer_bloom_file);
-							exit(EXIT_FAILURE);
-						}
-						if(i % 64 == 0)	{
-							printf(".");
-							fflush(stdout);
-						}
-					}
-					printf(" Done!\n");
-					fclose(fd_aux1);
-				}
-				else	{
-					fprintf(stderr,"[E] Error can't create the file %s\n",buffer_bloom_file);
-					exit(EXIT_FAILURE);
-				}
-			}
-			if(!FLAGREADEDFILE2  )	{
-
-				snprintf(buffer_bloom_file,1024,"keyhunt_bsgs_6_%" PRIu64 ".blm",bsgs_m2);
-
-				/* Writing file for 2nd bloom filter */
-				fd_aux2 = fopen(buffer_bloom_file,"wb");
-				if(fd_aux2 != NULL)	{
-					printf("[+] Writing bloom filter to file %s ",buffer_bloom_file);
-					fflush(stdout);
-					for(i = 0; i < 256;i++)	{
-						readed = fwrite(&bloom_bPx2nd[i],sizeof(struct bloom),1,fd_aux2);
-						if(readed != 1)	{
-							fprintf(stderr,"[E] Error writing the file %s\n",buffer_bloom_file);
-							exit(EXIT_FAILURE);
-						}
-						readed = fwrite(bloom_bPx2nd[i].bf,bloom_bPx2nd[i].bytes,1,fd_aux2);
-						if(readed != 1)	{
-							fprintf(stderr,"[E] Error writing the file %s\n",buffer_bloom_file);
-							exit(EXIT_FAILURE);
-						}
-						readed = fwrite(&bloom_bPx2nd_checksums[i],sizeof(struct checksumsha256),1,fd_aux2);
-						if(readed != 1)	{
-							fprintf(stderr,"[E] Error writing the file %s please delete it\n",buffer_bloom_file);
-							exit(EXIT_FAILURE);
-						}
-						if(i % 64 == 0)	{
-							printf(".");
-							fflush(stdout);
-						}
-					}
-					printf(" Done!\n");
-					fclose(fd_aux2);
-				}
-				else	{
-					fprintf(stderr,"[E] Error can't create the file %s\n",buffer_bloom_file);
-					exit(EXIT_FAILURE);
-				}
-			}
-
-			if(!FLAGREADEDFILE3)	{
-				/* Writing file for bPtable */
-				snprintf(buffer_bloom_file,1024,"keyhunt_bsgs_2_%" PRIu64 ".tbl",bsgs_m3);
-				fd_aux3 = fopen(buffer_bloom_file,"wb");
-				if(fd_aux3 != NULL)	{
-					printf("[+] Writing bP Table to file %s .. ",buffer_bloom_file);
-					fflush(stdout);
-					readed = fwrite(bPtable,bytes,1,fd_aux3);
-					if(readed != 1)	{
-						fprintf(stderr,"[E] Error writing the file %s\n",buffer_bloom_file);
-						exit(EXIT_FAILURE);
-					}
-					readed = fwrite(checksum,32,1,fd_aux3);
-					if(readed != 1)	{
-						fprintf(stderr,"[E] Error writing the file %s\n",buffer_bloom_file);
-						exit(EXIT_FAILURE);
-					}
-					printf("Done!\n");
-					fclose(fd_aux3);
-				}
-				else	{
-					fprintf(stderr,"[E] Error can't create the file %s\n",buffer_bloom_file);
-					exit(EXIT_FAILURE);
-				}
-			}
-			if(!FLAGREADEDFILE4)	{
-				snprintf(buffer_bloom_file,1024,"keyhunt_bsgs_7_%" PRIu64 ".blm",bsgs_m3);
-
-				/* Writing file for 3rd bloom filter */
-				fd_aux2 = fopen(buffer_bloom_file,"wb");
-				if(fd_aux2 != NULL)	{
-					printf("[+] Writing bloom filter to file %s ",buffer_bloom_file);
-					fflush(stdout);
-					for(i = 0; i < 256;i++)	{
-						readed = fwrite(&bloom_bPx3rd[i],sizeof(struct bloom),1,fd_aux2);
-						if(readed != 1)	{
-							fprintf(stderr,"[E] Error writing the file %s\n",buffer_bloom_file);
-							exit(EXIT_FAILURE);
-						}
-						readed = fwrite(bloom_bPx3rd[i].bf,bloom_bPx3rd[i].bytes,1,fd_aux2);
-						if(readed != 1)	{
-							fprintf(stderr,"[E] Error writing the file %s\n",buffer_bloom_file);
-							exit(EXIT_FAILURE);
-						}
-						readed = fwrite(&bloom_bPx3rd_checksums[i],sizeof(struct checksumsha256),1,fd_aux2);
-						if(readed != 1)	{
-							fprintf(stderr,"[E] Error writing the file %s please delete it\n",buffer_bloom_file);
-							exit(EXIT_FAILURE);
-						}
-						if(i % 64 == 0)	{
-							printf(".");
-							fflush(stdout);
-						}
-					}
-					printf(" Done!\n");
-					fclose(fd_aux2);
-				}
-				else	{
-					fprintf(stderr,"[E] Error can't create the file %s\n",buffer_bloom_file);
-					exit(EXIT_FAILURE);
-				}
-			}
-		}
-
-		i = 0;
-
-		steps = (uint64_t *) calloc(NTHREADS,sizeof(uint64_t));
-		checkpointer((void *)steps,__FILE__,"calloc","steps" ,__LINE__ -1 );
-		ends = (unsigned int *) calloc(NTHREADS,sizeof(int));
-		checkpointer((void *)ends,__FILE__,"calloc","ends" ,__LINE__ -1 );
-		tid = (pthread_t *) calloc(NTHREADS,sizeof(pthread_t));
-		checkpointer((void *)tid,__FILE__,"calloc","tid" ,__LINE__ -1 );
-
-		for(j= 0;j < NTHREADS; j++)	{
-			tt = (tothread*) malloc(sizeof(struct tothread));
-			checkpointer((void *)tt,__FILE__,"malloc","tt" ,__LINE__ -1 );
-			tt->nt = j;
-			steps[j] = 0;
-			s = 0;
-			switch(FLAGBSGSMODE)	{
-				case 0:
-					s = pthread_create(&tid[j],NULL,thread_process_bsgs,(void *)tt);
-				break;
-				case 1:
-					s = pthread_create(&tid[j],NULL,thread_process_bsgs_backward,(void *)tt);
-				break;
-				case 2:
-					s = pthread_create(&tid[j],NULL,thread_process_bsgs_both,(void *)tt);
-				break;
-				case 3:
-					s = pthread_create(&tid[j],NULL,thread_process_bsgs_random,(void *)tt);
-				break;
-				case 4:
-					s = pthread_create(&tid[j],NULL,thread_process_bsgs_dance,(void *)tt);
-				break;
-			}
-			if(s != 0)	{
-				fprintf(stderr,"[E] thread thread_process\n");
-				exit(EXIT_FAILURE);
-			}
-		}
-		free(aux);
-	}
-	if(FLAGMODE != MODE_BSGS)	{
-		steps = (uint64_t *) calloc(NTHREADS,sizeof(uint64_t));
-		checkpointer((void *)steps,__FILE__,"calloc","steps" ,__LINE__ -1 );
-		ends = (unsigned int *) calloc(NTHREADS,sizeof(int));
-		checkpointer((void *)ends,__FILE__,"calloc","ends" ,__LINE__ -1 );
-		tid = (pthread_t *) calloc(NTHREADS,sizeof(pthread_t));
-		checkpointer((void *)tid,__FILE__,"calloc","tid" ,__LINE__ -1 );
-		for(j= 0;j < NTHREADS; j++)	{
-			tt = (tothread*) malloc(sizeof(struct tothread));
-			checkpointer((void *)tt,__FILE__,"malloc","tt" ,__LINE__ -1 );
-			tt->nt = j;
-			steps[j] = 0;
-			s = 0;
-			switch(FLAGMODE)	{
-				case MODE_ADDRESS:
-				case MODE_XPOINT:
-					s = pthread_create(&tid[j],NULL,thread_process,(void *)tt);
-				break;
-			}
-			if(s != 0)	{
-				fprintf(stderr,"[E] pthread_create thread_process\n");
-				exit(EXIT_FAILURE);
-			}
 		}
 	}
 
@@ -1952,19 +903,14 @@ void *thread_process(void *vargp)	{
 	grp->Set(dx);
 
 	do {
-		if(FLAGRANDOM){
-			key_mpz.Rand(&n_range_start,&n_range_end);
+		if(n_range_start.IsLower(&n_range_end))	{
+			pthread_mutex_lock(&write_random);
+			key_mpz.Set(&n_range_start);
+			n_range_start.Add(N_SEQUENTIAL_MAX);
+			pthread_mutex_unlock(&write_random);
 		}
 		else	{
-			if(n_range_start.IsLower(&n_range_end))	{
-				pthread_mutex_lock(&write_random);
-				key_mpz.Set(&n_range_start);
-				n_range_start.Add(N_SEQUENTIAL_MAX);
-				pthread_mutex_unlock(&write_random);
-			}
-			else	{
-				continue_flag = 0;
-			}
+			continue_flag = 0;
 		}
 		if(continue_flag)	{
 			count = 0;
