@@ -31,9 +31,7 @@ email: albertobsd@gmail.com
 #include <pthread.h>
 #include <sys/random.h>
 
-#ifdef __unix__
 #include <linux/random.h>
-#endif
 
 #define CRYPTO_NONE 0
 #define CRYPTO_BTC 1

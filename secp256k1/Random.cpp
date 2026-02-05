@@ -20,9 +20,7 @@
 
 #include <sys/random.h>
 
-#ifdef __unix__
 #include <linux/random.h>
-#endif
 
 #define  RK_STATE_LEN 624
 
