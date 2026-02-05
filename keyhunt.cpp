@@ -13,7 +13,6 @@ email: albertobsd@gmail.com
 #include <inttypes.h>
 #include "base58/libbase58.h"
 #include "rmd160/rmd160.h"
-#include "oldbloom/oldbloom.h"
 #include "bloom/bloom.h"
 #include "sha3/sha3.h"
 #include "util.h"
