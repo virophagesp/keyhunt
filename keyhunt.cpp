@@ -215,7 +215,7 @@ int main(int argc, char **argv)	{
 
 	printf("[+] Version %s, developed by AlbertoBSD\n",version);
 
-	while ((c = getopt(argc, argv, "b:E:f:N:n:p:r:s:z:")) != -1) {
+	while ((c = getopt(argc, argv, "b:E:f:N:n:p:r:s:")) != -1) {
 		switch(c) {
 			case 'b':
 				bitrange = strtol(optarg,NULL,10);
@@ -294,13 +294,6 @@ int main(int argc, char **argv)	{
 					printf("[+] Stats output every %s seconds\n",hextemp);
 					free(hextemp);
 				}
-			break;
-			case 'z':
-				FLAGBLOOMMULTIPLIER= strtol(optarg,NULL,10);
-				if(FLAGBLOOMMULTIPLIER <= 0)	{
-					FLAGBLOOMMULTIPLIER = 1;
-				}
-				printf("[+] Bloom Size Multiplier %i\n",FLAGBLOOMMULTIPLIER);
 			break;
 			default:
 				fprintf(stderr,"[E] Unknow opcion -%c\n",c);
