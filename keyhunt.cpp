@@ -90,7 +90,7 @@ uint64_t *steps = NULL;
 unsigned int *ends = NULL;
 uint64_t N = 0;
 
-uint64_t N_SEQUENTIAL_MAX = 0x100000000;
+uint64_t N_SEQUENTIAL_MAX;
 
 Int OUTPUTSECONDS;
 
@@ -114,8 +114,6 @@ Int MPZAUX;
 
 Int n_range_start;
 Int n_range_end;
-Int n_range_diff;
-Int n_range_aux;
 
 Secp256K1 *secp;
 
@@ -145,27 +143,12 @@ int main()	{
 	ZERO.SetInt32(0);
 
 	unsigned long rseedvalue;
-	int bytes_read = getrandom(&rseedvalue, sizeof(unsigned long), GRND_NONBLOCK);
-	if(bytes_read > 0)	{
-		rseed(rseedvalue);
-		/*
-		In any case that seed is for a failsafe RNG, the default source on linux is getrandom function
-		See https://www.2uo.de/myths-about-urandom/
-		*/
-	}
-	else	{
-		/*
-			what year is??
-			WTF linux without RNG ? 
-		*/
-		fprintf(stderr,"[E] Error getrandom() ?\n");
-		exit(EXIT_FAILURE);
-		rseed(clock() + time(NULL) + rand()*rand());
-	}
+	getrandom(&rseedvalue, sizeof(unsigned long), GRND_NONBLOCK);
+	rseed(rseedvalue);
 
 	printf("[+] Version 0.2 bitcoin hunt, developed by virophagesp based upon 0.2.230519 Satoshi Quest by AlbertoBSD\n");
 
-	// sequential number option
+	// sequential number option (putting this IMPORTANT here for easy finding )
 	N_SEQUENTIAL_MAX = strtol("0x100000",NULL,16);
 	// file name
 	if (IMPORTANT == "small_test") {
@@ -197,32 +180,8 @@ int main()	{
 
 	printf("[+] Setting search for btc adddress\n");
 	n_range_start.SetBase16(range_start);
-	if(n_range_start.IsZero())	{
-		n_range_start.AddOne();
-	}
 	n_range_end.SetBase16(range_end);
-	if(n_range_start.IsEqual(&n_range_end) == false ) {
-		if(  n_range_start.IsLower(&secp->order) &&  n_range_end.IsLowerOrEqual(&secp->order) )	{
-			if( n_range_start.IsGreater(&n_range_end)) {
-				fprintf(stderr,"[W] Opps, start range can't be great than end range. Swapping them\n");
-				n_range_aux.Set(&n_range_start);
-				n_range_start.Set(&n_range_end);
-				n_range_end.Set(&n_range_aux);
-			}
-			n_range_diff.Set(&n_range_end);
-			n_range_diff.Sub(&n_range_start);
-		}
-	}
 	N = 0;
-
-	if(N_SEQUENTIAL_MAX < 1024)	{
-		fprintf(stderr,"[I] n value need to be equal or great than 1024, back to defaults\n");
-		N_SEQUENTIAL_MAX = 0x100000000;
-	}
-	if(N_SEQUENTIAL_MAX % 1024 != 0)	{
-		fprintf(stderr,"[I] n value need to be multiplier of  1024\n");
-		N_SEQUENTIAL_MAX = 0x100000000;
-	}
 
 	printf("[+] N = %p\n",(void*)N_SEQUENTIAL_MAX);
 	printf("[+] Range \n");
