@@ -98,8 +98,6 @@ int MAXLENGTHADDRESS = -1;
 
 int FLAGREADEDFILE1 = 0;
 
-char *range_start;
-char *range_end;
 Int stride;
 
 uint64_t bytes;
@@ -148,39 +146,28 @@ int main()	{
 
 	printf("[+] Version 0.2 bitcoin hunt, developed by virophagesp based upon 0.2.230519 Satoshi Quest by AlbertoBSD\n");
 
-	// sequential number option (putting this IMPORTANT here for easy finding )
-	N_SEQUENTIAL_MAX = strtol("0x100000",NULL,16);
-	// file name
-	if (IMPORTANT == "small_test") {
-		fileName = (char *)"16.txt";
-	} else if (IMPORTANT == "medium_test") {
-		fileName = (char *)"34.txt";
-	} else if (IMPORTANT == "big_test") {
-		fileName = (char *)"69.txt";
-	} else if (IMPORTANT == "money") {
-		fileName = (char *)"82.txt";
-	}
-	// range
-	if (IMPORTANT == "small_test") {
-		range_start = (char *)"8000";
-		range_end = (char *)"ffff";
-	} else if (IMPORTANT == "medium_test") {
-		range_start = (char *)"200000000";
-		range_end = (char *)"3ffffffff";
-	} else if (IMPORTANT == "big_test") {
-		range_start = (char *)"100000000000000000";
-		range_end = (char *)"1fffffffffffffffff";
-	} else if (IMPORTANT == "money") {
-		range_start = (char *)"200000000000000000000";
-		range_end = (char *)"3ffffffffffffffffffff";
-	}
-
 	stride.SetInt32(1);
 	init_generator();
 
 	printf("[+] Setting search for btc adddress\n");
-	n_range_start.SetBase16(range_start);
-	n_range_end.SetBase16(range_end);
+
+	// sequential number option (putting this IMPORTANT here for easy finding )
+	N_SEQUENTIAL_MAX = strtol("0x100000",NULL,16);
+
+	// range
+	if (IMPORTANT == "small_test") {
+		n_range_start.SetBase16((char *)"8000");
+		n_range_end.SetBase16((char *)"ffff");
+	} else if (IMPORTANT == "medium_test") {
+		n_range_start.SetBase16((char *)"200000000");
+		n_range_end.SetBase16((char *)"3ffffffff");
+	} else if (IMPORTANT == "big_test") {
+		n_range_start.SetBase16((char *)"100000000000000000");
+		n_range_end.SetBase16((char *)"1fffffffffffffffff");
+	} else if (IMPORTANT == "money") {
+		n_range_start.SetBase16((char *)"200000000000000000000");
+		n_range_end.SetBase16((char *)"3ffffffffffffffffffff");
+	}
 	N = 0;
 
 	printf("[+] N = %p\n",(void*)N_SEQUENTIAL_MAX);
@@ -192,11 +179,20 @@ int main()	{
 	printf("[+] -- to   : 0x%s\n",hextemp);
 	free(hextemp);
 
+	// file name
+	if (IMPORTANT == "small_test") {
+		fileName = (char *)"16.txt";
+	} else if (IMPORTANT == "medium_test") {
+		fileName = (char *)"34.txt";
+	} else if (IMPORTANT == "big_test") {
+		fileName = (char *)"69.txt";
+	} else if (IMPORTANT == "money") {
+		fileName = (char *)"82.txt";
+	}
 	if(!readFileAddress(fileName))	{
 		fprintf(stderr,"[E] Unenexpected error\n");
 		exit(EXIT_FAILURE);
 	}
-
 	if(!FLAGREADEDFILE1)	{
 		printf("[+] Sorting data ...");
 		_sort(addressTable,N);
