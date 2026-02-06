@@ -17,7 +17,7 @@ default:
 	g++ -m64 -march=native -mtune=native -mssse3 -Wall -Wextra -Wno-deprecated-copy -Ofast -ftree-vectorize -o keyhunt keyhunt.cpp base58.o hash/ripemd160.o hash/ripemd160_sse.o hash/sha256.o hash/sha256_sse.o bloom.o util.o Int.o  Point.o SECP256K1.o  IntMod.o  Random.o IntGroup.o sha3.o keccak.o  -lm -lpthread
 	rm -r *.o */*.o
 clean:
-	rm keyhunt
+	rm -f keyhunt
 run_small_test:
 	./keyhunt -f 16.txt -r 8000:ffff -n 0x100000
 run_medium_test:
