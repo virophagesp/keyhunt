@@ -95,7 +95,6 @@ int FLAGREADEDFILE1 = 0;
 
 int FLAGRANGE = 0;
 
-char *str_N;
 char *range_start;
 char *range_end;
 Int stride;
@@ -162,16 +161,10 @@ int main(int argc, char **argv)	{
 		rseed(clock() + time(NULL) + rand()*rand());
 	}
 
-	printf("[+] Version 0.1 bitcoin hunt, developed by virophagesp based upon 0.2.230519 Satoshi Quest by AlbertoBSD\n");
+	printf("[+] Version 0.2 bitcoin hunt, developed by virophagesp based upon 0.2.230519 Satoshi Quest by AlbertoBSD\n");
 
 	// sequential number option (important)
-	str_N = "0x100000";
-	if(str_N[0] == '0' && str_N[1] == 'x')	{
-		N_SEQUENTIAL_MAX =strtol(str_N,NULL,16);
-	}
-	else	{
-		N_SEQUENTIAL_MAX =strtol(str_N,NULL,10);
-	}
+	N_SEQUENTIAL_MAX = strtol("0x100000",NULL,16);
 
 	while ((c = getopt(argc, argv, "f:r:")) != -1) {
 		switch(c) {
