@@ -164,13 +164,19 @@ int main(int argc, char **argv)	{
 
 	printf("[+] Version 0.1 bitcoin hunt, developed by virophagesp based upon 0.2.230519 Satoshi Quest by AlbertoBSD\n");
 
-	while ((c = getopt(argc, argv, "f:n:r:")) != -1) {
+	// sequential number option (important)
+	str_N = "0x100000";
+	if(str_N[0] == '0' && str_N[1] == 'x')	{
+		N_SEQUENTIAL_MAX =strtol(str_N,NULL,16);
+	}
+	else	{
+		N_SEQUENTIAL_MAX =strtol(str_N,NULL,10);
+	}
+
+	while ((c = getopt(argc, argv, "f:r:")) != -1) {
 		switch(c) {
 			case 'f':
 				fileName = optarg;
-			break;
-			case 'n':
-				str_N = optarg;
 			break;
 			case 'r':
 				if(optarg != NULL)	{
@@ -252,13 +258,6 @@ int main(int argc, char **argv)	{
 		n_range_diff.Sub(&n_range_start);
 	}
 	N = 0;
-
-	if(str_N[0] == '0' && str_N[1] == 'x')	{
-		N_SEQUENTIAL_MAX =strtol(str_N,NULL,16);
-	}
-	else	{
-		N_SEQUENTIAL_MAX =strtol(str_N,NULL,10);
-	}
 
 	if(N_SEQUENTIAL_MAX < 1024)	{
 		fprintf(stderr,"[I] n value need to be equal or great than 1024, back to defaults\n");
