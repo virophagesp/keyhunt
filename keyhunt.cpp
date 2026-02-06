@@ -164,53 +164,145 @@ int main(int argc, char **argv)	{
 
 	printf("[+] Version 0.1 bitcoin hunt, developed by virophagesp based upon 0.2.230519 Satoshi Quest by AlbertoBSD\n");
 
-	while ((c = getopt(argc, argv, "f:n:r:")) != -1) {
-		switch(c) {
-			case 'f':
-				fileName = optarg;
-			break;
-			case 'n':
-				str_N = optarg;
-			break;
-			case 'r':
-				if(optarg != NULL)	{
-					stringtokenizer(optarg,&t);
-					switch(t.n)	{
-						case 1:
-							range_start = nextToken(&t);
-							if(isValidHex(range_start)) {
+	while ((c = getopt(argc, argv, "o:")) != -1) {
+		if (c == 'o') {
+			str_N = "0x100000";
+			if (strcmp("run_small_test", optarg) == 0) {
+				fileName = "16.txt";
+				stringtokenizer("8000:ffff",&t);
+				switch(t.n)	{
+					case 1:
+						range_start = nextToken(&t);
+						if(isValidHex(range_start)) {
+							FLAGRANGE = 1;
+							range_end = secp->order.GetBase16();
+						}
+						else	{
+							fprintf(stderr,"[E] Invalid hexstring : %s.\n",range_start);
+						}
+					break;
+					case 2:
+						range_start = nextToken(&t);
+						range_end	 = nextToken(&t);
+						if(isValidHex(range_start) && isValidHex(range_end)) {
 								FLAGRANGE = 1;
-								range_end = secp->order.GetBase16();
+						}
+						else	{
+							if(isValidHex(range_start)) {
+								fprintf(stderr,"[E] Invalid hexstring : %s\n",range_start);
 							}
 							else	{
-								fprintf(stderr,"[E] Invalid hexstring : %s.\n",range_start);
+								fprintf(stderr,"[E] Invalid hexstring : %s\n",range_end);
 							}
-						break;
-						case 2:
-							range_start = nextToken(&t);
-							range_end	 = nextToken(&t);
-							if(isValidHex(range_start) && isValidHex(range_end)) {
-									FLAGRANGE = 1;
-							}
-							else	{
-								if(isValidHex(range_start)) {
-									fprintf(stderr,"[E] Invalid hexstring : %s\n",range_start);
-								}
-								else	{
-									fprintf(stderr,"[E] Invalid hexstring : %s\n",range_end);
-								}
-							}
-						break;
-						default:
-							printf("[E] Unknow number of Range Params: %i\n",t.n);
-						break;
-					}
+						}
+					break;
+					default:
+						printf("[E] Unknow number of Range Params: %i\n",t.n);
+					break;
 				}
-			break;
-			default:
-				fprintf(stderr,"[E] Unknow opcion -%c\n",c);
-				exit(EXIT_FAILURE);
-			break;
+			} else if (strcmp("run_medium_test", optarg) == 0) {
+				fileName = "34.txt";
+				stringtokenizer("200000000:3ffffffff",&t);
+				switch(t.n)	{
+					case 1:
+						range_start = nextToken(&t);
+						if(isValidHex(range_start)) {
+							FLAGRANGE = 1;
+							range_end = secp->order.GetBase16();
+						}
+						else	{
+							fprintf(stderr,"[E] Invalid hexstring : %s.\n",range_start);
+						}
+					break;
+					case 2:
+						range_start = nextToken(&t);
+						range_end	 = nextToken(&t);
+						if(isValidHex(range_start) && isValidHex(range_end)) {
+								FLAGRANGE = 1;
+						}
+						else	{
+							if(isValidHex(range_start)) {
+								fprintf(stderr,"[E] Invalid hexstring : %s\n",range_start);
+							}
+							else	{
+								fprintf(stderr,"[E] Invalid hexstring : %s\n",range_end);
+							}
+						}
+					break;
+					default:
+						printf("[E] Unknow number of Range Params: %i\n",t.n);
+					break;
+				}
+			} else if (strcmp("run_big_test", optarg) == 0) {
+				fileName = "69.txt";
+				stringtokenizer("100000000000000000:1fffffffffffffffff",&t);
+				switch(t.n)	{
+					case 1:
+						range_start = nextToken(&t);
+						if(isValidHex(range_start)) {
+							FLAGRANGE = 1;
+							range_end = secp->order.GetBase16();
+						}
+						else	{
+							fprintf(stderr,"[E] Invalid hexstring : %s.\n",range_start);
+						}
+					break;
+					case 2:
+						range_start = nextToken(&t);
+						range_end	 = nextToken(&t);
+						if(isValidHex(range_start) && isValidHex(range_end)) {
+								FLAGRANGE = 1;
+						}
+						else	{
+							if(isValidHex(range_start)) {
+								fprintf(stderr,"[E] Invalid hexstring : %s\n",range_start);
+							}
+							else	{
+								fprintf(stderr,"[E] Invalid hexstring : %s\n",range_end);
+							}
+						}
+					break;
+					default:
+						printf("[E] Unknow number of Range Params: %i\n",t.n);
+					break;
+				}
+			} else if (strcmp("run_money", optarg) == 0) {
+				fileName = "82.txt";
+				stringtokenizer("200000000000000000000:3ffffffffffffffffffff",&t);
+				switch(t.n)	{
+					case 1:
+						range_start = nextToken(&t);
+						if(isValidHex(range_start)) {
+							FLAGRANGE = 1;
+							range_end = secp->order.GetBase16();
+						}
+						else	{
+							fprintf(stderr,"[E] Invalid hexstring : %s.\n",range_start);
+						}
+					break;
+					case 2:
+						range_start = nextToken(&t);
+						range_end	 = nextToken(&t);
+						if(isValidHex(range_start) && isValidHex(range_end)) {
+								FLAGRANGE = 1;
+						}
+						else	{
+							if(isValidHex(range_start)) {
+								fprintf(stderr,"[E] Invalid hexstring : %s\n",range_start);
+							}
+							else	{
+								fprintf(stderr,"[E] Invalid hexstring : %s\n",range_end);
+							}
+						}
+					break;
+					default:
+						printf("[E] Unknow number of Range Params: %i\n",t.n);
+					break;
+				}
+			}
+		} else {
+			fprintf(stderr,"[E] Unknow opcion -%c\n",c);
+			exit(EXIT_FAILURE);
 		}
 	}
 
