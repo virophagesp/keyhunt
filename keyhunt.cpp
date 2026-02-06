@@ -31,6 +31,11 @@ email: albertobsd@gmail.com
 
 #include <linux/random.h>
 
+#define IMPORTANT "small_test"
+//#define IMPORTANT "medium_test"
+//#define IMPORTANT "big_test"
+//#define IMPORTANT "money"
+
 struct address_value	{
 	uint8_t value[20];
 };
@@ -93,8 +98,6 @@ int MAXLENGTHADDRESS = -1;
 
 int FLAGREADEDFILE1 = 0;
 
-int FLAGRANGE = 0;
-
 char *range_start;
 char *range_end;
 Int stride;
@@ -116,10 +119,9 @@ Int n_range_aux;
 
 Secp256K1 *secp;
 
-int main(int argc, char **argv)	{
+int main()	{
 	char buffer[2048];
 	struct tothread *tt;	//tothread
-	Tokenizer t;	//tokenizer
 	char *fileName = NULL;
 	char *hextemp = NULL;
 	char *str_seconds = NULL;
@@ -127,7 +129,7 @@ int main(int argc, char **argv)	{
 	char *str_pretotal = NULL;
 	char *str_divpretotal = NULL;
 	uint64_t i;
-	int continue_flag,check_flag,c,salir,j;
+	int continue_flag,check_flag,salir,j;
 	Int total,pretotal,debugcount_mpz,seconds,div_pretotal,int_aux,int_r,int_q,int58;
 
 	pthread_mutex_init(&write_keys,NULL);
@@ -163,92 +165,53 @@ int main(int argc, char **argv)	{
 
 	printf("[+] Version 0.2 bitcoin hunt, developed by virophagesp based upon 0.2.230519 Satoshi Quest by AlbertoBSD\n");
 
-	// sequential number option (important)
+	// sequential number option
 	N_SEQUENTIAL_MAX = strtol("0x100000",NULL,16);
-
-	while ((c = getopt(argc, argv, "f:r:")) != -1) {
-		switch(c) {
-			case 'f':
-				fileName = optarg;
-			break;
-			case 'r':
-				if(optarg != NULL)	{
-					stringtokenizer(optarg,&t);
-					switch(t.n)	{
-						case 1:
-							range_start = nextToken(&t);
-							if(isValidHex(range_start)) {
-								FLAGRANGE = 1;
-								range_end = secp->order.GetBase16();
-							}
-							else	{
-								fprintf(stderr,"[E] Invalid hexstring : %s.\n",range_start);
-							}
-						break;
-						case 2:
-							range_start = nextToken(&t);
-							range_end	 = nextToken(&t);
-							if(isValidHex(range_start) && isValidHex(range_end)) {
-									FLAGRANGE = 1;
-							}
-							else	{
-								if(isValidHex(range_start)) {
-									fprintf(stderr,"[E] Invalid hexstring : %s\n",range_start);
-								}
-								else	{
-									fprintf(stderr,"[E] Invalid hexstring : %s\n",range_end);
-								}
-							}
-						break;
-						default:
-							printf("[E] Unknow number of Range Params: %i\n",t.n);
-						break;
-					}
-				}
-			break;
-			default:
-				fprintf(stderr,"[E] Unknow opcion -%c\n",c);
-				exit(EXIT_FAILURE);
-			break;
-		}
+	// file name
+	if (IMPORTANT == "small_test") {
+		fileName = (char *)"16.txt";
+	} else if (IMPORTANT == "medium_test") {
+		fileName = (char *)"34.txt";
+	} else if (IMPORTANT == "big_test") {
+		fileName = (char *)"69.txt";
+	} else if (IMPORTANT == "money") {
+		fileName = (char *)"82.txt";
+	}
+	// range
+	if (IMPORTANT == "small_test") {
+		range_start = (char *)"8000";
+		range_end = (char *)"ffff";
+	} else if (IMPORTANT == "medium_test") {
+		range_start = (char *)"200000000";
+		range_end = (char *)"3ffffffff";
+	} else if (IMPORTANT == "big_test") {
+		range_start = (char *)"100000000000000000";
+		range_end = (char *)"1fffffffffffffffff";
+	} else if (IMPORTANT == "money") {
+		range_start = (char *)"200000000000000000000";
+		range_end = (char *)"3ffffffffffffffffffff";
 	}
 
 	stride.SetInt32(1);
 	init_generator();
 
 	printf("[+] Setting search for btc adddress\n");
-	if(FLAGRANGE) {
-		n_range_start.SetBase16(range_start);
-		if(n_range_start.IsZero())	{
-			n_range_start.AddOne();
-		}
-		n_range_end.SetBase16(range_end);
-		if(n_range_start.IsEqual(&n_range_end) == false ) {
-			if(  n_range_start.IsLower(&secp->order) &&  n_range_end.IsLowerOrEqual(&secp->order) )	{
-				if( n_range_start.IsGreater(&n_range_end)) {
-					fprintf(stderr,"[W] Opps, start range can't be great than end range. Swapping them\n");
-					n_range_aux.Set(&n_range_start);
-					n_range_start.Set(&n_range_end);
-					n_range_end.Set(&n_range_aux);
-				}
-				n_range_diff.Set(&n_range_end);
-				n_range_diff.Sub(&n_range_start);
-			}
-			else	{
-				fprintf(stderr,"[E] Start and End range can't be great than N\nFallback to random mode!\n");
-				FLAGRANGE = 0;
-			}
-		}
-		else	{
-			fprintf(stderr,"[E] Start and End range can't be the same\nFallback to random mode!\n");
-			FLAGRANGE = 0;
-		}
+	n_range_start.SetBase16(range_start);
+	if(n_range_start.IsZero())	{
+		n_range_start.AddOne();
 	}
-	if(FLAGRANGE == 0)	{
-		n_range_start.SetInt32(1);
-		n_range_end.Set(&secp->order);
-		n_range_diff.Set(&n_range_end);
-		n_range_diff.Sub(&n_range_start);
+	n_range_end.SetBase16(range_end);
+	if(n_range_start.IsEqual(&n_range_end) == false ) {
+		if(  n_range_start.IsLower(&secp->order) &&  n_range_end.IsLowerOrEqual(&secp->order) )	{
+			if( n_range_start.IsGreater(&n_range_end)) {
+				fprintf(stderr,"[W] Opps, start range can't be great than end range. Swapping them\n");
+				n_range_aux.Set(&n_range_start);
+				n_range_start.Set(&n_range_end);
+				n_range_end.Set(&n_range_aux);
+			}
+			n_range_diff.Set(&n_range_end);
+			n_range_diff.Sub(&n_range_start);
+		}
 	}
 	N = 0;
 

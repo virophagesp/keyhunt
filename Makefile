@@ -18,11 +18,5 @@ default:
 	rm -r *.o */*.o
 clean:
 	rm -f keyhunt
-run_small_test:
-	./keyhunt -f 16.txt -r 8000:ffff
-run_medium_test:
-	./keyhunt -f 34.txt -r 200000000:3ffffffff
-run_big_test:
-	./keyhunt -f 69.txt -r 100000000000000000:1fffffffffffffffff
-run_money:
-	./keyhunt -f 82.txt -r 200000000000000000000:3ffffffffffffffffffff
+run:
+	./keyhunt
