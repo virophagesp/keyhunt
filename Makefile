@@ -19,10 +19,10 @@ default:
 clean:
 	rm -f keyhunt
 run_small_test:
-	./keyhunt -o run_small_test
+	./keyhunt -f 16.txt -r 8000:ffff -n 0x100000
 run_medium_test:
-	./keyhunt -o run_medium_test
+	./keyhunt -f 34.txt -r 200000000:3ffffffff -n 0x100000
 run_big_test:
-	./keyhunt -o run_big_test
+	./keyhunt -f 69.txt -r 100000000000000000:1fffffffffffffffff -n 0x100000
 run_money:
-	./keyhunt -o run_money
+	./keyhunt -f 82.txt -r 200000000000000000000:3ffffffffffffffffffff -n 0x100000
