@@ -111,7 +111,7 @@ int main()	{
 	getrandom(&rseedvalue, sizeof(unsigned long), GRND_NONBLOCK);
 	rseed(rseedvalue);
 
-	printf("[+] Version 0.2 bitcoin hunt, developed by virophagesp based upon 0.2.230519 Satoshi Quest by AlbertoBSD\n");
+	printf("[+] Version 0.4 bitcoin hunt, developed by virophagesp based upon 0.2.230519 Satoshi Quest by AlbertoBSD\n");
 
 	stride.SetInt32(1);
 	init_generator();
