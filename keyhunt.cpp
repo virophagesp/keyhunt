@@ -66,8 +66,6 @@ void writekey(bool compressed,Int *key);
 
 void checkpointer(void *ptr,const char *file,const char *function,const  char *name,int line);
 
-bool initBloomFilter(struct bloom *bloom_arg,uint64_t items_bloom);
-
 void writeFileIfNeeded(const char *fileName);
 
 void *thread_process(void *vargp);
@@ -90,8 +88,6 @@ uint64_t N = 0;
 uint64_t N_SEQUENTIAL_MAX;
 
 Int OUTPUTSECONDS;
-
-int MAXLENGTHADDRESS = -1;
 
 Int stride;
 
@@ -130,7 +126,6 @@ int main()	{
 	char buffer[2048];
 	struct tothread *tt;	//tothread
 	char *fileName = NULL;
-	char *hextemp = NULL;
 	char *str_seconds = NULL;
 	char *str_total = NULL;
 	char *str_pretotal = NULL;
@@ -145,8 +140,6 @@ int main()	{
 	int s;
 
 	FILE *fileDescriptor;
-	bool validAddress;
-	uint64_t numberItems;
 	size_t r,raw_value_length;
 	uint8_t rawvalue[50];
 	char aux[100];
@@ -171,101 +164,81 @@ int main()	{
 
 	// sequential number option (putting this IMPORTANT here for easy finding )
 	N_SEQUENTIAL_MAX = strtol("0x100000",NULL,16);
+	printf("[+] N = %p\n",(void*)N_SEQUENTIAL_MAX);
+	printf("[+] Range \n");
 
 	// range
 	if (IMPORTANT == "small_test") {
 		n_range_start.SetBase16((char *)"8000");
 		n_range_end.SetBase16((char *)"ffff");
+
+		printf("[+] -- from : 0x8000\n");
+		printf("[+] -- to   : 0xffff\n");
 	} else if (IMPORTANT == "medium_test") {
 		n_range_start.SetBase16((char *)"200000000");
 		n_range_end.SetBase16((char *)"3ffffffff");
+
+		printf("[+] -- from : 0x200000000\n");
+		printf("[+] -- to   : 0x3ffffffff\n");
 	} else if (IMPORTANT == "big_test") {
 		n_range_start.SetBase16((char *)"100000000000000000");
 		n_range_end.SetBase16((char *)"1fffffffffffffffff");
+
+		printf("[+] -- from : 0x100000000000000000\n");
+		printf("[+] -- to   : 0x1fffffffffffffffff\n");
 	} else if (IMPORTANT == "money") {
 		n_range_start.SetBase16((char *)"200000000000000000000");
 		n_range_end.SetBase16((char *)"3ffffffffffffffffffff");
-	}
-	N = 0;
 
-	printf("[+] N = %p\n",(void*)N_SEQUENTIAL_MAX);
-	printf("[+] Range \n");
-	hextemp = n_range_start.GetBase16();
-	printf("[+] -- from : 0x%s\n",hextemp);
-	free(hextemp);
-	hextemp = n_range_end.GetBase16();
-	printf("[+] -- to   : 0x%s\n",hextemp);
-	free(hextemp);
+		printf("[+] -- from : 0x200000000000000000000\n");
+		printf("[+] -- to   : 0x3ffffffffffffffffffff\n");
+	}
+
+	printf("[+] Allocating memory for 1 element: 0.00 MB\n");
+	addressTable = (struct address_value*) malloc(20);
+	if((void *)addressTable == NULL)	{
+		fprintf(stderr,"[E] error in file %s, malloc pointer addressTable on line %i\n",__FILE__,__LINE__ -1 ); 
+		exit(EXIT_FAILURE);
+	}
+	printf("[+] Bloom filter for 1 elements.\n");
+	if(bloom_init2(&bloom,10000,0.000001) == 1){
+		fprintf(stderr,"[E] error bloom_init for 10000 elements.\n");
+		printf("[+] Loading data to the bloomfilter total: %.2f MB\n",(double)(((double) (&bloom)->bytes)/(double)1048576));
+		fprintf(stderr,"[E] Unenexpected error\n");
+		exit(EXIT_FAILURE);
+	}
+	printf("[+] Loading data to the bloomfilter total: %.2f MB\n",(double)(((double) (&bloom)->bytes)/(double)1048576));
+	memset(aux,0,100);
+	memset(addressTable[0].value,0,20);
 
 	// file name
 	if (IMPORTANT == "small_test") {
 		fileName = (char *)"16.txt";
 		fileDescriptor = fopen((char *)"16.txt","r");
+		fseek(fileDescriptor,0,SEEK_SET);
 	} else if (IMPORTANT == "medium_test") {
 		fileName = (char *)"34.txt";
 		fileDescriptor = fopen((char *)"34.txt","r");
+		fseek(fileDescriptor,0,SEEK_SET);
 	} else if (IMPORTANT == "big_test") {
 		fileName = (char *)"69.txt";
 		fileDescriptor = fopen((char *)"69.txt","r");
+		fseek(fileDescriptor,0,SEEK_SET);
 	} else if (IMPORTANT == "money") {
 		fileName = (char *)"82.txt";
 		fileDescriptor = fopen((char *)"82.txt","r");
+		fseek(fileDescriptor,0,SEEK_SET);
 	}
-	/*Count lines in the file*/
-	numberItems = 0;
-	while(!feof(fileDescriptor))	{
-		hextemp = fgets(aux,100,fileDescriptor);
-		trim(aux," \t\n\r");
-		if(hextemp == aux)	{
-			r = strlen(aux);
-			if(r > 20)	{ 
-				numberItems++;
-			}
-		}
+	fgets(aux,100,fileDescriptor);
+	trim(aux," \t\n\r");
+	r = strlen(aux);
+	raw_value_length = 25;
+	b58tobin(rawvalue,&raw_value_length,aux,r);
+	if(raw_value_length == 25)	{
+		bloom_add(&bloom, rawvalue+1 ,20);
+		memcpy(addressTable[0].value,rawvalue+1,20);
 	}
-	fseek(fileDescriptor,0,SEEK_SET);
-	MAXLENGTHADDRESS = 20;		/*20 bytes beacuase we only need the data in binary*/
-	printf("[+] Allocating memory for %" PRIu64 " elements: %.2f MB\n",numberItems,(double)(((double) sizeof(struct address_value)*numberItems)/(double)1048576));
-	addressTable = (struct address_value*) malloc(sizeof(struct address_value)*numberItems);
-	checkpointer((void *)addressTable,__FILE__,"malloc","addressTable" ,__LINE__ -1 );
-	if(!initBloomFilter(&bloom,numberItems)) {
-		fprintf(stderr,"[E] Unenexpected error\n");
-		exit(EXIT_FAILURE);
-	}
-	i = 0;
-	while(i < numberItems)	{
-		validAddress = false;
-		memset(aux,0,100);
-		memset(addressTable[i].value,0,sizeof(struct address_value));
-		hextemp = fgets(aux,100,fileDescriptor);
-		trim(aux," \t\n\r");
-		r = strlen(aux);
-		if(r > 0 && r <= 40)	{
-			if(r<40 && isValidBase58String(aux))	{	//Address
-				raw_value_length = 25;
-				b58tobin(rawvalue,&raw_value_length,aux,r);
-				if(raw_value_length == 25)	{
-					//hextemp = tohex((char*)rawvalue+1,20);
-					bloom_add(&bloom, rawvalue+1 ,sizeof(struct address_value));
-					memcpy(addressTable[i].value,rawvalue+1,sizeof(struct address_value));
-					i++;
-					validAddress = true;
-				}
-			}
-			if(r == 40 && isValidHex(aux))	{	//RMD
-				hexs2bin(aux,rawvalue);
-				bloom_add(&bloom, rawvalue ,sizeof(struct address_value));
-				memcpy(addressTable[i].value,rawvalue,sizeof(struct address_value));
-				i++;
-				validAddress = true;
-			}
-		}
-		if(!validAddress)	{
-			fprintf(stderr,"[I] Ommiting invalid line %s\n",aux);
-			numberItems--;
-		}
-	}
-	N = numberItems;
+	N = 1;
 	printf("[+] Sorting data ...");
 	_sort(addressTable,N);
 	printf(" done! %" PRIu64 " values were loaded and sorted\n",N);
@@ -515,7 +488,7 @@ void *thread_process(void *vargp)	{
 
 					for(k = 0; k < 4;k++)	{
 						for(l = 0;l < 2; l++)	{
-							r = bloom_check(&bloom,publickeyhashrmd160_endomorphism[l][k],MAXLENGTHADDRESS);
+							r = bloom_check(&bloom,publickeyhashrmd160_endomorphism[l][k],20); /*20 bytes beacuase we only need the data in binary*/
 							if(r) {
 								r = searchbinary(addressTable,publickeyhashrmd160_endomorphism[l][k],N);
 								if(r) {
@@ -729,29 +702,6 @@ void writekey(bool compressed,Int *key)	{
 	free(hexrmd);
 }
 
-/*
-	I write this as a function because i have the same segment of code in 3 different functions
-*/
-
-bool initBloomFilter(struct bloom *bloom_arg,uint64_t items_bloom)	{
-	bool r = true;
-	printf("[+] Bloom filter for %" PRIu64 " elements.\n",items_bloom);
-	if(items_bloom <= 10000)	{
-		if(bloom_init2(bloom_arg,10000,0.000001) == 1){
-			fprintf(stderr,"[E] error bloom_init for 10000 elements.\n");
-			r = false;
-		}
-	}
-	else	{
-		if(bloom_init2(bloom_arg,items_bloom,0.000001)	== 1){
-			fprintf(stderr,"[E] error bloom_init for %" PRIu64 " elements.\n",items_bloom);
-			r = false;
-		}
-	}
-	printf("[+] Loading data to the bloomfilter total: %.2f MB\n",(double)(((double) bloom_arg->bytes)/(double)1048576));
-	return r;
-}
-
 void writeFileIfNeeded(const char *fileName)	{
 	FILE *fileDescriptor;
 	char fileBloomName[30];
@@ -766,7 +716,7 @@ void writeFileIfNeeded(const char *fileName)	{
 	tohex_dst((char*)checksum,4,(char*)hexPrefix); // we save the prefix (last fourt bytes) hexadecimal value
 	snprintf(fileBloomName,30,"data_%s.dat",hexPrefix);
 	fileDescriptor = fopen(fileBloomName,"wb");
-	dataSize = N * (sizeof(struct address_value));
+	dataSize = N * 20;
 	printf("[D] size data %li\n",dataSize);
 	if(fileDescriptor != NULL)	{
 		printf("[+] Writing file %s ",fileBloomName);
