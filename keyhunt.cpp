@@ -37,16 +37,13 @@ Point _2Gn;
 
 void init_generator();
 
-int searchbinary(struct address_value *buffer,char *data,int64_t array_length);
 void sleep_ms(int milliseconds);
 
 void _sort(struct address_value *arr,int64_t N);
 void _insertionsort(struct address_value *arr, int64_t n);
 void _introsort(struct address_value *arr,uint32_t depthLimit, int64_t n);
-void _swap(struct address_value *a,struct address_value *b);
 int64_t _partition(struct address_value *arr, int64_t n);
 void _myheapsort(struct address_value	*arr, int64_t n);
-void _heapify(struct address_value *arr, int64_t n, int64_t i);
 
 void writekey(bool compressed,Int *key);
 
@@ -84,22 +81,6 @@ Int n_range_start;
 Int n_range_end;
 
 Secp256K1 *secp;
-
-bool isBase58(char c) {
-    // Define the base58 set
-    const char base58Set[] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
-    // Check if the character is in the base58 set
-    return strchr(base58Set, c) != NULL;
-}
-
-bool isValidBase58String(char *str)	{
-	int len = strlen(str);
-	bool continuar = true;
-	for (int i = 0; i < len && continuar; i++) {
-		continuar = isBase58(str[i]);
-	}
-	return continuar;
-}
 
 int main()	{
 	char buffer[2048];
