@@ -783,22 +783,84 @@ void writeFileIfNeeded()	{
 	size_t bytesWrite;
 	uint64_t dataSize;
 	char *fileName = NULL;
-	// file name
+	// file bloom name
 	if (IMPORTANT == "small_test") {
-		fileName = (char *)"16.txt";
+		fileBloomName[0] = 'd';
+		fileBloomName[1] = 'a';
+		fileBloomName[2] = 't';
+		fileBloomName[3] = 'a';
+		fileBloomName[4] = '_';
+		fileBloomName[5] = '5';
+		fileBloomName[6] = '9';
+		fileBloomName[7] = '6';
+		fileBloomName[8] = 'd';
+		fileBloomName[9] = '6';
+		fileBloomName[10] = 'f';
+		fileBloomName[11] = '1';
+		fileBloomName[12] = '2';
+		fileBloomName[13] = '.';
+		fileBloomName[14] = 'd';
+		fileBloomName[15] = 'a';
+		fileBloomName[16] = 't';
+		fileBloomName[17] = '\0';
 	} else if (IMPORTANT == "medium_test") {
-		fileName = (char *)"34.txt";
+		fileBloomName[0] = 'd';
+		fileBloomName[1] = 'a';
+		fileBloomName[2] = 't';
+		fileBloomName[3] = 'a';
+		fileBloomName[4] = '_';
+		fileBloomName[5] = '2';
+		fileBloomName[6] = '4';
+		fileBloomName[7] = 'f';
+		fileBloomName[8] = '4';
+		fileBloomName[9] = '0';
+		fileBloomName[10] = '4';
+		fileBloomName[11] = '9';
+		fileBloomName[12] = 'c';
+		fileBloomName[13] = '.';
+		fileBloomName[14] = 'd';
+		fileBloomName[15] = 'a';
+		fileBloomName[16] = 't';
+		fileBloomName[17] = '\0';
 	} else if (IMPORTANT == "big_test") {
-		fileName = (char *)"69.txt";
+		fileBloomName[0] =  'd';
+		fileBloomName[1] =  'a';
+		fileBloomName[2] =  't';
+		fileBloomName[3] =  'a';
+		fileBloomName[4] =  '_';
+		fileBloomName[5] =  '9';
+		fileBloomName[6] =  '5';
+		fileBloomName[7] =  'a';
+		fileBloomName[8] =  '7';
+		fileBloomName[9] =  'd';
+		fileBloomName[10] = '8';
+		fileBloomName[11] = '6';
+		fileBloomName[12] = '1';
+		fileBloomName[13] = '.';
+		fileBloomName[14] = 'd';
+		fileBloomName[15] = 'a';
+		fileBloomName[16] = 't';
+		fileBloomName[17] = '\0';
 	} else if (IMPORTANT == "money") {
-		fileName = (char *)"82.txt";
+		fileBloomName[0] =  'd';
+		fileBloomName[1] =  'a';
+		fileBloomName[2] =  't';
+		fileBloomName[3] =  'a';
+		fileBloomName[4] =  '_';
+		fileBloomName[5] =  '6';
+		fileBloomName[6] =  'f';
+		fileBloomName[7] =  '6';
+		fileBloomName[8] =  'e';
+		fileBloomName[9] =  '6';
+		fileBloomName[10] = 'e';
+		fileBloomName[11] = 'a';
+		fileBloomName[12] = '2';
+		fileBloomName[13] = '.';
+		fileBloomName[14] = 'd';
+		fileBloomName[15] = 'a';
+		fileBloomName[16] = 't';
+		fileBloomName[17] = '\0';
 	}
-	if(!sha256_file((const char*)fileName,checksum)){
-		fprintf(stderr,"[E] sha256_file error line %i\n",__LINE__ - 1);
-		exit(EXIT_FAILURE);
-	}
-	tohex_dst((char*)checksum,4,(char*)hexPrefix); // we save the prefix (last fourt bytes) hexadecimal value
-	snprintf(fileBloomName,30,"data_%s.dat",hexPrefix);
 	fileDescriptor = fopen(fileBloomName,"wb");
 	dataSize = N * 20;
 	printf("[D] size data %li\n",dataSize);
