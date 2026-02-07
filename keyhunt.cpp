@@ -49,7 +49,7 @@ void writekey(bool compressed,Int *key);
 
 void checkpointer(void *ptr,const char *file,const char *function,const  char *name,int line);
 
-void writeFileIfNeeded(const char *fileName);
+void writeFileIfNeeded();
 
 void *thread_process(void *vargp);
 
@@ -85,7 +85,6 @@ Secp256K1 *secp;
 int main()	{
 	char buffer[2048];
 	struct tothread *tt;	//tothread
-	char *fileName = NULL;
 	char *str_seconds = NULL;
 	char *str_total = NULL;
 	char *str_pretotal = NULL;
@@ -168,9 +167,8 @@ int main()	{
 	memset(aux,0,100);
 	memset(addressTable[0].value,0,20);
 
-	// file name
+	// address
 	if (IMPORTANT == "small_test") {
-		fileName = (char *)"16.txt";
 		aux[0] = '1';
 		aux[1] = 'B';
 		aux[2] = 'D';
@@ -207,7 +205,6 @@ int main()	{
 		aux[33] = 'Y';
 		aux[34] = '\0';
 	} else if (IMPORTANT == "medium_test") {
-		fileName = (char *)"34.txt";
 		aux[0] = '1';
 		aux[1] = 'P';
 		aux[2] = 'W';
@@ -244,7 +241,6 @@ int main()	{
 		aux[33] = 'Q';
 		aux[34] = '\0';
 	} else if (IMPORTANT == "big_test") {
-		fileName = (char *)"69.txt";
 		aux[0] = '1';
 		aux[1] = '9';
 		aux[2] = 'v';
@@ -281,7 +277,6 @@ int main()	{
 		aux[33] = 'G';
 		aux[34] = '\0';
 	} else if (IMPORTANT == "money") {
-		fileName = (char *)"82.txt";
 		aux[0] = '1';
 		aux[1] = '3';
 		aux[2] = 'z';
@@ -328,7 +323,7 @@ int main()	{
 	printf("[+] Sorting data ...");
 	_sort(addressTable,N);
 	printf(" done! %" PRIu64 " values were loaded and sorted\n",N);
-	writeFileIfNeeded(fileName);
+	writeFileIfNeeded();
 
 	steps = (uint64_t *) calloc(1,sizeof(uint64_t));
 	checkpointer((void *)steps,__FILE__,"calloc","steps" ,__LINE__ -1 );
@@ -780,13 +775,24 @@ void writekey(bool compressed,Int *key)	{
 	free(hexrmd);
 }
 
-void writeFileIfNeeded(const char *fileName)	{
+void writeFileIfNeeded()	{
 	FILE *fileDescriptor;
 	char fileBloomName[30];
 	uint8_t checksum[32],hexPrefix[9];
 	char dataChecksum[32],bloomChecksum[32];
 	size_t bytesWrite;
 	uint64_t dataSize;
+	char *fileName = NULL;
+	// file name
+	if (IMPORTANT == "small_test") {
+		fileName = (char *)"16.txt";
+	} else if (IMPORTANT == "medium_test") {
+		fileName = (char *)"34.txt";
+	} else if (IMPORTANT == "big_test") {
+		fileName = (char *)"69.txt";
+	} else if (IMPORTANT == "money") {
+		fileName = (char *)"82.txt";
+	}
 	if(!sha256_file((const char*)fileName,checksum)){
 		fprintf(stderr,"[E] sha256_file error line %i\n",__LINE__ - 1);
 		exit(EXIT_FAILURE);
