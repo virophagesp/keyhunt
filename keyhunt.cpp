@@ -56,14 +56,7 @@ void writeFileIfNeeded(const char *fileName);
 
 void *thread_process(void *vargp);
 
-int THREADOUTPUT = 0;
-
-const char *default_fileName = "addresses.txt";
-
 pthread_t *tid = NULL;
-pthread_mutex_t write_keys;
-pthread_mutex_t write_random;
-pthread_mutex_t bsgs_thread;
 
 struct bloom bloom;
 
@@ -120,9 +113,6 @@ int main()	{
 	int continue_flag,check_flag,salir,j;
 	Int total,pretotal,debugcount_mpz,seconds,div_pretotal,int_aux,int_r,int_q,int58;
 
-	pthread_mutex_init(&write_keys,NULL);
-	pthread_mutex_init(&write_random,NULL);
-	pthread_mutex_init(&bsgs_thread,NULL);
 	int s;
 
 	FILE *fileDescriptor;
@@ -274,7 +264,6 @@ int main()	{
 
 				total.Mult(2);
 
-				pthread_mutex_lock(&bsgs_thread);
 				pretotal.Set(&total);
 				pretotal.Div(&seconds);
 				str_seconds = seconds.GetBase10();
@@ -305,8 +294,6 @@ int main()	{
 				}
 				printf("%s",buffer);
 				fflush(stdout);
-				THREADOUTPUT = 0;
-				pthread_mutex_unlock(&bsgs_thread);
 
 				free(str_seconds);
 				free(str_pretotal);
@@ -389,10 +376,8 @@ void *thread_process(void *vargp)	{
 
 	do {
 		if(n_range_start.IsLower(&n_range_end))	{
-			pthread_mutex_lock(&write_random);
 			key_mpz.Set(&n_range_start);
 			n_range_start.Add(N_SEQUENTIAL_MAX);
-			pthread_mutex_unlock(&write_random);
 		}
 		else	{
 			continue_flag = 0;
@@ -403,7 +388,6 @@ void *thread_process(void *vargp)	{
 			printf("\rBase key: %s     \r",hextemp);
 			fflush(stdout);
 			free(hextemp);
-			THREADOUTPUT = 1;
 			do {
 				temp_stride.SetInt32(512);
 				temp_stride.Mult(&stride);
@@ -675,7 +659,6 @@ void writekey(bool compressed,Int *key)	{
 	hexrmd = tohex(rmdhash,20);
 	rmd160toaddress_dst(rmdhash,address);
 
-	pthread_mutex_lock(&write_keys);
 	keys = fopen("KEYFOUNDKEYFOUND.txt","a+");
 	if(keys != NULL)	{
 		fprintf(keys,"Private Key: %s\npubkey: %s\nAddress %s\nrmd160 %s\n",hextemp,public_key_hex,address,hexrmd);
@@ -683,7 +666,6 @@ void writekey(bool compressed,Int *key)	{
 	}
 	printf("\nHit! Private Key: %s\npubkey: %s\nAddress %s\nrmd160 %s\n",hextemp,public_key_hex,address,hexrmd);
 
-	pthread_mutex_unlock(&write_keys);
 	free(hextemp);
 	free(hexrmd);
 }
