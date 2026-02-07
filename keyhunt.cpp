@@ -66,9 +66,6 @@ void writekey(bool compressed,Int *key);
 
 void checkpointer(void *ptr,const char *file,const char *function,const  char *name,int line);
 
-bool readFileAddress(char *fileName);
-bool forceReadFileAddress(char *fileName);
-
 bool initBloomFilter(struct bloom *bloom_arg,uint64_t items_bloom);
 
 void writeFileIfNeeded(const char *fileName);
@@ -96,8 +93,6 @@ Int OUTPUTSECONDS;
 
 int MAXLENGTHADDRESS = -1;
 
-int FLAGREADEDFILE1 = 0;
-
 Int stride;
 
 uint64_t bytes;
@@ -114,6 +109,22 @@ Int n_range_start;
 Int n_range_end;
 
 Secp256K1 *secp;
+
+bool isBase58(char c) {
+    // Define the base58 set
+    const char base58Set[] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+    // Check if the character is in the base58 set
+    return strchr(base58Set, c) != NULL;
+}
+
+bool isValidBase58String(char *str)	{
+	int len = strlen(str);
+	bool continuar = true;
+	for (int i = 0; i < len && continuar; i++) {
+		continuar = isBase58(str[i]);
+	}
+	return continuar;
+}
 
 int main()	{
 	char buffer[2048];
@@ -132,6 +143,13 @@ int main()	{
 	pthread_mutex_init(&write_random,NULL);
 	pthread_mutex_init(&bsgs_thread,NULL);
 	int s;
+
+	FILE *fileDescriptor;
+	bool validAddress;
+	uint64_t numberItems;
+	size_t r,raw_value_length;
+	uint8_t rawvalue[50];
+	char aux[100];
 
 	srand(time(NULL));
 
@@ -182,23 +200,76 @@ int main()	{
 	// file name
 	if (IMPORTANT == "small_test") {
 		fileName = (char *)"16.txt";
+		fileDescriptor = fopen((char *)"16.txt","r");
 	} else if (IMPORTANT == "medium_test") {
 		fileName = (char *)"34.txt";
+		fileDescriptor = fopen((char *)"34.txt","r");
 	} else if (IMPORTANT == "big_test") {
 		fileName = (char *)"69.txt";
+		fileDescriptor = fopen((char *)"69.txt","r");
 	} else if (IMPORTANT == "money") {
 		fileName = (char *)"82.txt";
+		fileDescriptor = fopen((char *)"82.txt","r");
 	}
-	if(!readFileAddress(fileName))	{
+	/*Count lines in the file*/
+	numberItems = 0;
+	while(!feof(fileDescriptor))	{
+		hextemp = fgets(aux,100,fileDescriptor);
+		trim(aux," \t\n\r");
+		if(hextemp == aux)	{
+			r = strlen(aux);
+			if(r > 20)	{ 
+				numberItems++;
+			}
+		}
+	}
+	fseek(fileDescriptor,0,SEEK_SET);
+	MAXLENGTHADDRESS = 20;		/*20 bytes beacuase we only need the data in binary*/
+	printf("[+] Allocating memory for %" PRIu64 " elements: %.2f MB\n",numberItems,(double)(((double) sizeof(struct address_value)*numberItems)/(double)1048576));
+	addressTable = (struct address_value*) malloc(sizeof(struct address_value)*numberItems);
+	checkpointer((void *)addressTable,__FILE__,"malloc","addressTable" ,__LINE__ -1 );
+	if(!initBloomFilter(&bloom,numberItems)) {
 		fprintf(stderr,"[E] Unenexpected error\n");
 		exit(EXIT_FAILURE);
 	}
-	if(!FLAGREADEDFILE1)	{
-		printf("[+] Sorting data ...");
-		_sort(addressTable,N);
-		printf(" done! %" PRIu64 " values were loaded and sorted\n",N);
-		writeFileIfNeeded(fileName);
+	i = 0;
+	while(i < numberItems)	{
+		validAddress = false;
+		memset(aux,0,100);
+		memset(addressTable[i].value,0,sizeof(struct address_value));
+		hextemp = fgets(aux,100,fileDescriptor);
+		trim(aux," \t\n\r");
+		r = strlen(aux);
+		if(r > 0 && r <= 40)	{
+			if(r<40 && isValidBase58String(aux))	{	//Address
+				raw_value_length = 25;
+				b58tobin(rawvalue,&raw_value_length,aux,r);
+				if(raw_value_length == 25)	{
+					//hextemp = tohex((char*)rawvalue+1,20);
+					bloom_add(&bloom, rawvalue+1 ,sizeof(struct address_value));
+					memcpy(addressTable[i].value,rawvalue+1,sizeof(struct address_value));
+					i++;
+					validAddress = true;
+				}
+			}
+			if(r == 40 && isValidHex(aux))	{	//RMD
+				hexs2bin(aux,rawvalue);
+				bloom_add(&bloom, rawvalue ,sizeof(struct address_value));
+				memcpy(addressTable[i].value,rawvalue,sizeof(struct address_value));
+				i++;
+				validAddress = true;
+			}
+		}
+		if(!validAddress)	{
+			fprintf(stderr,"[I] Ommiting invalid line %s\n",aux);
+			numberItems--;
+		}
 	}
+	N = numberItems;
+	printf("[+] Sorting data ...");
+	_sort(addressTable,N);
+	printf(" done! %" PRIu64 " values were loaded and sorted\n",N);
+	writeFileIfNeeded(fileName);
 
 	steps = (uint64_t *) calloc(1,sizeof(uint64_t));
 	checkpointer((void *)steps,__FILE__,"calloc","steps" ,__LINE__ -1 );
@@ -658,105 +729,6 @@ void writekey(bool compressed,Int *key)	{
 	free(hexrmd);
 }
 
-bool isBase58(char c) {
-    // Define the base58 set
-    const char base58Set[] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
-    // Check if the character is in the base58 set
-    return strchr(base58Set, c) != NULL;
-}
-
-bool isValidBase58String(char *str)	{
-	int len = strlen(str);
-	bool continuar = true;
-	for (int i = 0; i < len && continuar; i++) {
-		continuar = isBase58(str[i]);
-	}
-	return continuar;
-}
-
-bool readFileAddress(char *fileName)	{
-	if(!FLAGREADEDFILE1)	{
-		/*
-			if the data_ file doesn't exist we need read it first:
-		*/
-		return forceReadFileAddress(fileName);
-	}
-	return true;
-}
-
-bool forceReadFileAddress(char *fileName)	{
-	/* Here we read the original file as usual */
-	FILE *fileDescriptor;
-	bool validAddress;
-	uint64_t numberItems,i;
-	size_t r,raw_value_length;
-	uint8_t rawvalue[50];
-	char aux[100],*hextemp;
-	fileDescriptor = fopen(fileName,"r");
-	if(fileDescriptor == NULL)	{
-		fprintf(stderr,"[E] Error opening the file %s, line %i\n",fileName,__LINE__ - 2);
-		return false;
-	}
-
-	/*Count lines in the file*/
-	numberItems = 0;
-	while(!feof(fileDescriptor))	{
-		hextemp = fgets(aux,100,fileDescriptor);
-		trim(aux," \t\n\r");
-		if(hextemp == aux)	{
-			r = strlen(aux);
-			if(r > 20)	{ 
-				numberItems++;
-			}
-		}
-	}
-	fseek(fileDescriptor,0,SEEK_SET);
-	MAXLENGTHADDRESS = 20;		/*20 bytes beacuase we only need the data in binary*/
-
-	printf("[+] Allocating memory for %" PRIu64 " elements: %.2f MB\n",numberItems,(double)(((double) sizeof(struct address_value)*numberItems)/(double)1048576));
-	addressTable = (struct address_value*) malloc(sizeof(struct address_value)*numberItems);
-	checkpointer((void *)addressTable,__FILE__,"malloc","addressTable" ,__LINE__ -1 );
-
-	if(!initBloomFilter(&bloom,numberItems))
-		return false;
-
-	i = 0;
-	while(i < numberItems)	{
-		validAddress = false;
-		memset(aux,0,100);
-		memset(addressTable[i].value,0,sizeof(struct address_value));
-		hextemp = fgets(aux,100,fileDescriptor);
-		trim(aux," \t\n\r");
-		r = strlen(aux);
-		if(r > 0 && r <= 40)	{
-			if(r<40 && isValidBase58String(aux))	{	//Address
-				raw_value_length = 25;
-				b58tobin(rawvalue,&raw_value_length,aux,r);
-				if(raw_value_length == 25)	{
-					//hextemp = tohex((char*)rawvalue+1,20);
-					bloom_add(&bloom, rawvalue+1 ,sizeof(struct address_value));
-					memcpy(addressTable[i].value,rawvalue+1,sizeof(struct address_value));
-					i++;
-					validAddress = true;
-				}
-			}
-			if(r == 40 && isValidHex(aux))	{	//RMD
-				hexs2bin(aux,rawvalue);
-				bloom_add(&bloom, rawvalue ,sizeof(struct address_value));
-				memcpy(addressTable[i].value,rawvalue,sizeof(struct address_value));
-				i++;
-				validAddress = true;
-			}
-		}
-		if(!validAddress)	{
-			fprintf(stderr,"[I] Ommiting invalid line %s\n",aux);
-			numberItems--;
-		}
-	}
-	N = numberItems;
-	return true;
-}
-
 /*
 	I write this as a function because i have the same segment of code in 3 different functions
 */
@@ -781,86 +753,83 @@ bool initBloomFilter(struct bloom *bloom_arg,uint64_t items_bloom)	{
 }
 
 void writeFileIfNeeded(const char *fileName)	{
-	if(!FLAGREADEDFILE1)	{
-		FILE *fileDescriptor;
-		char fileBloomName[30];
-		uint8_t checksum[32],hexPrefix[9];
-		char dataChecksum[32],bloomChecksum[32];
-		size_t bytesWrite;
-		uint64_t dataSize;
-		if(!sha256_file((const char*)fileName,checksum)){
-			fprintf(stderr,"[E] sha256_file error line %i\n",__LINE__ - 1);
+	FILE *fileDescriptor;
+	char fileBloomName[30];
+	uint8_t checksum[32],hexPrefix[9];
+	char dataChecksum[32],bloomChecksum[32];
+	size_t bytesWrite;
+	uint64_t dataSize;
+	if(!sha256_file((const char*)fileName,checksum)){
+		fprintf(stderr,"[E] sha256_file error line %i\n",__LINE__ - 1);
+		exit(EXIT_FAILURE);
+	}
+	tohex_dst((char*)checksum,4,(char*)hexPrefix); // we save the prefix (last fourt bytes) hexadecimal value
+	snprintf(fileBloomName,30,"data_%s.dat",hexPrefix);
+	fileDescriptor = fopen(fileBloomName,"wb");
+	dataSize = N * (sizeof(struct address_value));
+	printf("[D] size data %li\n",dataSize);
+	if(fileDescriptor != NULL)	{
+		printf("[+] Writing file %s ",fileBloomName);
+
+		//calculate bloom checksum
+		//write bloom checksum (expected value to be checked)
+		//write bloom filter structure
+		//write bloom filter data
+
+		//calculate dataChecksum
+		//write data checksum (expected value to be checked)
+		//write data size
+		//write data
+
+		sha256((uint8_t*)bloom.bf,bloom.bytes,(uint8_t*)bloomChecksum);
+		printf(".");
+		bytesWrite = fwrite(bloomChecksum,1,32,fileDescriptor);
+		if(bytesWrite != 32)	{
+			fprintf(stderr,"[E] Errore writing file, code line %i\n",__LINE__ - 2);
 			exit(EXIT_FAILURE);
 		}
-		tohex_dst((char*)checksum,4,(char*)hexPrefix); // we save the prefix (last fourt bytes) hexadecimal value
-		snprintf(fileBloomName,30,"data_%s.dat",hexPrefix);
-		fileDescriptor = fopen(fileBloomName,"wb");
-		dataSize = N * (sizeof(struct address_value));
-		printf("[D] size data %li\n",dataSize);
-		if(fileDescriptor != NULL)	{
-			printf("[+] Writing file %s ",fileBloomName);
+		printf(".");
 
-			//calculate bloom checksum
-			//write bloom checksum (expected value to be checked)
-			//write bloom filter structure
-			//write bloom filter data
-
-			//calculate dataChecksum
-			//write data checksum (expected value to be checked)
-			//write data size
-			//write data
-
-			sha256((uint8_t*)bloom.bf,bloom.bytes,(uint8_t*)bloomChecksum);
-			printf(".");
-			bytesWrite = fwrite(bloomChecksum,1,32,fileDescriptor);
-			if(bytesWrite != 32)	{
-				fprintf(stderr,"[E] Errore writing file, code line %i\n",__LINE__ - 2);
-				exit(EXIT_FAILURE);
-			}
-			printf(".");
-
-			bytesWrite = fwrite(&bloom,1,sizeof(struct bloom),fileDescriptor);
-			if(bytesWrite != sizeof(struct bloom))	{
-				fprintf(stderr,"[E] Error writing file, code line %i\n",__LINE__ - 2);
-				exit(EXIT_FAILURE);
-			}
-			printf(".");
-
-			bytesWrite = fwrite(bloom.bf,1,bloom.bytes,fileDescriptor);
-			if(bytesWrite != bloom.bytes)	{
-				fprintf(stderr,"[E] Error writing file, code line %i\n",__LINE__ - 2);
-				fclose(fileDescriptor);
-				exit(EXIT_FAILURE);
-			}
-			printf(".");
-
-			sha256((uint8_t*)addressTable,dataSize,(uint8_t*)dataChecksum);
-			printf(".");
-
-			bytesWrite = fwrite(dataChecksum,1,32,fileDescriptor);
-			if(bytesWrite != 32)	{
-				fprintf(stderr,"[E] Errore writing file, code line %i\n",__LINE__ - 2);
-				exit(EXIT_FAILURE);
-			}
-			printf(".");
-
-			bytesWrite = fwrite(&dataSize,1,sizeof(uint64_t),fileDescriptor);
-			if(bytesWrite != sizeof(uint64_t))	{
-				fprintf(stderr,"[E] Errore writing file, code line %i\n",__LINE__ - 2);
-				exit(EXIT_FAILURE);
-			}
-			printf(".");
-
-			bytesWrite = fwrite(addressTable,1,dataSize,fileDescriptor);
-			if(bytesWrite != dataSize)	{
-				fprintf(stderr,"[E] Error writing file, code line %i\n",__LINE__ - 2);
-				exit(EXIT_FAILURE);
-			}
-			printf(".");
-
-			FLAGREADEDFILE1 = 1;
-			fclose(fileDescriptor);
-			printf("\n");
+		bytesWrite = fwrite(&bloom,1,sizeof(struct bloom),fileDescriptor);
+		if(bytesWrite != sizeof(struct bloom))	{
+			fprintf(stderr,"[E] Error writing file, code line %i\n",__LINE__ - 2);
+			exit(EXIT_FAILURE);
 		}
+		printf(".");
+
+		bytesWrite = fwrite(bloom.bf,1,bloom.bytes,fileDescriptor);
+		if(bytesWrite != bloom.bytes)	{
+			fprintf(stderr,"[E] Error writing file, code line %i\n",__LINE__ - 2);
+			fclose(fileDescriptor);
+			exit(EXIT_FAILURE);
+		}
+		printf(".");
+
+		sha256((uint8_t*)addressTable,dataSize,(uint8_t*)dataChecksum);
+		printf(".");
+
+		bytesWrite = fwrite(dataChecksum,1,32,fileDescriptor);
+		if(bytesWrite != 32)	{
+			fprintf(stderr,"[E] Errore writing file, code line %i\n",__LINE__ - 2);
+			exit(EXIT_FAILURE);
+		}
+		printf(".");
+
+		bytesWrite = fwrite(&dataSize,1,sizeof(uint64_t),fileDescriptor);
+		if(bytesWrite != sizeof(uint64_t))	{
+			fprintf(stderr,"[E] Errore writing file, code line %i\n",__LINE__ - 2);
+			exit(EXIT_FAILURE);
+		}
+		printf(".");
+
+		bytesWrite = fwrite(addressTable,1,dataSize,fileDescriptor);
+		if(bytesWrite != dataSize)	{
+			fprintf(stderr,"[E] Error writing file, code line %i\n",__LINE__ - 2);
+			exit(EXIT_FAILURE);
+		}
+		printf(".");
+
+		fclose(fileDescriptor);
+		printf("\n");
 	}
 }
