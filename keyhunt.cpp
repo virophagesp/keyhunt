@@ -3,33 +3,19 @@ Develop by Alberto
 email: albertobsd@gmail.com
 */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
 #include <math.h>
-#include <time.h>
-#include <vector>
 #include <inttypes.h>
 #include "base58/libbase58.h"
 #include "bloom/bloom.h"
-#include "sha3/sha3.h"
 #include "util.h"
 
 #include "secp256k1/SECP256k1.h"
-#include "secp256k1/Point.h"
-#include "secp256k1/Int.h"
 #include "secp256k1/IntGroup.h"
-#include "secp256k1/Random.h"
 
 #include "hash/sha256.h"
-#include "hash/ripemd160.h"
 
-#include <unistd.h>
 #include <pthread.h>
 #include <sys/random.h>
-
-#include <linux/random.h>
 
 #define IMPORTANT "small_test"
 //#define IMPORTANT "medium_test"
