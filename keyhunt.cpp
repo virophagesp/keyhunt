@@ -156,7 +156,7 @@ int main()	{
 		exit(EXIT_FAILURE);
 	}
 	printf("[+] Bloom filter for 1 elements.\n");
-	if(bloom_init2(&bloom,10000,0.000001) == 1){
+	if(bloom_init2(&bloom) == 1){
 		fprintf(stderr,"[E] error bloom_init for 10000 elements.\n");
 		printf("[+] Loading data to the bloomfilter total: %.2f MB\n",(double)(((double) (&bloom)->bytes)/(double)1048576));
 		fprintf(stderr,"[E] Unenexpected error\n");
@@ -315,7 +315,7 @@ int main()	{
 	raw_value_length = 25;
 	b58tobin(rawvalue,&raw_value_length,aux);
 	if(raw_value_length == 25)	{
-		bloom_add(&bloom, rawvalue+1 ,20);
+		bloom_add(&bloom, rawvalue+1);
 		memcpy(addressTable[0].value,rawvalue+1,20);
 	}
 	N = 1;
@@ -561,7 +561,7 @@ void *thread_process(void *vargp)	{
 
 					for(k = 0; k < 4;k++)	{
 						for(l = 0;l < 2; l++)	{
-							r = bloom_check(&bloom,publickeyhashrmd160_endomorphism[l][k],20); /*20 bytes beacuase we only need the data in binary*/
+							r = bloom_check(&bloom,publickeyhashrmd160_endomorphism[l][k]);
 							if(r) {
 								r = searchbinary(addressTable,publickeyhashrmd160_endomorphism[l][k],N);
 								if(r) {

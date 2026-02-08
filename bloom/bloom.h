@@ -76,7 +76,7 @@ int bloom_savecustom(struct bloom * bloom, char * filename);
  *     1 - on failure
  *
  */
-int bloom_init2(struct bloom * bloom, uint64_t entries, long double error);
+int bloom_init2(struct bloom * bloom);
 
 
 /** ***************************************************************************
@@ -96,7 +96,7 @@ int bloom_init2(struct bloom * bloom, uint64_t entries, long double error);
  *    -1 - bloom not initialized
  *
  */
-int bloom_check(struct bloom * bloom, const void * buffer, int len);
+int bloom_check(struct bloom * bloom, const void * buffer);
 
 
 /** ***************************************************************************
@@ -117,7 +117,7 @@ int bloom_check(struct bloom * bloom, const void * buffer, int len);
  *    -1 - bloom not initialized
  *
  */
-int bloom_add(struct bloom * bloom, const void * buffer, int len);
+int bloom_add(struct bloom * bloom, const void * buffer);
 
 
 #ifdef __cplusplus

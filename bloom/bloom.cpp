@@ -25,10 +25,6 @@
 #include "bloom.h"
 #include "../xxhash/xxhash.h"
 
-#define BLOOM_MAGIC "libbloom2"
-#define BLOOM_VERSION_MAJOR 2
-#define BLOOM_VERSION_MINOR 201
-
 inline static int test_bit_set_bit(uint8_t *bf, uint64_t bit, int set_bit)
 {
   uint64_t byte = bit >> 3;
@@ -56,46 +52,17 @@ inline static int test_bit(uint8_t *bf, uint64_t bit)
   }
 }
 
-static int bloom_check_add(struct bloom * bloom, const void * buffer, int len, int add)
-{
-  if (bloom->ready == 0) {
-    printf("bloom at %p not initialized!\n", (void *)bloom);
-    return -1;
-  }
-  uint8_t hits = 0;
-  uint64_t a = XXH64(buffer, len, 0x59f2815b16f81798);
-  uint64_t b = XXH64(buffer, len, a);
-  uint64_t x;
-  uint8_t i;
-  for (i = 0; i < bloom->hashes; i++) {
-    x = (a + b*i) % bloom->bits;
-    if (test_bit_set_bit(bloom->bf, x, add)) {
-      hits++;
-    } else if (!add) {
-      // Don't care about the presence of all the bits. Just our own.
-      return 0;
-    }
-  }
-  if (hits == bloom->hashes) {
-    return 1;                // 1 == element already in (or collision)
-  }
-  return 0;
-}
-
-int bloom_init2(struct bloom * bloom, uint64_t entries, long double error)
+int bloom_init2(struct bloom * bloom)
 {
   memset(bloom, 0, sizeof(struct bloom));
-  if (entries < 1000 || error <= 0 || error >= 1) {
-    return 1;
-  }
-  bloom->entries = entries;
-  bloom->error = error;
+  bloom->entries = 10000;
+  bloom->error = 0.000001;
 
   long double num = -log(bloom->error);
   long double denom = 0.480453013918201; // ln(2)^2
   bloom->bpe = (num / denom);
 
-  long double dentries = (long double)entries;
+  long double dentries = (long double)10000;
   long double allbits = dentries * bloom->bpe;
   bloom->bits = (uint64_t)allbits;
 
@@ -112,20 +79,20 @@ int bloom_init2(struct bloom * bloom, uint64_t entries, long double error)
   }                                                          // LCOV_EXCL_STOP
 
   bloom->ready = 1;
-  bloom->major = BLOOM_VERSION_MAJOR;
-  bloom->minor = BLOOM_VERSION_MINOR;
+  bloom->major = 2;
+  bloom->minor = 201;
   return 0;
 }
 
-int bloom_check(struct bloom * bloom, const void * buffer, int len)
+int bloom_check(struct bloom * bloom, const void * buffer)
 {
   if (bloom->ready == 0) {
     printf("bloom at %p not initialized!\n", (void *)bloom);
     return -1;
   }
   uint8_t hits = 0;
-  uint64_t a = XXH64(buffer, len, 0x59f2815b16f81798);
-  uint64_t b = XXH64(buffer, len, a);
+  uint64_t a = XXH64(buffer, 20, 0x59f2815b16f81798);
+  uint64_t b = XXH64(buffer, 20, a);
   uint64_t x;
   uint8_t i;
   for (i = 0; i < bloom->hashes; i++) {
@@ -143,7 +110,25 @@ int bloom_check(struct bloom * bloom, const void * buffer, int len)
 }
 
 
-int bloom_add(struct bloom * bloom, const void * buffer, int len)
+int bloom_add(struct bloom * bloom, const void * buffer)
 {
-  return bloom_check_add(bloom, buffer, len, 1);
+  if (bloom->ready == 0) {
+    printf("bloom at %p not initialized!\n", (void *)bloom);
+    return -1;
+  }
+  uint8_t hits = 0;
+  uint64_t a = XXH64(buffer, 20, 0x59f2815b16f81798);
+  uint64_t b = XXH64(buffer, 20, a);
+  uint64_t x;
+  uint8_t i;
+  for (i = 0; i < bloom->hashes; i++) {
+    x = (a + b*i) % bloom->bits;
+    if (test_bit_set_bit(bloom->bf, x, 1)) {
+      hits++;
+    }
+  }
+  if (hits == bloom->hashes) {
+    return 1;                // 1 == element already in (or collision)
+  }
+  return 0;
 }
