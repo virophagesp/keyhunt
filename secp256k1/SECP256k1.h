@@ -19,7 +19,6 @@
 #define SECP256K1H
 
 #include "Point.h"
-#include <vector>
 
 // Address type
 #define P2PKH  0
@@ -35,7 +34,6 @@ public:
   ~Secp256K1();
   void  Init();
   Point ComputePublicKey(Int *privKey);
-  bool  EC(Point &p);
   
   void GetPublicKeyHex(bool compressed, Point &pubKey,char *dst);
 
@@ -61,7 +59,6 @@ public:
 
 private:
 
-  Int GetY(Int x, bool isEven);
   Point GTable[256*32];       // Generator table
 
 };

@@ -20,8 +20,6 @@
 
 #include <sys/random.h>
 
-#include <linux/random.h>
-
 #define  RK_STATE_LEN 624
 
 /* State of the RNG */

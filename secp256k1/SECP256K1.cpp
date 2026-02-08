@@ -15,8 +15,6 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <cstdio>
-#include <cstring>
 #include "SECP256k1.h"
 #include "Point.h"
 #include "../util.h"
@@ -258,33 +256,6 @@ Point Secp256K1::DoubleDirect(Point &p) {
   r.y.ModAdd(&_p,&p.y);
   r.y.ModNeg();           // ry = neg(p.y + s*(ret.x+neg(p.x)));
   return r;
-}
-
-Int Secp256K1::GetY(Int x,bool isEven) {
-  Int _s;
-  Int _p;
-  _s.ModSquareK1(&x);
-  _p.ModMulK1(&_s,&x);
-  _p.ModAdd(7);
-  _p.ModSqrt();
-  if(!_p.IsEven() && isEven) {
-    _p.ModNeg();
-  }
-  else if(_p.IsEven() && !isEven) {
-    _p.ModNeg();
-  }
-  return _p;
-}
-
-bool Secp256K1::EC(Point &p) {
-  Int _s;
-  Int _p;
-  _s.ModSquareK1(&p.x);
-  _p.ModMulK1(&_s,&p.x);
-  _p.ModAdd(7);
-  _s.ModMulK1(&p.y,&p.y);
-  _s.ModSub(&_p);
-  return _s.IsZero(); // ( ((pow2(y) - (pow3(x) + 7)) % P) == 0 );
 }
 
 #define KEYBUFFCOMP(buff,p) \
