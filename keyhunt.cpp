@@ -95,8 +95,7 @@ int main()	{
 
 	int s;
 
-	FILE *fileDescriptor;
-	size_t r,raw_value_length;
+	size_t raw_value_length;
 	uint8_t rawvalue[50];
 	char aux[100];
 
@@ -778,11 +777,9 @@ void writekey(bool compressed,Int *key)	{
 void writeFileIfNeeded()	{
 	FILE *fileDescriptor;
 	char fileBloomName[30];
-	uint8_t checksum[32],hexPrefix[9];
 	char dataChecksum[32],bloomChecksum[32];
 	size_t bytesWrite;
 	uint64_t dataSize;
-	char *fileName = NULL;
 	// file bloom name
 	if (IMPORTANT == "small_test") {
 		fileBloomName[0] = 'd';
