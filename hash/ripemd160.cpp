@@ -36,12 +36,10 @@ void inline Initialize(uint32_t* s)
     s[4] = 0xC3D2E1F0ul;
 }
 
-#ifndef WIN64
 inline uint32_t _rotl(uint32_t x, uint8_t r) {
   asm("roll %1,%0" : "+r" (x) : "c" (r));
   return x;
 }
-#endif
 
 #define ROL(x,n) _rotl(x,n)
 
@@ -248,36 +246,6 @@ void Transform(uint32_t* s, const unsigned char* chunk)
 }
 
 } // namespace ripemd160
-
-CRIPEMD160::CRIPEMD160() : bytes(0)
-{
-  _ripemd160::Initialize(s);
-}
-
-void CRIPEMD160::Write(const unsigned char* data, size_t len)
-{
-    const unsigned char* end = data + len;
-    size_t bufsize = bytes % 64;
-    if (bufsize && bufsize + len >= 64) {
-        // Fill the buffer, and process it.
-        memcpy(buf + bufsize, data, 64 - bufsize);
-        bytes += 64 - bufsize;
-        data += 64 - bufsize;
-        _ripemd160::Transform(s, buf);
-        bufsize = 0;
-    }
-    while (end >= data + 64) {
-        // Process full chunks directly from the source.
-        _ripemd160::Transform(s, data);
-        bytes += 64;
-        data += 64;
-    }
-    if (end > data) {
-        // Fill the buffer with what remains.
-        memcpy(buf + bufsize, data, end - data);
-        bytes += end - data;
-    }
-}
 
 static const uint64_t sizedesc_32 = 32 << 3;
 static const unsigned char pad[64] = { 0x80 };

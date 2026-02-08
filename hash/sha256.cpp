@@ -31,14 +31,12 @@ namespace _sha256
 
   static const unsigned char pad[64] = { 0x80 };
 
-#ifndef WIN64
 #define _byteswap_ulong __builtin_bswap32
 #define _byteswap_uint64 __builtin_bswap64
 inline uint32_t _rotr(uint32_t x, uint8_t r) {
   asm("rorl %1,%0" : "+r" (x) : "c" (r));
   return x;
 }
-#endif
 
 #define ROR(x,n) _rotr(x, n)
 #define S0(x) (ROR(x,2) ^ ROR(x,13) ^ ROR(x,22))
@@ -298,25 +296,4 @@ void sha256_65(unsigned char *input, unsigned char *digest) {
   WRITEBE32(digest + 24, s[6]);
   WRITEBE32(digest + 28, s[7]);
 
-}
-
-bool sha256_file(const char* file_name, uint8_t* checksum) {
-    FILE* file = fopen(file_name, "rb");
-    if (file == NULL) {
-        printf("Failed to open file: %s\n", file_name);
-        return false;
-    }
-    CSHA256 sha;
-    uint8_t buffer[8192]; // Buffer to read file contents
-    size_t bytes_read;
-
-	// Read file contents and update SHA256 context
-	while ((bytes_read = fread(buffer, 1, sizeof(buffer), file)) > 0) {
-		sha.Write( buffer, bytes_read);
-	}
-
-	// Finalize SHA256 computation
-	sha.Finalize(checksum);
-	fclose(file);
-	return true;
 }

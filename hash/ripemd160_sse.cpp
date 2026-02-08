@@ -22,11 +22,7 @@
 // Internal SSE RIPEMD-160 implementation.
 namespace ripemd160sse {
 
-#ifdef WIN64
-  static const __declspec(align(16)) uint32_t _init[] = {
-#else
   static const uint32_t _init[] __attribute__ ((aligned (16))) = {
-#endif
       0x67452301ul,0x67452301ul,0x67452301ul,0x67452301ul,
       0xEFCDAB89ul,0xEFCDAB89ul,0xEFCDAB89ul,0xEFCDAB89ul,
       0x98BADCFEul,0x98BADCFEul,0x98BADCFEul,0x98BADCFEul,
@@ -42,24 +38,11 @@ namespace ripemd160sse {
 
 #define ROL(x,n) _mm_or_si128( _mm_slli_epi32(x, n) , _mm_srli_epi32(x, 32 - n) )
 
-#ifdef WIN64
-
-#define not(x) _mm_andnot_si128(x, _mm_cmpeq_epi32(_mm_setzero_si128(), _mm_setzero_si128()))
-#define f1(x,y,z) _mm_xor_si128(x, _mm_xor_si128(y, z))
-#define f2(x,y,z) _mm_or_si128(_mm_and_si128(x,y),_mm_andnot_si128(x,z))
-#define f3(x,y,z) _mm_xor_si128(_mm_or_si128(x,not(y)),z)
-#define f4(x,y,z) _mm_or_si128(_mm_and_si128(x,z),_mm_andnot_si128(z,y))
-#define f5(x,y,z) _mm_xor_si128(x,_mm_or_si128(y,not(z)))
-
-#else
-
 #define f1(x,y,z) _mm_xor_si128(x, _mm_xor_si128(y, z))
 #define f2(x,y,z) _mm_or_si128(_mm_and_si128(x,y),_mm_andnot_si128(x,z))
 #define f3(x,y,z) _mm_xor_si128(_mm_or_si128(x,~(y)),z)
 #define f4(x,y,z) _mm_or_si128(_mm_and_si128(x,z),_mm_andnot_si128(z,y))
 #define f5(x,y,z) _mm_xor_si128(x,_mm_or_si128(y,~(z)))
-
-#endif
 
 
 #define add3(x0, x1, x2 ) _mm_add_epi32(_mm_add_epi32(x0, x1), x2)
@@ -297,25 +280,12 @@ namespace ripemd160sse {
 
 } // namespace ripemd160sse
 
-#ifdef WIN64
-
-#define DEPACK(d,i) \
-((uint32_t *)d)[0] = s[0].m128i_u32[i]; \
-((uint32_t *)d)[1] = s[1].m128i_u32[i]; \
-((uint32_t *)d)[2] = s[2].m128i_u32[i]; \
-((uint32_t *)d)[3] = s[3].m128i_u32[i]; \
-((uint32_t *)d)[4] = s[4].m128i_u32[i];
-
-#else
-
 #define DEPACK(d,i) \
 ((uint32_t *)d)[0] = s0[i]; \
 ((uint32_t *)d)[1] = s1[i]; \
 ((uint32_t *)d)[2] = s2[i]; \
 ((uint32_t *)d)[3] = s3[i]; \
 ((uint32_t *)d)[4] = s4[i];
-
-#endif
 
 static const uint64_t sizedesc_32 = 32 << 3;
 static const unsigned char pad[64] = { 0x80 };
@@ -345,13 +315,11 @@ void ripemd160sse_32(
 
   ripemd160sse::Transform(s, bs);
 
-#ifndef WIN64
   uint32_t *s0 = (uint32_t *)&s[0];
   uint32_t *s1 = (uint32_t *)&s[1];
   uint32_t *s2 = (uint32_t *)&s[2];
   uint32_t *s3 = (uint32_t *)&s[3];
   uint32_t *s4 = (uint32_t *)&s[4];
-#endif
 
   DEPACK(d0,3);
   DEPACK(d1,2);
