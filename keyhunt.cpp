@@ -313,7 +313,7 @@ int main()	{
 		aux[34] = '\0';
 	}
 	raw_value_length = 25;
-	b58tobin(rawvalue,&raw_value_length,aux,34);
+	b58tobin(rawvalue,&raw_value_length,aux);
 	if(raw_value_length == 25)	{
 		bloom_add(&bloom, rawvalue+1 ,20);
 		memcpy(addressTable[0].value,rawvalue+1,20);
@@ -410,12 +410,11 @@ int main()	{
 
 void rmd160toaddress_dst(char *rmd,char *dst){
 	char digest[60];
-	size_t pubaddress_size = 40;
 	digest[0] = 0x00;
 	memcpy(digest+1,rmd,20);
 	sha256((uint8_t*)digest, 21,(uint8_t*) digest+21);
 	sha256((uint8_t*)digest+21, 32,(uint8_t*) digest+21);
-	if(!b58enc(dst,&pubaddress_size,digest,25)){
+	if(!b58enc(dst,digest)){
 		fprintf(stderr,"error b58enc\n");
 	}
 }
