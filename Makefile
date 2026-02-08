@@ -1,6 +1,5 @@
 default:
 	g++ -m64 -march=native -mtune=native -mssse3 -Wall -Wextra -Ofast -ftree-vectorize -c bloom/bloom.cpp -o bloom.o
-	g++ -m64 -march=native -mtune=native -mssse3 -Wall -Wextra -Ofast -ftree-vectorize -c base58/base58.c -o base58.o
 	g++ -m64 -march=native -mtune=native -mssse3 -Wall -Wextra -Ofast -ftree-vectorize -c util.c -o util.o
 	g++ -m64 -march=native -mtune=native -mssse3 -Wall -Wextra -Ofast -ftree-vectorize -c secp256k1/Int.cpp -o Int.o
 	g++ -m64 -march=native -mtune=native -mssse3 -Wall -Wextra -Ofast -ftree-vectorize -c secp256k1/Point.cpp -o Point.o
@@ -12,7 +11,7 @@ default:
 	g++ -m64 -march=native -mtune=native -mssse3 -Wall -Wextra -Ofast -ftree-vectorize -c hash/sha256.cpp -o hash/sha256.o
 	g++ -m64 -march=native -mtune=native -mssse3 -Wall -Wextra -Ofast -ftree-vectorize -c hash/ripemd160_sse.cpp -o hash/ripemd160_sse.o
 	g++ -m64 -march=native -mtune=native -mssse3 -Wall -Wextra -Ofast -ftree-vectorize -c hash/sha256_sse.cpp -o hash/sha256_sse.o
-	g++ -m64 -march=native -mtune=native -mssse3 -Wall -Wextra -Ofast -ftree-vectorize -o keyhunt keyhunt.cpp base58.o hash/ripemd160.o hash/ripemd160_sse.o hash/sha256.o hash/sha256_sse.o bloom.o util.o Int.o Point.o SECP256K1.o IntMod.o Random.o IntGroup.o -lm -lpthread
+	g++ -m64 -march=native -mtune=native -mssse3 -Wall -Wextra -Ofast -ftree-vectorize -o keyhunt keyhunt.cpp hash/ripemd160.o hash/ripemd160_sse.o hash/sha256.o hash/sha256_sse.o bloom.o util.o Int.o Point.o SECP256K1.o IntMod.o Random.o IntGroup.o -lm -lpthread
 	rm -r *.o */*.o
 clean:
 	rm -f keyhunt
