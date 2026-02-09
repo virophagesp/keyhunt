@@ -101,7 +101,6 @@ struct address_value	{
 };
 
 struct tothread {
-	int nt;     //Number thread
 	char *rs;   //range start
 	char *rpt;  //rng per thread
 };
@@ -245,178 +244,47 @@ static const int8_t b58digits_map[] = {
 void b58tobin(void *rawvalue, size_t *raw_value_length)
 {
 	// address
-	char aux[34];
-	if (IMPORTANT == "small_test") {
-		aux[0] = '1';
-		aux[1] = 'B';
-		aux[2] = 'D';
-		aux[3] = 'y';
-		aux[4] = 'r';
-		aux[5] = 'Q';
-		aux[6] = '6';
-		aux[7] = 'W';
-		aux[8] = 'o';
-		aux[9] = 'F';
-		aux[10] = '8';
-		aux[11] = 'V';
-		aux[12] = 'N';
-		aux[13] = '3';
-		aux[14] = 'g';
-		aux[15] = '9';
-		aux[16] = 'S';
-		aux[17] = 'A';
-		aux[18] = 'S';
-		aux[19] = '1';
-		aux[20] = 'i';
-		aux[21] = 'K';
-		aux[22] = 'Z';
-		aux[23] = 'c';
-		aux[24] = 'P';
-		aux[25] = 'z';
-		aux[26] = 'F';
-		aux[27] = 'f';
-		aux[28] = 'n';
-		aux[29] = 'D';
-		aux[30] = 'V';
-		aux[31] = 'i';
-		aux[32] = 'e';
-		aux[33] = 'Y';
-		aux[34] = '\0';
-	} else if (IMPORTANT == "medium_test") {
-		aux[0] = '1';
-		aux[1] = 'P';
-		aux[2] = 'W';
-		aux[3] = 'A';
-		aux[4] = 'B';
-		aux[5] = 'E';
-		aux[6] = '7';
-		aux[7] = 'o';
-		aux[8] = 'U';
-		aux[9] = 'a';
-		aux[10] = 'h';
-		aux[11] = 'G';
-		aux[12] = '2';
-		aux[13] = 'A';
-		aux[14] = 'F';
-		aux[15] = 'F';
-		aux[16] = 'Q';
-		aux[17] = 'h';
-		aux[18] = 'h';
-		aux[19] = 'v';
-		aux[20] = 'V';
-		aux[21] = 'i';
-		aux[22] = 'Q';
-		aux[23] = 'o';
-		aux[24] = 'v';
-		aux[25] = 'n';
-		aux[26] = 'C';
-		aux[27] = 'r';
-		aux[28] = '4';
-		aux[29] = 'r';
-		aux[30] = 'E';
-		aux[31] = 'v';
-		aux[32] = '7';
-		aux[33] = 'Q';
-	} else if (IMPORTANT == "big_test") {
-		aux[0] = '1';
-		aux[1] = '9';
-		aux[2] = 'v';
-		aux[3] = 'k';
-		aux[4] = 'i';
-		aux[5] = 'E';
-		aux[6] = 'a';
-		aux[7] = 'j';
-		aux[8] = 'f';
-		aux[9] = 'h';
-		aux[10] = 'u';
-		aux[11] = 'Z';
-		aux[12] = '8';
-		aux[13] = 'b';
-		aux[14] = 's';
-		aux[15] = '8';
-		aux[16] = 'Z';
-		aux[17] = 'u';
-		aux[18] = '2';
-		aux[19] = 'j';
-		aux[20] = 'g';
-		aux[21] = 'm';
-		aux[22] = 'C';
-		aux[23] = '6';
-		aux[24] = 'o';
-		aux[25] = 'q';
-		aux[26] = 'Z';
-		aux[27] = 'b';
-		aux[28] = 'W';
-		aux[29] = 'q';
-		aux[30] = 'h';
-		aux[31] = 'x';
-		aux[32] = 'h';
-		aux[33] = 'G';
-	} else if (IMPORTANT == "money") {
-		aux[0] = '1';
-		aux[1] = '3';
-		aux[2] = 'z';
-		aux[3] = 'Y';
-		aux[4] = 'r';
-		aux[5] = 'Y';
-		aux[6] = 'h';
-		aux[7] = 'h';
-		aux[8] = 'J';
-		aux[9] = 'x';
-		aux[10] = 'p';
-		aux[11] = '6';
-		aux[12] = 'U';
-		aux[13] = 'i';
-		aux[14] = '1';
-		aux[15] = 'V';
-		aux[16] = 'V';
-		aux[17] = '7';
-		aux[18] = 'p';
-		aux[19] = 'q';
-		aux[20] = 'a';
-		aux[21] = '5';
-		aux[22] = 'W';
-		aux[23] = 'D';
-		aux[24] = 'h';
-		aux[25] = 'N';
-		aux[26] = 'W';
-		aux[27] = 'M';
-		aux[28] = '4';
-		aux[29] = '5';
-		aux[30] = 'A';
-		aux[31] = 'R';
-		aux[32] = 'A';
-		aux[33] = 'C';
-	}
-
 	size_t binsz = *raw_value_length;
 	unsigned char *binu = (unsigned char *)rawvalue;
 	uint32_t outi[7];
-	uint64_t t;
-	uint32_t c;
 	size_t i, j;
-	unsigned zerocount = 1;
-	
-	for (i = 0; i < 7; ++i) {
-		outi[i] = 0;
+	if (IMPORTANT == "small_test") {
+		outi[0] = 0;
+		outi[1] = 1881519343;
+		outi[2] = -1275116821;
+		outi[3] = 1299018234;
+		outi[4] = -1229636785;
+		outi[5] = 1231545309;
+		outi[6] = 617679621;
+	} else if (IMPORTANT == "medium_test") {
+		outi[0] = 0;
+		outi[1] = -153715335;
+		outi[2] = -2084605883;
+		outi[3] = 254368924;
+		outi[4] = -1205282133;
+		outi[5] = 643767290;
+		outi[6] = -289356897;
+	} else if (IMPORTANT == "big_test") {
+		outi[0] = 0;
+		outi[1] = 1642826320;
+		outi[2] = -932510332;
+		outi[3] = -1150124586;
+		outi[4] = 1542294820;
+		outi[5] = 14079402;
+		outi[6] = -852360005;
+	} else if (IMPORTANT == "money") {
+		outi[0] = 0;
+		outi[1] = 550669646;
+		outi[2] = -2024523449;
+		outi[3] = -941321925;
+		outi[4] = -842094058;
+		outi[5] = -487002015;
+		outi[6] = -706377603;
 	}
-
-	for (i = 0; i < 34; ++i)
-	{
-		c = (unsigned)b58digits_map[aux[i]];
-		for (j = 7; j--; )
-		{
-			t = ((uint64_t)outi[j]) * 58 + c;
-			c = t >> 32;
-			outi[j] = t & -1;
-		}
-	}
 	
-	j = 0;
 	*(binu++) = (outi[0] >> 0) & 0xff;
-	++j;
 	
-	for (; j < 7; ++j)
+	for (j = 1; j < 7; ++j)
 	{
 		for (i = sizeof(*outi); i > 0; --i) {
 			*(binu++) = (outi[j] >> (8 * (i - 1))) & 0xff;
@@ -431,7 +299,7 @@ void b58tobin(void *rawvalue, size_t *raw_value_length)
 			break;
 		--*raw_value_length;
 	}
-	*raw_value_length += zerocount;
+	*raw_value_length += 1;
 	
 	return;
 }
@@ -634,7 +502,6 @@ int main()	{
 	checkpointer((void *)tid,__FILE__,"calloc","tid" ,__LINE__ -1 );
 	tt = (tothread*) malloc(sizeof(struct tothread));
 	checkpointer((void *)tt,__FILE__,"malloc","tt" ,__LINE__ -1 );
-	tt->nt = 0;
 	steps[0] = 0;
 	s = pthread_create(&tid[0],NULL,thread_process,(void *)tt);
 	if(s != 0)	{
@@ -748,11 +615,7 @@ int searchbinary(struct address_value *buffer,char *data,int64_t array_length) {
 }
 
 void *thread_process(void *vargp)	{
-	struct tothread *tt;
 	Point pts[1024];
-	Point endomorphism_beta[1024];
-	Point endomorphism_beta2[1024];
-	Point endomorphism_negeted_point[4];
 
 	Int dx[513];
 	IntGroup *grp = new IntGroup(513);
@@ -765,7 +628,7 @@ void *thread_process(void *vargp)	{
 	Point pn;
 	int i,l,pp_offset,pn_offset,hLength = (511);
 	uint64_t j,count;
-	Point R,temporal,publickey;
+	Point R,publickey;
 	int r,thread_number,continue_flag = 1,k;
 	char *hextemp = NULL;
 
@@ -774,9 +637,7 @@ void *thread_process(void *vargp)	{
 	char publickeyhashrmd160_endomorphism[12][4][20];
 
 	Int key_mpz,keyfound,temp_stride;
-	tt = (struct tothread *)vargp;
-	thread_number = tt->nt;
-	free(tt);
+	thread_number = 0;
 	grp->Set(dx);
 
 	do {
