@@ -242,60 +242,181 @@ static const int8_t b58digits_map[] = {
 	47,48,49,50,51,52,53,54, 55,56,57,-1,-1,-1,-1,-1,
 };
 
-bool b58tobin(void *bin, size_t *binszp, const char *b58)
+void b58tobin(void *rawvalue, size_t *raw_value_length)
 {
-	size_t binsz = *binszp;
-	const unsigned char *b58u = (const unsigned char *)((void*)b58);
-	unsigned char *binu = (unsigned char *)bin;
-	size_t outisz = (binsz + 3) / 4;
-	uint32_t outi[outisz];
+	// address
+	char aux[34];
+	if (IMPORTANT == "small_test") {
+		aux[0] = '1';
+		aux[1] = 'B';
+		aux[2] = 'D';
+		aux[3] = 'y';
+		aux[4] = 'r';
+		aux[5] = 'Q';
+		aux[6] = '6';
+		aux[7] = 'W';
+		aux[8] = 'o';
+		aux[9] = 'F';
+		aux[10] = '8';
+		aux[11] = 'V';
+		aux[12] = 'N';
+		aux[13] = '3';
+		aux[14] = 'g';
+		aux[15] = '9';
+		aux[16] = 'S';
+		aux[17] = 'A';
+		aux[18] = 'S';
+		aux[19] = '1';
+		aux[20] = 'i';
+		aux[21] = 'K';
+		aux[22] = 'Z';
+		aux[23] = 'c';
+		aux[24] = 'P';
+		aux[25] = 'z';
+		aux[26] = 'F';
+		aux[27] = 'f';
+		aux[28] = 'n';
+		aux[29] = 'D';
+		aux[30] = 'V';
+		aux[31] = 'i';
+		aux[32] = 'e';
+		aux[33] = 'Y';
+		aux[34] = '\0';
+	} else if (IMPORTANT == "medium_test") {
+		aux[0] = '1';
+		aux[1] = 'P';
+		aux[2] = 'W';
+		aux[3] = 'A';
+		aux[4] = 'B';
+		aux[5] = 'E';
+		aux[6] = '7';
+		aux[7] = 'o';
+		aux[8] = 'U';
+		aux[9] = 'a';
+		aux[10] = 'h';
+		aux[11] = 'G';
+		aux[12] = '2';
+		aux[13] = 'A';
+		aux[14] = 'F';
+		aux[15] = 'F';
+		aux[16] = 'Q';
+		aux[17] = 'h';
+		aux[18] = 'h';
+		aux[19] = 'v';
+		aux[20] = 'V';
+		aux[21] = 'i';
+		aux[22] = 'Q';
+		aux[23] = 'o';
+		aux[24] = 'v';
+		aux[25] = 'n';
+		aux[26] = 'C';
+		aux[27] = 'r';
+		aux[28] = '4';
+		aux[29] = 'r';
+		aux[30] = 'E';
+		aux[31] = 'v';
+		aux[32] = '7';
+		aux[33] = 'Q';
+	} else if (IMPORTANT == "big_test") {
+		aux[0] = '1';
+		aux[1] = '9';
+		aux[2] = 'v';
+		aux[3] = 'k';
+		aux[4] = 'i';
+		aux[5] = 'E';
+		aux[6] = 'a';
+		aux[7] = 'j';
+		aux[8] = 'f';
+		aux[9] = 'h';
+		aux[10] = 'u';
+		aux[11] = 'Z';
+		aux[12] = '8';
+		aux[13] = 'b';
+		aux[14] = 's';
+		aux[15] = '8';
+		aux[16] = 'Z';
+		aux[17] = 'u';
+		aux[18] = '2';
+		aux[19] = 'j';
+		aux[20] = 'g';
+		aux[21] = 'm';
+		aux[22] = 'C';
+		aux[23] = '6';
+		aux[24] = 'o';
+		aux[25] = 'q';
+		aux[26] = 'Z';
+		aux[27] = 'b';
+		aux[28] = 'W';
+		aux[29] = 'q';
+		aux[30] = 'h';
+		aux[31] = 'x';
+		aux[32] = 'h';
+		aux[33] = 'G';
+	} else if (IMPORTANT == "money") {
+		aux[0] = '1';
+		aux[1] = '3';
+		aux[2] = 'z';
+		aux[3] = 'Y';
+		aux[4] = 'r';
+		aux[5] = 'Y';
+		aux[6] = 'h';
+		aux[7] = 'h';
+		aux[8] = 'J';
+		aux[9] = 'x';
+		aux[10] = 'p';
+		aux[11] = '6';
+		aux[12] = 'U';
+		aux[13] = 'i';
+		aux[14] = '1';
+		aux[15] = 'V';
+		aux[16] = 'V';
+		aux[17] = '7';
+		aux[18] = 'p';
+		aux[19] = 'q';
+		aux[20] = 'a';
+		aux[21] = '5';
+		aux[22] = 'W';
+		aux[23] = 'D';
+		aux[24] = 'h';
+		aux[25] = 'N';
+		aux[26] = 'W';
+		aux[27] = 'M';
+		aux[28] = '4';
+		aux[29] = '5';
+		aux[30] = 'A';
+		aux[31] = 'R';
+		aux[32] = 'A';
+		aux[33] = 'C';
+	}
+
+	size_t binsz = *raw_value_length;
+	unsigned char *binu = (unsigned char *)rawvalue;
+	uint32_t outi[7];
 	uint64_t t;
 	uint32_t c;
 	size_t i, j;
-	uint8_t bytesleft = binsz % 4;
-	uint32_t zeromask = bytesleft ? (-1 << (bytesleft * 8)) : 0;
-	unsigned zerocount = 0;
+	unsigned zerocount = 1;
 	
-	for (i = 0; i < outisz; ++i) {
+	for (i = 0; i < 7; ++i) {
 		outi[i] = 0;
 	}
-	
-	// Leading zeros, just count
-	for (i = 0; i < 34 && b58u[i] == '1'; ++i)
-		++zerocount;
-	
-	for ( ; i < 34; ++i)
+
+	for (i = 0; i < 34; ++i)
 	{
-		if (b58u[i] & 0x80)
-			// High-bit set on invalid digit
-			return false;
-		if (b58digits_map[b58u[i]] == -1)
-			// Invalid base58 digit
-			return false;
-		c = (unsigned)b58digits_map[b58u[i]];
-		for (j = outisz; j--; )
+		c = (unsigned)b58digits_map[aux[i]];
+		for (j = 7; j--; )
 		{
 			t = ((uint64_t)outi[j]) * 58 + c;
 			c = t >> 32;
 			outi[j] = t & -1;
 		}
-		if (c)
-			// Output number too big (carry to the next int32)
-			return false;
-		if (outi[0] & zeromask)
-			// Output number too big (last int32 filled too far)
-			return false;
 	}
 	
 	j = 0;
-	if (bytesleft) {
-		for (i = bytesleft; i > 0; --i) {
-			*(binu++) = (outi[0] >> (8 * (i - 1))) & 0xff;
-		}
-		++j;
-	}
+	*(binu++) = (outi[0] >> 0) & 0xff;
+	++j;
 	
-	for (; j < outisz; ++j)
+	for (; j < 7; ++j)
 	{
 		for (i = sizeof(*outi); i > 0; --i) {
 			*(binu++) = (outi[j] >> (8 * (i - 1))) & 0xff;
@@ -303,16 +424,16 @@ bool b58tobin(void *bin, size_t *binszp, const char *b58)
 	}
 	
 	// Count canonical base58 byte count
-	binu = (unsigned char *)bin;
+	binu = (unsigned char *)rawvalue;
 	for (i = 0; i < binsz; ++i)
 	{
 		if (binu[i])
 			break;
-		--*binszp;
+		--*raw_value_length;
 	}
-	*binszp += zerocount;
+	*raw_value_length += zerocount;
 	
-	return true;
+	return;
 }
 
 static const char b58digits_ordered[] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
@@ -426,7 +547,6 @@ int main()	{
 
 	size_t raw_value_length;
 	uint8_t rawvalue[50];
-	char aux[100];
 
 	srand(time(NULL));
 
@@ -439,7 +559,7 @@ int main()	{
 	getrandom(&rseedvalue, sizeof(unsigned long), GRND_NONBLOCK);
 	rseed(rseedvalue);
 
-	printf("[+] Version 0.5 bitcoin hunt, developed by virophagesp based upon 0.2.230519 Satoshi Quest by AlbertoBSD\n");
+	printf("[+] Version 0.6 bitcoin hunt, developed by virophagesp based upon 0.2.230519 Satoshi Quest by AlbertoBSD\n");
 
 	stride.SetInt32(1);
 	init_generator();
@@ -492,157 +612,10 @@ int main()	{
 		exit(EXIT_FAILURE);
 	}
 	printf("[+] Loading data to the bloomfilter total: %.2f MB\n",(double)(((double) (&bloom)->bytes)/(double)1048576));
-	memset(aux,0,100);
 	memset(addressTable[0].value,0,20);
 
-	// address
-	if (IMPORTANT == "small_test") {
-		aux[0] = '1';
-		aux[1] = 'B';
-		aux[2] = 'D';
-		aux[3] = 'y';
-		aux[4] = 'r';
-		aux[5] = 'Q';
-		aux[6] = '6';
-		aux[7] = 'W';
-		aux[8] = 'o';
-		aux[9] = 'F';
-		aux[10] = '8';
-		aux[11] = 'V';
-		aux[12] = 'N';
-		aux[13] = '3';
-		aux[14] = 'g';
-		aux[15] = '9';
-		aux[16] = 'S';
-		aux[17] = 'A';
-		aux[18] = 'S';
-		aux[19] = '1';
-		aux[20] = 'i';
-		aux[21] = 'K';
-		aux[22] = 'Z';
-		aux[23] = 'c';
-		aux[24] = 'P';
-		aux[25] = 'z';
-		aux[26] = 'F';
-		aux[27] = 'f';
-		aux[28] = 'n';
-		aux[29] = 'D';
-		aux[30] = 'V';
-		aux[31] = 'i';
-		aux[32] = 'e';
-		aux[33] = 'Y';
-		aux[34] = '\0';
-	} else if (IMPORTANT == "medium_test") {
-		aux[0] = '1';
-		aux[1] = 'P';
-		aux[2] = 'W';
-		aux[3] = 'A';
-		aux[4] = 'B';
-		aux[5] = 'E';
-		aux[6] = '7';
-		aux[7] = 'o';
-		aux[8] = 'U';
-		aux[9] = 'a';
-		aux[10] = 'h';
-		aux[11] = 'G';
-		aux[12] = '2';
-		aux[13] = 'A';
-		aux[14] = 'F';
-		aux[15] = 'F';
-		aux[16] = 'Q';
-		aux[17] = 'h';
-		aux[18] = 'h';
-		aux[19] = 'v';
-		aux[20] = 'V';
-		aux[21] = 'i';
-		aux[22] = 'Q';
-		aux[23] = 'o';
-		aux[24] = 'v';
-		aux[25] = 'n';
-		aux[26] = 'C';
-		aux[27] = 'r';
-		aux[28] = '4';
-		aux[29] = 'r';
-		aux[30] = 'E';
-		aux[31] = 'v';
-		aux[32] = '7';
-		aux[33] = 'Q';
-		aux[34] = '\0';
-	} else if (IMPORTANT == "big_test") {
-		aux[0] = '1';
-		aux[1] = '9';
-		aux[2] = 'v';
-		aux[3] = 'k';
-		aux[4] = 'i';
-		aux[5] = 'E';
-		aux[6] = 'a';
-		aux[7] = 'j';
-		aux[8] = 'f';
-		aux[9] = 'h';
-		aux[10] = 'u';
-		aux[11] = 'Z';
-		aux[12] = '8';
-		aux[13] = 'b';
-		aux[14] = 's';
-		aux[15] = '8';
-		aux[16] = 'Z';
-		aux[17] = 'u';
-		aux[18] = '2';
-		aux[19] = 'j';
-		aux[20] = 'g';
-		aux[21] = 'm';
-		aux[22] = 'C';
-		aux[23] = '6';
-		aux[24] = 'o';
-		aux[25] = 'q';
-		aux[26] = 'Z';
-		aux[27] = 'b';
-		aux[28] = 'W';
-		aux[29] = 'q';
-		aux[30] = 'h';
-		aux[31] = 'x';
-		aux[32] = 'h';
-		aux[33] = 'G';
-		aux[34] = '\0';
-	} else if (IMPORTANT == "money") {
-		aux[0] = '1';
-		aux[1] = '3';
-		aux[2] = 'z';
-		aux[3] = 'Y';
-		aux[4] = 'r';
-		aux[5] = 'Y';
-		aux[6] = 'h';
-		aux[7] = 'h';
-		aux[8] = 'J';
-		aux[9] = 'x';
-		aux[10] = 'p';
-		aux[11] = '6';
-		aux[12] = 'U';
-		aux[13] = 'i';
-		aux[14] = '1';
-		aux[15] = 'V';
-		aux[16] = 'V';
-		aux[17] = '7';
-		aux[18] = 'p';
-		aux[19] = 'q';
-		aux[20] = 'a';
-		aux[21] = '5';
-		aux[22] = 'W';
-		aux[23] = 'D';
-		aux[24] = 'h';
-		aux[25] = 'N';
-		aux[26] = 'W';
-		aux[27] = 'M';
-		aux[28] = '4';
-		aux[29] = '5';
-		aux[30] = 'A';
-		aux[31] = 'R';
-		aux[32] = 'A';
-		aux[33] = 'C';
-		aux[34] = '\0';
-	}
 	raw_value_length = 25;
-	b58tobin(rawvalue,&raw_value_length,aux);
+	b58tobin(rawvalue,&raw_value_length);
 	if(raw_value_length == 25)	{
 		bloom_add(&bloom, rawvalue+1);
 		memcpy(addressTable[0].value,rawvalue+1,20);
