@@ -11,9 +11,51 @@ email: albertobsd@gmail.com
  */
 
 
+/*
+ * 
+ * Copyright (c) 2012,2015,2016,2017 Jyri J. Virkki
+ * All rights reserved.
+ * 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ * 
+ * 1. Redistributions of source code must retain the above copyright
+ * notice, this list of conditions and the following disclaimer.
+ * 
+ * 2. Redistributions in binary form must reproduce the above copyright
+ * notice, this list of conditions and the following disclaimer in the
+ * documentation and/or other materials provided with the distribution.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include <math.h>
 #include <inttypes.h>
-#include "bloom/bloom.h"
+
+#include <assert.h>
+#include <fcntl.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <pthread.h>
+
+#include "xxhash/xxhash.h"
+
 #include "util.h"
 
 #include "secp256k1/SECP256k1.h"
@@ -28,6 +70,154 @@ email: albertobsd@gmail.com
 //#define IMPORTANT "medium_test"
 //#define IMPORTANT "big_test"
 //#define IMPORTANT "money"
+
+/** ***************************************************************************
+ * Structure to keep track of one bloom filter.  Caller needs to
+ * allocate this and pass it to the functions below. First call for
+ * every struct must be to bloom_init().
+ *
+ */
+struct bloom
+{
+  // These fields are part of the public interface of this structure.
+  // Client code may read these values if desired. Client code MUST NOT
+  // modify any of these.
+  uint64_t entries;
+  uint64_t bits;
+  uint64_t bytes;
+  uint8_t hashes;
+  long double error;
+
+  // Fields below are private to the implementation. These may go away or
+  // change incompatibly at any moment. Client code MUST NOT access or rely
+  // on these.
+  uint8_t ready;
+  uint8_t major;
+  uint8_t minor;
+  double bpe;
+  uint8_t *bf;
+};
+
+struct address_value	{
+	uint8_t value[20];
+};
+
+struct tothread {
+	int nt;     //Number thread
+	char *rs;   //range start
+	char *rpt;  //rng per thread
+};
+
+int bloom_init2(struct bloom * bloom);
+int bloom_check(struct bloom * bloom, const void * buffer);
+int bloom_add(struct bloom * bloom, const void * buffer);
+
+inline static int test_bit_set_bit(uint8_t *bf, uint64_t bit, int set_bit)
+{
+  uint64_t byte = bit >> 3;
+  uint8_t c = bf[byte];	 // expensive memory access
+  uint8_t mask = 1 << (bit % 8);
+  if (c & mask) {
+    return 1;
+  } else {
+    if (set_bit) {
+		bf[byte] = c | mask;
+    }
+    return 0;
+  }
+}
+
+inline static int test_bit(uint8_t *bf, uint64_t bit)
+{
+  uint64_t byte = bit >> 3;
+  uint8_t c = bf[byte];	 // expensive memory access
+  uint8_t mask = 1 << (bit % 8);
+  if (c & mask) {
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
+int bloom_init2(struct bloom * bloom)
+{
+  memset(bloom, 0, sizeof(struct bloom));
+  bloom->entries = 10000;
+  bloom->error = 0.000001;
+
+  long double num = -log(bloom->error);
+  long double denom = 0.480453013918201; // ln(2)^2
+  bloom->bpe = (num / denom);
+
+  long double dentries = (long double)10000;
+  long double allbits = dentries * bloom->bpe;
+  bloom->bits = (uint64_t)allbits;
+
+  bloom->bytes = (uint64_t) bloom->bits / 8;
+  if (bloom->bits % 8) {
+    bloom->bytes +=1;
+  }
+
+  bloom->hashes = (uint8_t)ceil(0.693147180559945 * bloom->bpe);  // ln(2)
+  
+  bloom->bf = (uint8_t *)calloc(bloom->bytes, sizeof(uint8_t));
+  if (bloom->bf == NULL) {                                   // LCOV_EXCL_START
+    return 1;
+  }                                                          // LCOV_EXCL_STOP
+
+  bloom->ready = 1;
+  bloom->major = 2;
+  bloom->minor = 201;
+  return 0;
+}
+
+int bloom_check(struct bloom * bloom, const void * buffer)
+{
+  if (bloom->ready == 0) {
+    printf("bloom at %p not initialized!\n", (void *)bloom);
+    return -1;
+  }
+  uint8_t hits = 0;
+  uint64_t a = XXH64(buffer, 20, 0x59f2815b16f81798);
+  uint64_t b = XXH64(buffer, 20, a);
+  uint64_t x;
+  uint8_t i;
+  for (i = 0; i < bloom->hashes; i++) {
+    x = (a + b*i) % bloom->bits;
+    if (test_bit(bloom->bf, x)) {
+      hits++;
+    } else {
+      return 0;
+    }
+  }
+  if (hits == bloom->hashes) {
+    return 1;                // 1 == element already in (or collision)
+  }
+  return 0;
+}
+
+int bloom_add(struct bloom * bloom, const void * buffer)
+{
+  if (bloom->ready == 0) {
+    printf("bloom at %p not initialized!\n", (void *)bloom);
+    return -1;
+  }
+  uint8_t hits = 0;
+  uint64_t a = XXH64(buffer, 20, 0x59f2815b16f81798);
+  uint64_t b = XXH64(buffer, 20, a);
+  uint64_t x;
+  uint8_t i;
+  for (i = 0; i < bloom->hashes; i++) {
+    x = (a + b*i) % bloom->bits;
+    if (test_bit_set_bit(bloom->bf, x, 1)) {
+      hits++;
+    }
+  }
+  if (hits == bloom->hashes) {
+    return 1;                // 1 == element already in (or collision)
+  }
+  return 0;
+}
 
 static const int8_t b58digits_map[] = {
 	-1,-1,-1,-1,-1,-1,-1,-1, -1,-1,-1,-1,-1,-1,-1,-1,
@@ -159,19 +349,6 @@ bool b58enc(char *b58, const void *data)
 	return true;
 }
 
-struct address_value	{
-	uint8_t value[20];
-};
-
-struct tothread {
-	int nt;     //Number thread
-	char *rs;   //range start
-	char *rpt;  //rng per thread
-};
-
-std::vector<Point> Gn;
-Point _2Gn;
-
 void init_generator();
 
 void sleep_ms(int milliseconds);
@@ -189,6 +366,9 @@ void checkpointer(void *ptr,const char *file,const char *function,const  char *n
 void writeFileIfNeeded();
 
 void *thread_process(void *vargp);
+
+std::vector<Point> Gn;
+Point _2Gn;
 
 pthread_t *tid = NULL;
 
