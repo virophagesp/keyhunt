@@ -41,13 +41,13 @@ void Secp256K1::Init() {
   // Compute Generator table
   Point N(G);
   for(int i = 0; i < 32; i++) {
-    GTable[i * 256] = N;
+    GTable[i * 256].Set(N);
     N = DoubleDirect(N);
     for (int j = 1; j < 255; j++) {
-      GTable[i * 256 + j] = N;
+      GTable[i * 256 + j].Set(N);
       N = AddDirect(N, GTable[i * 256]);
     }
-    GTable[i * 256 + 255] = N; // Dummy point for check function
+    GTable[i * 256 + 255].Set(N); // Dummy point for check function
   }
 
 }
@@ -66,7 +66,7 @@ Point Secp256K1::ComputePublicKey(Int *privKey) {
     if(b)
       break;
   }
-  Q = GTable[256 * i + (b-1)];
+  Q.Set(GTable[256 * i + (b-1)]);
   i++;
 
   for(; i < 32; i++) {

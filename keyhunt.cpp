@@ -248,7 +248,7 @@ void b58tobin(void *rawvalue, size_t *raw_value_length)
 	unsigned char *binu = (unsigned char *)rawvalue;
 	uint32_t outi[7];
 	size_t i, j;
-	if (IMPORTANT == "small_test") {
+	if (strcmp(IMPORTANT, "small_test") == 0) {
 		outi[0] = 0;
 		outi[1] = 1881519343;
 		outi[2] = -1275116821;
@@ -256,7 +256,7 @@ void b58tobin(void *rawvalue, size_t *raw_value_length)
 		outi[4] = -1229636785;
 		outi[5] = 1231545309;
 		outi[6] = 617679621;
-	} else if (IMPORTANT == "medium_test") {
+	} else if (strcmp(IMPORTANT, "medium_test") == 0) {
 		outi[0] = 0;
 		outi[1] = -153715335;
 		outi[2] = -2084605883;
@@ -264,7 +264,7 @@ void b58tobin(void *rawvalue, size_t *raw_value_length)
 		outi[4] = -1205282133;
 		outi[5] = 643767290;
 		outi[6] = -289356897;
-	} else if (IMPORTANT == "big_test") {
+	} else if (strcmp(IMPORTANT, "big_test") == 0) {
 		outi[0] = 0;
 		outi[1] = 1642826320;
 		outi[2] = -932510332;
@@ -272,7 +272,7 @@ void b58tobin(void *rawvalue, size_t *raw_value_length)
 		outi[4] = 1542294820;
 		outi[5] = 14079402;
 		outi[6] = -852360005;
-	} else if (IMPORTANT == "money") {
+	} else if (strcmp(IMPORTANT, "money") == 0) {
 		outi[0] = 0;
 		outi[1] = 550669646;
 		outi[2] = -2024523449;
@@ -440,25 +440,25 @@ int main()	{
 	printf("[+] Range \n");
 
 	// range
-	if (IMPORTANT == "small_test") {
+	if (strcmp(IMPORTANT, "small_test") == 0) {
 		n_range_start.SetBase16((char *)"8000");
 		n_range_end.SetBase16((char *)"ffff");
 
 		printf("[+] -- from : 0x8000\n");
 		printf("[+] -- to   : 0xffff\n");
-	} else if (IMPORTANT == "medium_test") {
+	} else if (strcmp(IMPORTANT, "medium_test") == 0) {
 		n_range_start.SetBase16((char *)"200000000");
 		n_range_end.SetBase16((char *)"3ffffffff");
 
 		printf("[+] -- from : 0x200000000\n");
 		printf("[+] -- to   : 0x3ffffffff\n");
-	} else if (IMPORTANT == "big_test") {
+	} else if (strcmp(IMPORTANT, "big_test") == 0) {
 		n_range_start.SetBase16((char *)"100000000000000000");
 		n_range_end.SetBase16((char *)"1fffffffffffffffff");
 
 		printf("[+] -- from : 0x100000000000000000\n");
 		printf("[+] -- to   : 0x1fffffffffffffffff\n");
-	} else if (IMPORTANT == "money") {
+	} else if (strcmp(IMPORTANT, "money") == 0) {
 		n_range_start.SetBase16((char *)"200000000000000000000");
 		n_range_end.SetBase16((char *)"3ffffffffffffffffffff");
 
@@ -669,11 +669,11 @@ void *thread_process(void *vargp)	{
 				dx[i + 1].ModSub(&_2Gn.x,&startP.x); // For the next center point
 				grp->ModInv();
 
-				pts[512] = startP;
+				pts[512].Set(startP);
 
 				for(i = 0; i<hLength; i++) {
-					pp = startP;
-					pn = startP;
+					pp.Set(startP);
+					pn.Set(startP);
 
 					// P = startP + i*G
 					dy.ModSub(&Gn[i].y,&pp.y);
@@ -699,12 +699,12 @@ void *thread_process(void *vargp)	{
 					pp_offset = 512 + (i + 1);
 					pn_offset = 512 - (i + 1);
 
-					pts[pp_offset] = pp;
-					pts[pn_offset] = pn;
+					pts[pp_offset].Set(pp);
+					pts[pn_offset].Set(pn);
 				}
 
 				// First point (startP - (GRP_SZIE/2)*G)
-				pn = startP;
+				pn.Set(startP);
 				dyn.Set(&Gn[i].y);
 				dyn.ModNeg();
 				dyn.ModSub(&pn.y);
@@ -716,7 +716,7 @@ void *thread_process(void *vargp)	{
 				pn.x.ModAdd(&_p);
 				pn.x.ModSub(&Gn[i].x);
 
-				pts[0] = pn;
+				pts[0].Set(pn);
 
 				for(j = 0; j < 256;j++){
 					secp->GetHash160_fromX(P2PKH,0x02,&pts[(j*4)].x,&pts[(j*4)+1].x,&pts[(j*4)+2].x,&pts[(j*4)+3].x,(uint8_t*)publickeyhashrmd160_endomorphism[0][0],(uint8_t*)publickeyhashrmd160_endomorphism[0][1],(uint8_t*)publickeyhashrmd160_endomorphism[0][2],(uint8_t*)publickeyhashrmd160_endomorphism[0][3]);
@@ -752,7 +752,7 @@ void *thread_process(void *vargp)	{
 				steps[thread_number]++;
 
 				// Next start point (startP + GRP_SIZE*G)
-				pp = startP;
+				pp.Set(startP);
 				dy.ModSub(&_2Gn.y,&pp.y);
 
 				_s.ModMulK1(&dy,&dx[i + 1]);
@@ -766,7 +766,7 @@ void *thread_process(void *vargp)	{
 				pp.y.ModSub(&_2Gn.x,&pp.x);
 				pp.y.ModMulK1(&_s);
 				pp.y.ModSub(&_2Gn.y);
-				startP = pp;
+				startP.Set(pp);
 			}while(count < N_SEQUENTIAL_MAX && continue_flag);
 		}
 	} while(continue_flag);
@@ -895,12 +895,12 @@ void init_generator()	{
 	Point g;
 	g.Set(G);
 	Gn.reserve(512);
-	Gn[0] = g;
+	Gn[0].Set(g);
 	g = secp->DoubleDirect(g);
-	Gn[1] = g;
+	Gn[1].Set(g);
 	for(int i = 2; i < 512; i++) {
 		g = secp->AddDirect(g,G);
-		Gn[i] = g;
+		Gn[i].Set(g);
 	}
 	_2Gn = secp->DoubleDirect(Gn[511]);
 }
@@ -943,7 +943,7 @@ void writeFileIfNeeded()	{
 	size_t bytesWrite;
 	uint64_t dataSize;
 	// file bloom name
-	if (IMPORTANT == "small_test") {
+	if (strcmp(IMPORTANT, "small_test") == 0) {
 		fileBloomName[0] = 'd';
 		fileBloomName[1] = 'a';
 		fileBloomName[2] = 't';
@@ -962,7 +962,7 @@ void writeFileIfNeeded()	{
 		fileBloomName[15] = 'a';
 		fileBloomName[16] = 't';
 		fileBloomName[17] = '\0';
-	} else if (IMPORTANT == "medium_test") {
+	} else if (strcmp(IMPORTANT, "medium_test") == 0) {
 		fileBloomName[0] = 'd';
 		fileBloomName[1] = 'a';
 		fileBloomName[2] = 't';
@@ -981,7 +981,7 @@ void writeFileIfNeeded()	{
 		fileBloomName[15] = 'a';
 		fileBloomName[16] = 't';
 		fileBloomName[17] = '\0';
-	} else if (IMPORTANT == "big_test") {
+	} else if (strcmp(IMPORTANT, "big_test") == 0) {
 		fileBloomName[0] =  'd';
 		fileBloomName[1] =  'a';
 		fileBloomName[2] =  't';
@@ -1000,7 +1000,7 @@ void writeFileIfNeeded()	{
 		fileBloomName[15] = 'a';
 		fileBloomName[16] = 't';
 		fileBloomName[17] = '\0';
-	} else if (IMPORTANT == "money") {
+	} else if (strcmp(IMPORTANT, "money") == 0) {
 		fileBloomName[0] =  'd';
 		fileBloomName[1] =  'a';
 		fileBloomName[2] =  't';
