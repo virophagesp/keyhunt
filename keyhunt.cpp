@@ -56,8 +56,6 @@ email: albertobsd@gmail.com
 
 #include "xxhash/xxhash.h"
 
-#include "util.h"
-
 #include "secp256k1/SECP256k1.h"
 #include "secp256k1/IntGroup.h"
 
@@ -217,6 +215,20 @@ int bloom_add(struct bloom * bloom, const void * buffer)
     return 1;                // 1 == element already in (or collision)
   }
   return 0;
+}
+
+char *tohex(char *ptr,int length){
+  char *buffer;
+  int offset = 0;
+  unsigned char c;
+  buffer = (char *) malloc((length * 2)+1);
+  for (int i = 0; i <length; i++) {
+    c = ptr[i];
+	sprintf((char*) (buffer + offset),"%.2x",c);
+	offset+=2;
+  }
+  buffer[length*2] = 0;
+  return buffer;
 }
 
 static const int8_t b58digits_map[] = {

@@ -17,7 +17,6 @@
 
 #include "SECP256k1.h"
 #include "Point.h"
-#include "../util.h"
 #include "../hash/sha256.h"
 #include "../hash/ripemd160.h"
 
@@ -77,6 +76,18 @@ Point Secp256K1::ComputePublicKey(Int *privKey) {
   }
   Q.Reduce();
   return Q;
+}
+
+
+void tohex_dst(char *ptr,int length,char *dst)	{
+  int offset = 0;
+  unsigned char c;
+  for (int i = 0; i <length; i++) {
+    c = ptr[i];
+	sprintf((char*) (dst + offset),"%.2x",c);
+	offset+=2;
+  }
+  dst[length*2] = 0;
 }
 
 
