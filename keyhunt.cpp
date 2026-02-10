@@ -381,19 +381,10 @@ uint64_t N = 0;
 
 uint64_t N_SEQUENTIAL_MAX;
 
-Int OUTPUTSECONDS;
-
 Int stride;
 
 uint64_t bytes;
 struct address_value *addressTable;
-
-const char *str_limits_prefixs[7] = {"Mkeys/s","Gkeys/s","Tkeys/s","Pkeys/s","Ekeys/s","Zkeys/s","Ykeys/s"};
-const char *str_limits[7] = {"1000000","1000000000","1000000000000","1000000000000000","1000000000000000000","1000000000000000000000","1000000000000000000000000"};
-Int int_limits[7];
-
-Int ZERO;
-Int MPZAUX;
 
 Int n_range_start;
 Int n_range_end;
@@ -401,15 +392,8 @@ Int n_range_end;
 Secp256K1 *secp;
 
 int main()	{
-	char buffer[2048];
 	struct tothread *tt;	//tothread
-	char *str_seconds = NULL;
-	char *str_total = NULL;
-	char *str_pretotal = NULL;
-	char *str_divpretotal = NULL;
-	uint64_t i;
-	int continue_flag,check_flag,salir,j;
-	Int total,pretotal,debugcount_mpz,seconds,div_pretotal,int_aux,int_r,int_q,int58;
+	int continue_flag,check_flag;
 
 	int s;
 
@@ -420,8 +404,6 @@ int main()	{
 
 	secp = new Secp256K1();
 	secp->Init();
-	OUTPUTSECONDS.SetInt32(30);
-	ZERO.SetInt32(0);
 
 	unsigned long rseedvalue;
 	getrandom(&rseedvalue, sizeof(unsigned long), GRND_NONBLOCK);
@@ -509,69 +491,12 @@ int main()	{
 		exit(EXIT_FAILURE);
 	}
 
-	for(j =0; j < 7; j++)	{
-		int_limits[j].SetBase10((char*)str_limits[j]);
-	}
-
 	continue_flag = 1;
-	total.SetInt32(0);
-	pretotal.SetInt32(0);
-	debugcount_mpz.SetInt32(0x400);
-	seconds.SetInt32(0);
 	do	{
 		sleep_ms(1000);
-		seconds.AddOne();
 		check_flag = 1 & ends[0];
 		if(check_flag)	{
 			continue_flag = 0;
-		}
-		if(OUTPUTSECONDS.IsGreater(&ZERO) ){
-			MPZAUX.Set(&seconds);
-			MPZAUX.Mod(&OUTPUTSECONDS);
-			if(MPZAUX.IsZero()) {
-				total.SetInt32(0);
-
-				pretotal.Set(&debugcount_mpz);
-				pretotal.Mult(steps[0]);
-				total.Add(&pretotal);
-
-				total.Mult(2);
-
-				pretotal.Set(&total);
-				pretotal.Div(&seconds);
-				str_seconds = seconds.GetBase10();
-				str_pretotal = pretotal.GetBase10();
-				str_total = total.GetBase10();
-
-				if(pretotal.IsLower(&int_limits[0]))	{
-					sprintf(buffer,"\r[+] Total %s keys in %s seconds: %s keys/s\r",str_total,str_seconds,str_pretotal);
-				}
-				else	{
-					i = 0;
-					salir = 0;
-					while( i < 6 && !salir)	{
-						if(pretotal.IsLower(&int_limits[i+1]))	{
-							salir = 1;
-						}
-						else	{
-							i++;
-						}
-					}
-
-					div_pretotal.Set(&pretotal);
-					div_pretotal.Div(&int_limits[salir ? i : i-1]);
-					str_divpretotal = div_pretotal.GetBase10();
-					sprintf(buffer,"\r[+] Total %s keys in %s seconds: ~%s %s (%s keys/s)\r",str_total,str_seconds,str_divpretotal,str_limits_prefixs[salir ? i : i-1],str_pretotal);
-					free(str_divpretotal);
-
-				}
-				printf("%s",buffer);
-				fflush(stdout);
-
-				free(str_seconds);
-				free(str_pretotal);
-				free(str_total);
-			}
 		}
 	}while(continue_flag);
 	printf("\nEnd\n");
