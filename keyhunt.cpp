@@ -61,7 +61,6 @@ email: albertobsd@gmail.com
 
 #include "hash/sha256.h"
 
-#include <pthread.h>
 #include <sys/random.h>
 
 #define IMPORTANT "small_test"
@@ -366,8 +365,6 @@ void checkpointer(void *ptr,const char *file,const char *function,const  char *n
 
 void writeFileIfNeeded();
 
-void *thread_process(void *vargp);
-
 std::vector<Point> Gn;
 Point _2Gn;
 
@@ -391,14 +388,76 @@ Int n_range_end;
 
 Secp256K1 *secp;
 
+void rmd160toaddress_dst(char *rmd,char *dst){
+	char digest[60];
+	digest[0] = 0x00;
+	memcpy(digest+1,rmd,20);
+	sha256((uint8_t*)digest, 21,(uint8_t*) digest+21);
+	sha256((uint8_t*)digest+21, 32,(uint8_t*) digest+21);
+	if(!b58enc(dst,digest)){
+		fprintf(stderr,"error b58enc\n");
+	}
+}
+
+int searchbinary(struct address_value *buffer,char *data,int64_t array_length) {
+	int64_t half,min,max,current;
+	int r = 0,rcmp;
+	min = 0;
+	current = 0;
+	max = array_length;
+	half = array_length;
+	while(!r && half >= 1) {
+		half = (max - min)/2;
+		rcmp = memcmp(data,buffer[current+half].value,20);
+		if(rcmp == 0)	{
+			r = 1;	//Found!!
+		}
+		else	{
+			if(rcmp < 0) { //data < temp_read
+				max = (max-half);
+			}
+			else	{ // data > temp_read
+				min = (min+half);
+			}
+			current = min;
+		}
+	}
+	return r;
+}
+
 int main()	{
 	struct tothread *tt;	//tothread
-	int continue_flag,check_flag;
+	int check_flag;
 
 	int s;
 
 	size_t raw_value_length;
 	uint8_t rawvalue[50];
+
+	Point pts[1024];
+
+	Int dx[513];
+	IntGroup *grp = new IntGroup(513);
+	Point startP;
+	Int dy;
+	Int dyn;
+	Int _s;
+	Int _p;
+	Point pp;
+	Point pn;
+	int i,l,pp_offset,pn_offset,hLength = (511);
+	uint64_t j,count;
+	Point R,publickey;
+	int r,thread_number,continue_flag = 1,k;
+	char *hextemp = NULL;
+
+	char publickeyhashrmd160[20];
+
+	char publickeyhashrmd160_endomorphism[12][4][20];
+
+	Int key_mpz,keyfound,temp_stride;
+	thread_number = 0;
+	grp->Set(dx);
 
 	srand(time(NULL));
 
@@ -485,87 +544,14 @@ int main()	{
 	tt = (tothread*) malloc(sizeof(struct tothread));
 	checkpointer((void *)tt,__FILE__,"malloc","tt" ,__LINE__ -1 );
 	steps[0] = 0;
-	s = pthread_create(&tid[0],NULL,thread_process,(void *)tt);
-	if(s != 0)	{
-		fprintf(stderr,"[E] pthread_create thread_process\n");
-		exit(EXIT_FAILURE);
-	}
 
 	continue_flag = 1;
 	do	{
-		sleep_ms(1000);
 		check_flag = 1 & ends[0];
 		if(check_flag)	{
 			continue_flag = 0;
 		}
-	}while(continue_flag);
-	printf("\nEnd\n");
-}
 
-void rmd160toaddress_dst(char *rmd,char *dst){
-	char digest[60];
-	digest[0] = 0x00;
-	memcpy(digest+1,rmd,20);
-	sha256((uint8_t*)digest, 21,(uint8_t*) digest+21);
-	sha256((uint8_t*)digest+21, 32,(uint8_t*) digest+21);
-	if(!b58enc(dst,digest)){
-		fprintf(stderr,"error b58enc\n");
-	}
-}
-
-int searchbinary(struct address_value *buffer,char *data,int64_t array_length) {
-	int64_t half,min,max,current;
-	int r = 0,rcmp;
-	min = 0;
-	current = 0;
-	max = array_length;
-	half = array_length;
-	while(!r && half >= 1) {
-		half = (max - min)/2;
-		rcmp = memcmp(data,buffer[current+half].value,20);
-		if(rcmp == 0)	{
-			r = 1;	//Found!!
-		}
-		else	{
-			if(rcmp < 0) { //data < temp_read
-				max = (max-half);
-			}
-			else	{ // data > temp_read
-				min = (min+half);
-			}
-			current = min;
-		}
-	}
-	return r;
-}
-
-void *thread_process(void *vargp)	{
-	Point pts[1024];
-
-	Int dx[513];
-	IntGroup *grp = new IntGroup(513);
-	Point startP;
-	Int dy;
-	Int dyn;
-	Int _s;
-	Int _p;
-	Point pp;
-	Point pn;
-	int i,l,pp_offset,pn_offset,hLength = (511);
-	uint64_t j,count;
-	Point R,publickey;
-	int r,thread_number,continue_flag = 1,k;
-	char *hextemp = NULL;
-
-	char publickeyhashrmd160[20];
-
-	char publickeyhashrmd160_endomorphism[12][4][20];
-
-	Int key_mpz,keyfound,temp_stride;
-	thread_number = 0;
-	grp->Set(dx);
-
-	do {
 		if(n_range_start.IsLower(&n_range_end))	{
 			key_mpz.Set(&n_range_start);
 			n_range_start.Add(N_SEQUENTIAL_MAX);
@@ -696,7 +682,7 @@ void *thread_process(void *vargp)	{
 		}
 	} while(continue_flag);
 	ends[thread_number] = 1;
-	return NULL;
+	printf("\nEnd\n");
 }
 
 void _swap(struct address_value *a,struct address_value *b)	{
@@ -800,19 +786,6 @@ void _myheapsort(struct address_value	*arr, int64_t n)	{
 		_swap(&arr[0] , &arr[i]);
 		_heapify(arr, i, 0);
 	}
-}
-
-void sleep_ms(int milliseconds)	{ // cross-platform sleep function
-#if _POSIX_C_SOURCE >= 199309L
-    struct timespec ts;
-    ts.tv_sec = milliseconds / 1000;
-    ts.tv_nsec = (milliseconds % 1000) * 1000000;
-    nanosleep(&ts, NULL);
-#else
-    if (milliseconds >= 1000)
-      sleep(milliseconds / 1000);
-    usleep((milliseconds % 1000) * 1000);
-#endif
 }
 
 void init_generator()	{
