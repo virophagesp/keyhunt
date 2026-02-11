@@ -117,7 +117,7 @@ Int n_range_end;
 
 Secp256K1 *secp;
 
-inline static int test_bit_set_bit(uint8_t *bf, uint64_t bit, int set_bit)
+inline static int test_bit_set_bit(uint8_t *bf, uint64_t bit)
 {
   uint64_t byte = bit >> 3;
   uint8_t c = bf[byte];	 // expensive memory access
@@ -125,9 +125,7 @@ inline static int test_bit_set_bit(uint8_t *bf, uint64_t bit, int set_bit)
   if (c & mask) {
     return 1;
   } else {
-    if (set_bit) {
-		bf[byte] = c | mask;
-    }
+    bf[byte] = c | mask;
     return 0;
   }
 }
@@ -214,7 +212,7 @@ int bloom_add(struct bloom * bloom, const void * buffer)
   uint8_t i;
   for (i = 0; i < bloom->hashes; i++) {
     x = (a + b*i) % bloom->bits;
-    if (test_bit_set_bit(bloom->bf, x, 1)) {
+    if (test_bit_set_bit(bloom->bf, x)) {
       hits++;
     }
   }
@@ -224,17 +222,17 @@ int bloom_add(struct bloom * bloom, const void * buffer)
   return 0;
 }
 
-char *tohex(char *ptr,int length){
+char *tohex(char *ptr){
   char *buffer;
   int offset = 0;
   unsigned char c;
-  buffer = (char *) malloc((length * 2)+1);
-  for (int i = 0; i <length; i++) {
+  buffer = (char *) malloc(41);
+  for (int i = 0; i <20; i++) {
     c = ptr[i];
 	sprintf((char*) (buffer + offset),"%.2x",c);
 	offset+=2;
   }
-  buffer[length*2] = 0;
+  buffer[40] = 0;
   return buffer;
 }
 
@@ -439,7 +437,7 @@ void init_generator()	{
 	_2Gn = secp->DoubleDirect(Gn[511]);
 }
 
-void writekey(bool compressed,Int *key)	{
+void writekey(Int *key)	{
 	Point publickey;
 	FILE *keys;
 	char *hextemp,*hexrmd,public_key_hex[132],address[50],rmdhash[20];
@@ -447,9 +445,9 @@ void writekey(bool compressed,Int *key)	{
 	memset(public_key_hex,0,132);
 	hextemp = key->GetBase16();
 	publickey = secp->ComputePublicKey(key);
-	secp->GetPublicKeyHex(compressed,publickey,public_key_hex);
-	secp->GetHash160(P2PKH,compressed,publickey,(uint8_t*)rmdhash);
-	hexrmd = tohex(rmdhash,20);
+	secp->GetPublicKeyHex(true,publickey,public_key_hex);
+	secp->GetHash160(P2PKH,true,publickey,(uint8_t*)rmdhash);
+	hexrmd = tohex(rmdhash);
 	rmd160toaddress_dst(rmdhash,address);
 
 	keys = fopen("KEYFOUNDKEYFOUND.txt","a+");
@@ -461,159 +459,6 @@ void writekey(bool compressed,Int *key)	{
 
 	free(hextemp);
 	free(hexrmd);
-}
-
-void writeFileIfNeeded()	{
-	FILE *fileDescriptor;
-	char fileBloomName[30];
-	char dataChecksum[32],bloomChecksum[32];
-	size_t bytesWrite;
-	uint64_t dataSize;
-	// file bloom name
-	if (strcmp(IMPORTANT, "small_test") == 0) {
-		fileBloomName[0] = 'd';
-		fileBloomName[1] = 'a';
-		fileBloomName[2] = 't';
-		fileBloomName[3] = 'a';
-		fileBloomName[4] = '_';
-		fileBloomName[5] = '5';
-		fileBloomName[6] = '9';
-		fileBloomName[7] = '6';
-		fileBloomName[8] = 'd';
-		fileBloomName[9] = '6';
-		fileBloomName[10] = 'f';
-		fileBloomName[11] = '1';
-		fileBloomName[12] = '2';
-		fileBloomName[13] = '.';
-		fileBloomName[14] = 'd';
-		fileBloomName[15] = 'a';
-		fileBloomName[16] = 't';
-		fileBloomName[17] = '\0';
-	} else if (strcmp(IMPORTANT, "medium_test") == 0) {
-		fileBloomName[0] = 'd';
-		fileBloomName[1] = 'a';
-		fileBloomName[2] = 't';
-		fileBloomName[3] = 'a';
-		fileBloomName[4] = '_';
-		fileBloomName[5] = '2';
-		fileBloomName[6] = '4';
-		fileBloomName[7] = 'f';
-		fileBloomName[8] = '4';
-		fileBloomName[9] = '0';
-		fileBloomName[10] = '4';
-		fileBloomName[11] = '9';
-		fileBloomName[12] = 'c';
-		fileBloomName[13] = '.';
-		fileBloomName[14] = 'd';
-		fileBloomName[15] = 'a';
-		fileBloomName[16] = 't';
-		fileBloomName[17] = '\0';
-	} else if (strcmp(IMPORTANT, "big_test") == 0) {
-		fileBloomName[0] =  'd';
-		fileBloomName[1] =  'a';
-		fileBloomName[2] =  't';
-		fileBloomName[3] =  'a';
-		fileBloomName[4] =  '_';
-		fileBloomName[5] =  '9';
-		fileBloomName[6] =  '5';
-		fileBloomName[7] =  'a';
-		fileBloomName[8] =  '7';
-		fileBloomName[9] =  'd';
-		fileBloomName[10] = '8';
-		fileBloomName[11] = '6';
-		fileBloomName[12] = '1';
-		fileBloomName[13] = '.';
-		fileBloomName[14] = 'd';
-		fileBloomName[15] = 'a';
-		fileBloomName[16] = 't';
-		fileBloomName[17] = '\0';
-	} else if (strcmp(IMPORTANT, "money") == 0) {
-		fileBloomName[0] =  'd';
-		fileBloomName[1] =  'a';
-		fileBloomName[2] =  't';
-		fileBloomName[3] =  'a';
-		fileBloomName[4] =  '_';
-		fileBloomName[5] =  '6';
-		fileBloomName[6] =  'f';
-		fileBloomName[7] =  '6';
-		fileBloomName[8] =  'e';
-		fileBloomName[9] =  '6';
-		fileBloomName[10] = 'e';
-		fileBloomName[11] = 'a';
-		fileBloomName[12] = '2';
-		fileBloomName[13] = '.';
-		fileBloomName[14] = 'd';
-		fileBloomName[15] = 'a';
-		fileBloomName[16] = 't';
-		fileBloomName[17] = '\0';
-	}
-	fileDescriptor = fopen(fileBloomName,"wb");
-	dataSize = N * 20;
-	printf("[D] size data %li\n",dataSize);
-	if(fileDescriptor != NULL)	{
-		printf("[+] Writing file %s ",fileBloomName);
-
-		//calculate bloom checksum
-		//write bloom checksum (expected value to be checked)
-		//write bloom filter structure
-		//write bloom filter data
-
-		//calculate dataChecksum
-		//write data checksum (expected value to be checked)
-		//write data size
-		//write data
-
-		sha256((uint8_t*)bloom.bf,bloom.bytes,(uint8_t*)bloomChecksum);
-		printf(".");
-		bytesWrite = fwrite(bloomChecksum,1,32,fileDescriptor);
-		if(bytesWrite != 32)	{
-			fprintf(stderr,"[E] Errore writing file, code line %i\n",__LINE__ - 2);
-			exit(EXIT_FAILURE);
-		}
-		printf(".");
-
-		bytesWrite = fwrite(&bloom,1,sizeof(struct bloom),fileDescriptor);
-		if(bytesWrite != sizeof(struct bloom))	{
-			fprintf(stderr,"[E] Error writing file, code line %i\n",__LINE__ - 2);
-			exit(EXIT_FAILURE);
-		}
-		printf(".");
-
-		bytesWrite = fwrite(bloom.bf,1,bloom.bytes,fileDescriptor);
-		if(bytesWrite != bloom.bytes)	{
-			fprintf(stderr,"[E] Error writing file, code line %i\n",__LINE__ - 2);
-			fclose(fileDescriptor);
-			exit(EXIT_FAILURE);
-		}
-		printf(".");
-
-		sha256((uint8_t*)addressTable,dataSize,(uint8_t*)dataChecksum);
-		printf(".");
-
-		bytesWrite = fwrite(dataChecksum,1,32,fileDescriptor);
-		if(bytesWrite != 32)	{
-			fprintf(stderr,"[E] Errore writing file, code line %i\n",__LINE__ - 2);
-			exit(EXIT_FAILURE);
-		}
-		printf(".");
-
-		bytesWrite = fwrite(&dataSize,1,sizeof(uint64_t),fileDescriptor);
-		if(bytesWrite != sizeof(uint64_t))	{
-			fprintf(stderr,"[E] Errore writing file, code line %i\n",__LINE__ - 2);
-			exit(EXIT_FAILURE);
-		}
-		printf(".");
-
-		bytesWrite = fwrite(addressTable,1,dataSize,fileDescriptor);
-		if(bytesWrite != dataSize)	{
-			fprintf(stderr,"[E] Error writing file, code line %i\n",__LINE__ - 2);
-			exit(EXIT_FAILURE);
-		}
-		printf(".");
-
-		fclose(fileDescriptor);
-		printf("\n");
-	}
 }
 
 int main()	{
@@ -822,7 +667,6 @@ int main()	{
 	printf("[+] Sorting data ...");
 	_sort(addressTable,N);
 	printf(" done! %" PRIu64 " values were loaded and sorted\n",N);
-	writeFileIfNeeded();
 
 	continue_flag = 1;
 	do	{
@@ -928,7 +772,7 @@ int main()	{
 										keyfound.Neg();
 										keyfound.Add(&secp->order);
 									}
-									writekey(true,&keyfound);
+									writekey(&keyfound);
 								}
 							}
 						}
