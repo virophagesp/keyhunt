@@ -104,8 +104,6 @@ Point _2Gn;
 
 struct bloom bloom;
 
-uint64_t *steps = NULL;
-unsigned int *ends = NULL;
 uint64_t N = 0;
 
 uint64_t N_SEQUENTIAL_MAX;
@@ -441,13 +439,6 @@ void init_generator()	{
 	_2Gn = secp->DoubleDirect(Gn[511]);
 }
 
-void checkpointer(void *ptr,const char *file,const char *function,const  char *name,int line)	{
-	if(ptr == NULL)	{
-		fprintf(stderr,"[E] error in file %s, %s pointer %s on line %i\n",file,function,name,line); 
-		exit(EXIT_FAILURE);
-	}
-}
-
 void writekey(bool compressed,Int *key)	{
 	Point publickey;
 	FILE *keys;
@@ -628,7 +619,7 @@ void writeFileIfNeeded()	{
 int main()	{
 	int check_flag;
 
-	uint8_t rawvalue[50];
+	uint8_t rawvalue[25];
 
 	Point pts[1024];
 
@@ -644,7 +635,7 @@ int main()	{
 	int i,l,pp_offset,pn_offset,hLength = (511);
 	uint64_t j,count;
 	Point R,publickey;
-	int r,thread_number,continue_flag = 1,k;
+	int r,continue_flag = 1,k;
 	char *hextemp = NULL;
 
 	char publickeyhashrmd160[20];
@@ -652,7 +643,6 @@ int main()	{
 	char publickeyhashrmd160_endomorphism[12][4][20];
 
 	Int key_mpz,keyfound,temp_stride;
-	thread_number = 0;
 	grp->Set(dx);
 
 	srand(time(NULL));
@@ -720,66 +710,111 @@ int main()	{
 	memset(addressTable[0].value,0,20);
 
 	// address
-	uint32_t outi[7];
 	if (strcmp(IMPORTANT, "small_test") == 0) {
-		outi[0] = 0;
-		outi[1] = 1881519343;
-		outi[2] = -1275116821;
-		outi[3] = 1299018234;
-		outi[4] = -1229636785;
-		outi[5] = 1231545309;
-		outi[6] = 617679621;
+		rawvalue[0] = 0;
+		rawvalue[1] = 112;
+		rawvalue[2] = 37;
+		rawvalue[3] = 180;
+		rawvalue[4] = 239;
+		rawvalue[5] = 179;
+		rawvalue[6] = 255;
+		rawvalue[7] = 66;
+		rawvalue[8] = 235;
+		rawvalue[9] = 77;
+		rawvalue[10] = 109;
+		rawvalue[11] = 113;
+		rawvalue[12] = 250;
+		rawvalue[13] = 182;
+		rawvalue[14] = 181;
+		rawvalue[15] = 59;
+		rawvalue[16] = 79;
+		rawvalue[17] = 73;
+		rawvalue[18] = 103;
+		rawvalue[19] = 227;
+		rawvalue[20] = 221;
+		rawvalue[21] = 36;
+		rawvalue[22] = 209;
+		rawvalue[23] = 11;
+		rawvalue[24] = 5;
 	} else if (strcmp(IMPORTANT, "medium_test") == 0) {
-		outi[0] = 0;
-		outi[1] = -153715335;
-		outi[2] = -2084605883;
-		outi[3] = 254368924;
-		outi[4] = -1205282133;
-		outi[5] = 643767290;
-		outi[6] = -289356897;
+		rawvalue[0] = 0;
+		rawvalue[1] = 246;
+		rawvalue[2] = 214;
+		rawvalue[3] = 125;
+		rawvalue[4] = 121;
+		rawvalue[5] = 131;
+		rawvalue[6] = 191;
+		rawvalue[7] = 112;
+		rawvalue[8] = 69;
+		rawvalue[9] = 15;
+		rawvalue[10] = 41;
+		rawvalue[11] = 92;
+		rawvalue[12] = 156;
+		rawvalue[13] = 184;
+		rawvalue[14] = 40;
+		rawvalue[15] = 218;
+		rawvalue[16] = 171;
+		rawvalue[17] = 38;
+		rawvalue[18] = 95;
+		rawvalue[19] = 27;
+		rawvalue[20] = 250;
+		rawvalue[21] = 238;
+		rawvalue[22] = 192;
+		rawvalue[23] = 195;
+		rawvalue[24] = 159;
 	} else if (strcmp(IMPORTANT, "big_test") == 0) {
-		outi[0] = 0;
-		outi[1] = 1642826320;
-		outi[2] = -932510332;
-		outi[3] = -1150124586;
-		outi[4] = 1542294820;
-		outi[5] = 14079402;
-		outi[6] = -852360005;
+		rawvalue[0] = 0;
+		rawvalue[1] = 97;
+		rawvalue[2] = 235;
+		rawvalue[3] = 138;
+		rawvalue[4] = 80;
+		rawvalue[5] = 200;
+		rawvalue[6] = 107;
+		rawvalue[7] = 5;
+		rawvalue[8] = 132;
+		rawvalue[9] = 187;
+		rawvalue[10] = 114;
+		rawvalue[11] = 125;
+		rawvalue[12] = 214;
+		rawvalue[13] = 91;
+		rawvalue[14] = 237;
+		rawvalue[15] = 141;
+		rawvalue[16] = 36;
+		rawvalue[17] = 0;
+		rawvalue[18] = 214;
+		rawvalue[19] = 213;
+		rawvalue[20] = 170;
+		rawvalue[21] = 205;
+		rawvalue[22] = 50;
+		rawvalue[23] = 4;
+		rawvalue[24] = 187;
 	} else if (strcmp(IMPORTANT, "money") == 0) {
-		outi[0] = 0;
-		outi[1] = 550669646;
-		outi[2] = -2024523449;
-		outi[3] = -941321925;
-		outi[4] = -842094058;
-		outi[5] = -487002015;
-		outi[6] = -706377603;
+		rawvalue[0] = 0;
+		rawvalue[1] = 32;
+		rawvalue[2] = 210;
+		rawvalue[3] = 141;
+		rawvalue[4] = 78;
+		rawvalue[5] = 135;
+		rawvalue[6] = 84;
+		rawvalue[7] = 57;
+		rawvalue[8] = 71;
+		rawvalue[9] = 199;
+		rawvalue[10] = 228;
+		rawvalue[11] = 145;
+		rawvalue[12] = 59;
+		rawvalue[13] = 205;
+		rawvalue[14] = 206;
+		rawvalue[15] = 170;
+		rawvalue[16] = 22;
+		rawvalue[17] = 226;
+		rawvalue[18] = 248;
+		rawvalue[19] = 240;
+		rawvalue[20] = 97;
+		rawvalue[21] = 213;
+		rawvalue[22] = 229;
+		rawvalue[23] = 136;
+		rawvalue[24] = 125;
 	}
-	
-	rawvalue[0] = (outi[0] >> 0) & 0xff;
-	rawvalue[1] = (outi[1] >> 24) & 0xff;
-	rawvalue[2] = (outi[1] >> 16) & 0xff;
-	rawvalue[3] = (outi[1] >> 8) & 0xff;
-	rawvalue[4] = (outi[1] >> 0) & 0xff;
-	rawvalue[5] = (outi[2] >> 24) & 0xff;
-	rawvalue[6] = (outi[2] >> 16) & 0xff;
-	rawvalue[7] = (outi[2] >> 8) & 0xff;
-	rawvalue[8] = (outi[2] >> 0) & 0xff;
-	rawvalue[9] = (outi[3] >> 24) & 0xff;
-	rawvalue[10] = (outi[3] >> 16) & 0xff;
-	rawvalue[11] = (outi[3] >> 8) & 0xff;
-	rawvalue[12] = (outi[3] >> 0) & 0xff;
-	rawvalue[13] = (outi[4] >> 24) & 0xff;
-	rawvalue[14] = (outi[4] >> 16) & 0xff;
-	rawvalue[15] = (outi[4] >> 8) & 0xff;
-	rawvalue[16] = (outi[4] >> 0) & 0xff;
-	rawvalue[17] = (outi[5] >> 24) & 0xff;
-	rawvalue[18] = (outi[5] >> 16) & 0xff;
-	rawvalue[19] = (outi[5] >> 8) & 0xff;
-	rawvalue[20] = (outi[5] >> 0) & 0xff;
-	rawvalue[21] = (outi[6] >> 24) & 0xff;
-	rawvalue[22] = (outi[6] >> 16) & 0xff;
-	rawvalue[23] = (outi[6] >> 8) & 0xff;
-	rawvalue[24] = (outi[6] >> 0) & 0xff;
 
 	bloom_add(&bloom, rawvalue+1);
 	memcpy(addressTable[0].value,rawvalue+1,20);
@@ -789,15 +824,9 @@ int main()	{
 	printf(" done! %" PRIu64 " values were loaded and sorted\n",N);
 	writeFileIfNeeded();
 
-	steps = (uint64_t *) calloc(1,sizeof(uint64_t));
-	checkpointer((void *)steps,__FILE__,"calloc","steps" ,__LINE__ -1 );
-	ends = (unsigned int *) calloc(1,sizeof(int));
-	checkpointer((void *)ends,__FILE__,"calloc","ends" ,__LINE__ -1 );
-	steps[0] = 0;
-
 	continue_flag = 1;
 	do	{
-		check_flag = 1 & ends[0];
+		check_flag = 1 & 0;
 		if(check_flag)	{
 			continue_flag = 0;
 		}
@@ -910,8 +939,6 @@ int main()	{
 					key_mpz.Add(&temp_stride);
 				}
 
-				steps[thread_number]++;
-
 				// Next start point (startP + GRP_SIZE*G)
 				pp.Set(startP);
 				dy.ModSub(&_2Gn.y,&pp.y);
@@ -932,6 +959,5 @@ int main()	{
 		}
 	} while(continue_flag);
 	delete grp;
-	ends[thread_number] = 1;
 	printf("\nEnd\n");
 }
