@@ -206,20 +206,6 @@ int bloom_add(struct bloom * bloom, const void * buffer)
   return 0;
 }
 
-char *tohex(char *ptr){
-  char *buffer;
-  int offset = 0;
-  unsigned char c;
-  buffer = (char *) malloc(41);
-  for (int i = 0; i <20; i++) {
-    c = ptr[i];
-	sprintf((char*) (buffer + offset),"%.2x",c);
-	offset+=2;
-  }
-  buffer[40] = 0;
-  return buffer;
-}
-
 static const char b58digits_ordered[] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
 bool b58enc(char *b58, const void *data)
@@ -264,17 +250,6 @@ bool b58enc(char *b58, const void *data)
 	b58[i] = '\0';
 	
 	return true;
-}
-
-void rmd160toaddress_dst(char *rmd,char *dst){
-	char digest[60];
-	digest[0] = 0x00;
-	memcpy(digest+1,rmd,20);
-	sha256((uint8_t*)digest, 21,(uint8_t*) digest+21);
-	sha256((uint8_t*)digest+21, 32,(uint8_t*) digest+21);
-	if(!b58enc(dst,digest)){
-		fprintf(stderr,"error b58enc\n");
-	}
 }
 
 int searchbinary(struct address_value *buffer,char *data,int64_t array_length) {
@@ -410,14 +385,31 @@ void writekey(Int *key)	{
 	Point publickey;
 	FILE *keys;
 	char *hextemp,*hexrmd,public_key_hex[132],address[50],rmdhash[20];
+	int offset = 0;
+	unsigned char c;
+	char digest[60];
 	memset(address,0,50);
 	memset(public_key_hex,0,132);
 	hextemp = key->GetBase16();
 	publickey = secp.ComputePublicKey(key);
 	secp.GetPublicKeyHex(true,publickey,public_key_hex);
 	secp.GetHash160(P2PKH,true,publickey,(uint8_t*)rmdhash);
-	hexrmd = tohex(rmdhash);
-	rmd160toaddress_dst(rmdhash,address);
+
+	hexrmd = (char *) malloc(41);
+	for (int i = 0; i <20; i++) {
+		c = rmdhash[i];
+		sprintf((char*) (hexrmd + offset),"%.2x",c);
+		offset+=2;
+	}
+	hexrmd[40] = 0;
+
+	digest[0] = 0x00;
+	memcpy(digest+1,rmdhash,20);
+	sha256((uint8_t*)digest, 21,(uint8_t*) digest+21);
+	sha256((uint8_t*)digest+21, 32,(uint8_t*) digest+21);
+	if(!b58enc(address,digest)){
+		fprintf(stderr,"error b58enc\n");
+	}
 
 	keys = fopen("KEYFOUNDKEYFOUND.txt","a+");
 	if(keys != NULL)	{
