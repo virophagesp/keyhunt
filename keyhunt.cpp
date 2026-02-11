@@ -681,6 +681,7 @@ int main()	{
 			}while(count < N_SEQUENTIAL_MAX && continue_flag);
 		}
 	} while(continue_flag);
+	delete grp;
 	ends[thread_number] = 1;
 	printf("\nEnd\n");
 }
