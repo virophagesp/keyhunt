@@ -99,22 +99,6 @@ struct address_value	{
 	uint8_t value[20];
 };
 
-std::vector<Point> Gn;
-Point _2Gn;
-
-struct bloom bloom;
-
-uint64_t N = 0;
-
-uint64_t N_SEQUENTIAL_MAX;
-
-Int stride;
-
-struct address_value *addressTable;
-
-Int n_range_start;
-Int n_range_end;
-
 Secp256K1 *secp;
 
 inline static int test_bit_set_bit(uint8_t *bf, uint64_t bit)
@@ -422,21 +406,6 @@ void _sort(struct address_value *arr,int64_t n)	{
 	_introsort(arr,depthLimit,n);
 }
 
-void init_generator()	{
-	Point G = secp->ComputePublicKey(&stride);
-	Point g;
-	g.Set(G);
-	Gn.reserve(512);
-	Gn[0].Set(g);
-	g = secp->DoubleDirect(g);
-	Gn[1].Set(g);
-	for(int i = 2; i < 512; i++) {
-		g = secp->AddDirect(g,G);
-		Gn[i].Set(g);
-	}
-	_2Gn = secp->DoubleDirect(Gn[511]);
-}
-
 void writekey(Int *key)	{
 	Point publickey;
 	FILE *keys;
@@ -463,11 +432,8 @@ void writekey(Int *key)	{
 
 int main()	{
 	int check_flag;
-
 	uint8_t rawvalue[25];
-
 	Point pts[1024];
-
 	Int dx[513];
 	IntGroup *grp = new IntGroup(513);
 	Point startP;
@@ -482,12 +448,20 @@ int main()	{
 	Point R,publickey;
 	int r,continue_flag = 1,k;
 	char *hextemp = NULL;
-
 	char publickeyhashrmd160[20];
-
 	char publickeyhashrmd160_endomorphism[12][4][20];
-
 	Int key_mpz,keyfound,temp_stride;
+	Point G,g;
+	std::vector<Point> Gn;
+	Point _2Gn;
+	struct bloom bloom;
+	uint64_t N = 0;
+	uint64_t N_SEQUENTIAL_MAX;
+	Int stride;
+	struct address_value *addressTable;
+	Int n_range_start;
+	Int n_range_end;
+
 	grp->Set(dx);
 
 	srand(time(NULL));
@@ -502,7 +476,18 @@ int main()	{
 	printf("[+] Version 0.6 bitcoin hunt, developed by virophagesp based upon 0.2.230519 Satoshi Quest by AlbertoBSD\n");
 
 	stride.SetInt32(1);
-	init_generator();
+
+	G = secp->ComputePublicKey(&stride);
+	g.Set(G);
+	Gn.reserve(512);
+	Gn[0].Set(g);
+	g = secp->DoubleDirect(g);
+	Gn[1].Set(g);
+	for(int i = 2; i < 512; i++) {
+		g = secp->AddDirect(g,G);
+		Gn[i].Set(g);
+	}
+	_2Gn = secp->DoubleDirect(Gn[511]);
 
 	printf("[+] Setting search for btc adddress\n");
 
