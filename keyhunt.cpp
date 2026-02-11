@@ -99,7 +99,7 @@ struct address_value	{
 	uint8_t value[20];
 };
 
-Secp256K1 *secp;
+Secp256K1 secp;
 
 inline static int test_bit_set_bit(uint8_t *bf, uint64_t bit)
 {
@@ -413,9 +413,9 @@ void writekey(Int *key)	{
 	memset(address,0,50);
 	memset(public_key_hex,0,132);
 	hextemp = key->GetBase16();
-	publickey = secp->ComputePublicKey(key);
-	secp->GetPublicKeyHex(true,publickey,public_key_hex);
-	secp->GetHash160(P2PKH,true,publickey,(uint8_t*)rmdhash);
+	publickey = secp.ComputePublicKey(key);
+	secp.GetPublicKeyHex(true,publickey,public_key_hex);
+	secp.GetHash160(P2PKH,true,publickey,(uint8_t*)rmdhash);
 	hexrmd = tohex(rmdhash);
 	rmd160toaddress_dst(rmdhash,address);
 
@@ -464,8 +464,7 @@ int main()	{
 
 	srand(time(NULL));
 
-	secp = new Secp256K1();
-	secp->Init();
+	secp.Init();
 
 	unsigned long rseedvalue;
 	getrandom(&rseedvalue, sizeof(unsigned long), GRND_NONBLOCK);
@@ -475,17 +474,17 @@ int main()	{
 
 	stride.SetInt32(1);
 
-	G = secp->ComputePublicKey(&stride);
+	G = secp.ComputePublicKey(&stride);
 	g.Set(G);
 	Gn.reserve(512);
 	Gn[0].Set(g);
-	g = secp->DoubleDirect(g);
+	g = secp.DoubleDirect(g);
 	Gn[1].Set(g);
 	for(int i = 2; i < 512; i++) {
-		g = secp->AddDirect(g,G);
+		g = secp.AddDirect(g,G);
 		Gn[i].Set(g);
 	}
-	_2Gn = secp->DoubleDirect(Gn[511]);
+	_2Gn = secp.DoubleDirect(Gn[511]);
 
 	printf("[+] Setting search for btc adddress\n");
 
@@ -674,7 +673,7 @@ int main()	{
 			do {
 				temp_stride.SetInt32(512);
 				key_mpz.Add(&temp_stride);
-	 			startP = secp->ComputePublicKey(&key_mpz);
+	 			startP = secp.ComputePublicKey(&key_mpz);
 				key_mpz.Sub(&temp_stride);
 
 				for(i = 0; i < hLength; i++) {
@@ -754,8 +753,8 @@ int main()	{
 				pts[0].Set(pn);
 
 				for(j = 0; j < 256;j++){
-					secp->GetHash160_fromX(P2PKH,0x02,&pts[(j*4)].x,&pts[(j*4)+1].x,&pts[(j*4)+2].x,&pts[(j*4)+3].x,(uint8_t*)publickeyhashrmd160_endomorphism[0][0],(uint8_t*)publickeyhashrmd160_endomorphism[0][1],(uint8_t*)publickeyhashrmd160_endomorphism[0][2],(uint8_t*)publickeyhashrmd160_endomorphism[0][3]);
-					secp->GetHash160_fromX(P2PKH,0x03,&pts[(j*4)].x,&pts[(j*4)+1].x,&pts[(j*4)+2].x,&pts[(j*4)+3].x,(uint8_t*)publickeyhashrmd160_endomorphism[1][0],(uint8_t*)publickeyhashrmd160_endomorphism[1][1],(uint8_t*)publickeyhashrmd160_endomorphism[1][2],(uint8_t*)publickeyhashrmd160_endomorphism[1][3]);
+					secp.GetHash160_fromX(P2PKH,0x02,&pts[(j*4)].x,&pts[(j*4)+1].x,&pts[(j*4)+2].x,&pts[(j*4)+3].x,(uint8_t*)publickeyhashrmd160_endomorphism[0][0],(uint8_t*)publickeyhashrmd160_endomorphism[0][1],(uint8_t*)publickeyhashrmd160_endomorphism[0][2],(uint8_t*)publickeyhashrmd160_endomorphism[0][3]);
+					secp.GetHash160_fromX(P2PKH,0x03,&pts[(j*4)].x,&pts[(j*4)+1].x,&pts[(j*4)+2].x,&pts[(j*4)+3].x,(uint8_t*)publickeyhashrmd160_endomorphism[1][0],(uint8_t*)publickeyhashrmd160_endomorphism[1][1],(uint8_t*)publickeyhashrmd160_endomorphism[1][2],(uint8_t*)publickeyhashrmd160_endomorphism[1][3]);
 
 					for(k = 0; k < 4;k++)	{
 						for(l = 0;l < 2; l++)	{
@@ -766,11 +765,11 @@ int main()	{
 									keyfound.SetInt32(k);
 									keyfound.Add(&key_mpz);
 
-									publickey = secp->ComputePublicKey(&keyfound);
-									secp->GetHash160(P2PKH,true,publickey,(uint8_t*)publickeyhashrmd160);
+									publickey = secp.ComputePublicKey(&keyfound);
+									secp.GetHash160(P2PKH,true,publickey,(uint8_t*)publickeyhashrmd160);
 									if(memcmp(publickeyhashrmd160_endomorphism[l][k],publickeyhashrmd160,20) != 0)	{
 										keyfound.Neg();
-										keyfound.Add(&secp->order);
+										keyfound.Add(&secp.order);
 									}
 									writekey(&keyfound);
 								}
