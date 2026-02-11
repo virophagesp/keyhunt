@@ -99,14 +99,28 @@ struct address_value	{
 	uint8_t value[20];
 };
 
-struct tothread {
-	char *rs;   //range start
-	char *rpt;  //rng per thread
-};
+std::vector<Point> Gn;
+Point _2Gn;
 
-int bloom_init2(struct bloom * bloom);
-int bloom_check(struct bloom * bloom, const void * buffer);
-int bloom_add(struct bloom * bloom, const void * buffer);
+pthread_t *tid = NULL;
+
+struct bloom bloom;
+
+uint64_t *steps = NULL;
+unsigned int *ends = NULL;
+uint64_t N = 0;
+
+uint64_t N_SEQUENTIAL_MAX;
+
+Int stride;
+
+uint64_t bytes;
+struct address_value *addressTable;
+
+Int n_range_start;
+Int n_range_end;
+
+Secp256K1 *secp;
 
 inline static int test_bit_set_bit(uint8_t *bf, uint64_t bit, int set_bit)
 {
@@ -349,45 +363,6 @@ bool b58enc(char *b58, const void *data)
 	return true;
 }
 
-void init_generator();
-
-void sleep_ms(int milliseconds);
-
-void _sort(struct address_value *arr,int64_t N);
-void _insertionsort(struct address_value *arr, int64_t n);
-void _introsort(struct address_value *arr,uint32_t depthLimit, int64_t n);
-int64_t _partition(struct address_value *arr, int64_t n);
-void _myheapsort(struct address_value	*arr, int64_t n);
-
-void writekey(bool compressed,Int *key);
-
-void checkpointer(void *ptr,const char *file,const char *function,const  char *name,int line);
-
-void writeFileIfNeeded();
-
-std::vector<Point> Gn;
-Point _2Gn;
-
-pthread_t *tid = NULL;
-
-struct bloom bloom;
-
-uint64_t *steps = NULL;
-unsigned int *ends = NULL;
-uint64_t N = 0;
-
-uint64_t N_SEQUENTIAL_MAX;
-
-Int stride;
-
-uint64_t bytes;
-struct address_value *addressTable;
-
-Int n_range_start;
-Int n_range_end;
-
-Secp256K1 *secp;
-
 void rmd160toaddress_dst(char *rmd,char *dst){
 	char digest[60];
 	digest[0] = 0x00;
@@ -425,311 +400,11 @@ int searchbinary(struct address_value *buffer,char *data,int64_t array_length) {
 	return r;
 }
 
-int main()	{
-	struct tothread *tt;	//tothread
-	int check_flag;
-
-	int s;
-
-	size_t raw_value_length;
-	uint8_t rawvalue[50];
-
-	Point pts[1024];
-
-	Int dx[513];
-	IntGroup *grp = new IntGroup(513);
-	Point startP;
-	Int dy;
-	Int dyn;
-	Int _s;
-	Int _p;
-	Point pp;
-	Point pn;
-	int i,l,pp_offset,pn_offset,hLength = (511);
-	uint64_t j,count;
-	Point R,publickey;
-	int r,thread_number,continue_flag = 1,k;
-	char *hextemp = NULL;
-
-	char publickeyhashrmd160[20];
-
-	char publickeyhashrmd160_endomorphism[12][4][20];
-
-	Int key_mpz,keyfound,temp_stride;
-	thread_number = 0;
-	grp->Set(dx);
-
-	srand(time(NULL));
-
-	secp = new Secp256K1();
-	secp->Init();
-
-	unsigned long rseedvalue;
-	getrandom(&rseedvalue, sizeof(unsigned long), GRND_NONBLOCK);
-	rseed(rseedvalue);
-
-	printf("[+] Version 0.6 bitcoin hunt, developed by virophagesp based upon 0.2.230519 Satoshi Quest by AlbertoBSD\n");
-
-	stride.SetInt32(1);
-	init_generator();
-
-	printf("[+] Setting search for btc adddress\n");
-
-	// sequential number option (putting this IMPORTANT here for easy finding )
-	N_SEQUENTIAL_MAX = strtol("0x100000",NULL,16);
-	printf("[+] N = %p\n",(void*)N_SEQUENTIAL_MAX);
-	printf("[+] Range \n");
-
-	// range
-	if (strcmp(IMPORTANT, "small_test") == 0) {
-		n_range_start.SetBase16((char *)"8000");
-		n_range_end.SetBase16((char *)"ffff");
-
-		printf("[+] -- from : 0x8000\n");
-		printf("[+] -- to   : 0xffff\n");
-	} else if (strcmp(IMPORTANT, "medium_test") == 0) {
-		n_range_start.SetBase16((char *)"200000000");
-		n_range_end.SetBase16((char *)"3ffffffff");
-
-		printf("[+] -- from : 0x200000000\n");
-		printf("[+] -- to   : 0x3ffffffff\n");
-	} else if (strcmp(IMPORTANT, "big_test") == 0) {
-		n_range_start.SetBase16((char *)"100000000000000000");
-		n_range_end.SetBase16((char *)"1fffffffffffffffff");
-
-		printf("[+] -- from : 0x100000000000000000\n");
-		printf("[+] -- to   : 0x1fffffffffffffffff\n");
-	} else if (strcmp(IMPORTANT, "money") == 0) {
-		n_range_start.SetBase16((char *)"200000000000000000000");
-		n_range_end.SetBase16((char *)"3ffffffffffffffffffff");
-
-		printf("[+] -- from : 0x200000000000000000000\n");
-		printf("[+] -- to   : 0x3ffffffffffffffffffff\n");
-	}
-
-	printf("[+] Allocating memory for 1 element: 0.00 MB\n");
-	addressTable = (struct address_value*) malloc(20);
-	if((void *)addressTable == NULL)	{
-		fprintf(stderr,"[E] error in file %s, malloc pointer addressTable on line %i\n",__FILE__,__LINE__ -1 ); 
-		exit(EXIT_FAILURE);
-	}
-	printf("[+] Bloom filter for 1 elements.\n");
-	if(bloom_init2(&bloom) == 1){
-		fprintf(stderr,"[E] error bloom_init for 10000 elements.\n");
-		printf("[+] Loading data to the bloomfilter total: %.2f MB\n",(double)(((double) (&bloom)->bytes)/(double)1048576));
-		fprintf(stderr,"[E] Unenexpected error\n");
-		exit(EXIT_FAILURE);
-	}
-	printf("[+] Loading data to the bloomfilter total: %.2f MB\n",(double)(((double) (&bloom)->bytes)/(double)1048576));
-	memset(addressTable[0].value,0,20);
-
-	raw_value_length = 25;
-	b58tobin(rawvalue,&raw_value_length);
-	if(raw_value_length == 25)	{
-		bloom_add(&bloom, rawvalue+1);
-		memcpy(addressTable[0].value,rawvalue+1,20);
-	}
-	N = 1;
-	printf("[+] Sorting data ...");
-	_sort(addressTable,N);
-	printf(" done! %" PRIu64 " values were loaded and sorted\n",N);
-	writeFileIfNeeded();
-
-	steps = (uint64_t *) calloc(1,sizeof(uint64_t));
-	checkpointer((void *)steps,__FILE__,"calloc","steps" ,__LINE__ -1 );
-	ends = (unsigned int *) calloc(1,sizeof(int));
-	checkpointer((void *)ends,__FILE__,"calloc","ends" ,__LINE__ -1 );
-	tid = (pthread_t *) calloc(1,sizeof(pthread_t));
-	checkpointer((void *)tid,__FILE__,"calloc","tid" ,__LINE__ -1 );
-	tt = (tothread*) malloc(sizeof(struct tothread));
-	checkpointer((void *)tt,__FILE__,"malloc","tt" ,__LINE__ -1 );
-	steps[0] = 0;
-
-	continue_flag = 1;
-	do	{
-		check_flag = 1 & ends[0];
-		if(check_flag)	{
-			continue_flag = 0;
-		}
-
-		if(n_range_start.IsLower(&n_range_end))	{
-			key_mpz.Set(&n_range_start);
-			n_range_start.Add(N_SEQUENTIAL_MAX);
-		}
-		else	{
-			continue_flag = 0;
-		}
-		if(continue_flag)	{
-			count = 0;
-			hextemp = key_mpz.GetBase16();
-			printf("\rBase key: %s     \r",hextemp);
-			fflush(stdout);
-			free(hextemp);
-			do {
-				temp_stride.SetInt32(512);
-				temp_stride.Mult(&stride);
-				key_mpz.Add(&temp_stride);
-	 			startP = secp->ComputePublicKey(&key_mpz);
-				key_mpz.Sub(&temp_stride);
-
-				for(i = 0; i < hLength; i++) {
-					dx[i].ModSub(&Gn[i].x,&startP.x);
-				}
-
-				dx[i].ModSub(&Gn[i].x,&startP.x);  // For the first point
-				dx[i + 1].ModSub(&_2Gn.x,&startP.x); // For the next center point
-				grp->ModInv();
-
-				pts[512].Set(startP);
-
-				for(i = 0; i<hLength; i++) {
-					pp.Set(startP);
-					pn.Set(startP);
-
-					// P = startP + i*G
-					dy.ModSub(&Gn[i].y,&pp.y);
-
-					_s.ModMulK1(&dy,&dx[i]);        // s = (p2.y-p1.y)*inverse(p2.x-p1.x);
-					_p.ModSquareK1(&_s);            // _p = pow2(s)
-
-					pp.x.ModNeg();
-					pp.x.ModAdd(&_p);
-					pp.x.ModSub(&Gn[i].x);           // rx = pow2(s) - p1.x - p2.x;
-
-					// P = startP - i*G  , if (x,y) = i*G then (x,-y) = -i*G
-					dyn.Set(&Gn[i].y);
-					dyn.ModNeg();
-					dyn.ModSub(&pn.y);
-
-					_s.ModMulK1(&dyn,&dx[i]);      // s = (p2.y-p1.y)*inverse(p2.x-p1.x);
-					_p.ModSquareK1(&_s);            // _p = pow2(s)
-					pn.x.ModNeg();
-					pn.x.ModAdd(&_p);
-					pn.x.ModSub(&Gn[i].x);          // rx = pow2(s) - p1.x - p2.x;
-
-					pp_offset = 512 + (i + 1);
-					pn_offset = 512 - (i + 1);
-
-					pts[pp_offset].Set(pp);
-					pts[pn_offset].Set(pn);
-				}
-
-				// First point (startP - (GRP_SZIE/2)*G)
-				pn.Set(startP);
-				dyn.Set(&Gn[i].y);
-				dyn.ModNeg();
-				dyn.ModSub(&pn.y);
-
-				_s.ModMulK1(&dyn,&dx[i]);
-				_p.ModSquareK1(&_s);
-
-				pn.x.ModNeg();
-				pn.x.ModAdd(&_p);
-				pn.x.ModSub(&Gn[i].x);
-
-				pts[0].Set(pn);
-
-				for(j = 0; j < 256;j++){
-					secp->GetHash160_fromX(P2PKH,0x02,&pts[(j*4)].x,&pts[(j*4)+1].x,&pts[(j*4)+2].x,&pts[(j*4)+3].x,(uint8_t*)publickeyhashrmd160_endomorphism[0][0],(uint8_t*)publickeyhashrmd160_endomorphism[0][1],(uint8_t*)publickeyhashrmd160_endomorphism[0][2],(uint8_t*)publickeyhashrmd160_endomorphism[0][3]);
-					secp->GetHash160_fromX(P2PKH,0x03,&pts[(j*4)].x,&pts[(j*4)+1].x,&pts[(j*4)+2].x,&pts[(j*4)+3].x,(uint8_t*)publickeyhashrmd160_endomorphism[1][0],(uint8_t*)publickeyhashrmd160_endomorphism[1][1],(uint8_t*)publickeyhashrmd160_endomorphism[1][2],(uint8_t*)publickeyhashrmd160_endomorphism[1][3]);
-
-					for(k = 0; k < 4;k++)	{
-						for(l = 0;l < 2; l++)	{
-							r = bloom_check(&bloom,publickeyhashrmd160_endomorphism[l][k]);
-							if(r) {
-								r = searchbinary(addressTable,publickeyhashrmd160_endomorphism[l][k],N);
-								if(r) {
-									keyfound.SetInt32(k);
-									keyfound.Mult(&stride);
-									keyfound.Add(&key_mpz);
-
-									publickey = secp->ComputePublicKey(&keyfound);
-									secp->GetHash160(P2PKH,true,publickey,(uint8_t*)publickeyhashrmd160);
-									if(memcmp(publickeyhashrmd160_endomorphism[l][k],publickeyhashrmd160,20) != 0)	{
-										keyfound.Neg();
-										keyfound.Add(&secp->order);
-									}
-									writekey(true,&keyfound);
-								}
-							}
-						}
-					}
-					count+=4;
-					temp_stride.SetInt32(4);
-					temp_stride.Mult(&stride);
-					key_mpz.Add(&temp_stride);
-				}
-
-				steps[thread_number]++;
-
-				// Next start point (startP + GRP_SIZE*G)
-				pp.Set(startP);
-				dy.ModSub(&_2Gn.y,&pp.y);
-
-				_s.ModMulK1(&dy,&dx[i + 1]);
-				_p.ModSquareK1(&_s);
-
-				pp.x.ModNeg();
-				pp.x.ModAdd(&_p);
-				pp.x.ModSub(&_2Gn.x);
-
-				//The Y value for the next start point always need to be calculated
-				pp.y.ModSub(&_2Gn.x,&pp.x);
-				pp.y.ModMulK1(&_s);
-				pp.y.ModSub(&_2Gn.y);
-				startP.Set(pp);
-			}while(count < N_SEQUENTIAL_MAX && continue_flag);
-		}
-	} while(continue_flag);
-	delete grp;
-	ends[thread_number] = 1;
-	printf("\nEnd\n");
-}
-
 void _swap(struct address_value *a,struct address_value *b)	{
 	struct address_value t;
 	t  = *a;
 	*a = *b;
 	*b =  t;
-}
-
-void _sort(struct address_value *arr,int64_t n)	{
-	uint32_t depthLimit = ((uint32_t) ceil(log(n))) * 2;
-	_introsort(arr,depthLimit,n);
-}
-
-void _introsort(struct address_value *arr,uint32_t depthLimit, int64_t n) {
-	int64_t p;
-	if(n > 1)	{
-		if(n <= 16) {
-			_insertionsort(arr,n);
-		}
-		else	{
-			if(depthLimit == 0) {
-				_myheapsort(arr,n);
-			}
-			else	{
-				p = _partition(arr,n);
-				if(p > 0) _introsort(arr , depthLimit-1 , p);
-				if(p < n) _introsort(&arr[p+1],depthLimit-1,n-(p+1));
-			}
-		}
-	}
-}
-
-void _insertionsort(struct address_value *arr, int64_t n) {
-	int64_t j;
-	int64_t i;
-	struct address_value key;
-	for(i = 1; i < n ; i++ ) {
-		key = arr[i];
-		j= i-1;
-		while(j >= 0 && memcmp(arr[j].value,key.value,20) > 0) {
-			arr[j+1] = arr[j];
-			j--;
-		}
-		arr[j+1] = key;
-	}
 }
 
 int64_t _partition(struct address_value *arr, int64_t n)	{
@@ -764,6 +439,21 @@ int64_t _partition(struct address_value *arr, int64_t n)	{
 	return right;
 }
 
+void _insertionsort(struct address_value *arr, int64_t n) {
+	int64_t j;
+	int64_t i;
+	struct address_value key;
+	for(i = 1; i < n ; i++ ) {
+		key = arr[i];
+		j= i-1;
+		while(j >= 0 && memcmp(arr[j].value,key.value,20) > 0) {
+			arr[j+1] = arr[j];
+			j--;
+		}
+		arr[j+1] = key;
+	}
+}
+
 void _heapify(struct address_value *arr, int64_t n, int64_t i) {
 	int64_t largest = i;
 	int64_t l = 2 * i + 1;
@@ -787,6 +477,30 @@ void _myheapsort(struct address_value	*arr, int64_t n)	{
 		_swap(&arr[0] , &arr[i]);
 		_heapify(arr, i, 0);
 	}
+}
+
+void _introsort(struct address_value *arr,uint32_t depthLimit, int64_t n) {
+	int64_t p;
+	if(n > 1)	{
+		if(n <= 16) {
+			_insertionsort(arr,n);
+		}
+		else	{
+			if(depthLimit == 0) {
+				_myheapsort(arr,n);
+			}
+			else	{
+				p = _partition(arr,n);
+				if(p > 0) _introsort(arr , depthLimit-1 , p);
+				if(p < n) _introsort(&arr[p+1],depthLimit-1,n-(p+1));
+			}
+		}
+	}
+}
+
+void _sort(struct address_value *arr,int64_t n)	{
+	uint32_t depthLimit = ((uint32_t) ceil(log(n))) * 2;
+	_introsort(arr,depthLimit,n);
 }
 
 void init_generator()	{
@@ -986,4 +700,262 @@ void writeFileIfNeeded()	{
 		fclose(fileDescriptor);
 		printf("\n");
 	}
+}
+
+int main()	{
+	int check_flag;
+
+	int s;
+
+	size_t raw_value_length;
+	uint8_t rawvalue[50];
+
+	Point pts[1024];
+
+	Int dx[513];
+	IntGroup *grp = new IntGroup(513);
+	Point startP;
+	Int dy;
+	Int dyn;
+	Int _s;
+	Int _p;
+	Point pp;
+	Point pn;
+	int i,l,pp_offset,pn_offset,hLength = (511);
+	uint64_t j,count;
+	Point R,publickey;
+	int r,thread_number,continue_flag = 1,k;
+	char *hextemp = NULL;
+
+	char publickeyhashrmd160[20];
+
+	char publickeyhashrmd160_endomorphism[12][4][20];
+
+	Int key_mpz,keyfound,temp_stride;
+	thread_number = 0;
+	grp->Set(dx);
+
+	srand(time(NULL));
+
+	secp = new Secp256K1();
+	secp->Init();
+
+	unsigned long rseedvalue;
+	getrandom(&rseedvalue, sizeof(unsigned long), GRND_NONBLOCK);
+	rseed(rseedvalue);
+
+	printf("[+] Version 0.6 bitcoin hunt, developed by virophagesp based upon 0.2.230519 Satoshi Quest by AlbertoBSD\n");
+
+	stride.SetInt32(1);
+	init_generator();
+
+	printf("[+] Setting search for btc adddress\n");
+
+	// sequential number option (putting this IMPORTANT here for easy finding )
+	N_SEQUENTIAL_MAX = strtol("0x100000",NULL,16);
+	printf("[+] N = %p\n",(void*)N_SEQUENTIAL_MAX);
+	printf("[+] Range \n");
+
+	// range
+	if (strcmp(IMPORTANT, "small_test") == 0) {
+		n_range_start.SetBase16((char *)"8000");
+		n_range_end.SetBase16((char *)"ffff");
+
+		printf("[+] -- from : 0x8000\n");
+		printf("[+] -- to   : 0xffff\n");
+	} else if (strcmp(IMPORTANT, "medium_test") == 0) {
+		n_range_start.SetBase16((char *)"200000000");
+		n_range_end.SetBase16((char *)"3ffffffff");
+
+		printf("[+] -- from : 0x200000000\n");
+		printf("[+] -- to   : 0x3ffffffff\n");
+	} else if (strcmp(IMPORTANT, "big_test") == 0) {
+		n_range_start.SetBase16((char *)"100000000000000000");
+		n_range_end.SetBase16((char *)"1fffffffffffffffff");
+
+		printf("[+] -- from : 0x100000000000000000\n");
+		printf("[+] -- to   : 0x1fffffffffffffffff\n");
+	} else if (strcmp(IMPORTANT, "money") == 0) {
+		n_range_start.SetBase16((char *)"200000000000000000000");
+		n_range_end.SetBase16((char *)"3ffffffffffffffffffff");
+
+		printf("[+] -- from : 0x200000000000000000000\n");
+		printf("[+] -- to   : 0x3ffffffffffffffffffff\n");
+	}
+
+	printf("[+] Allocating memory for 1 element: 0.00 MB\n");
+	addressTable = (struct address_value*) malloc(20);
+	if((void *)addressTable == NULL)	{
+		fprintf(stderr,"[E] error in file %s, malloc pointer addressTable on line %i\n",__FILE__,__LINE__ -1 ); 
+		exit(EXIT_FAILURE);
+	}
+	printf("[+] Bloom filter for 1 elements.\n");
+	if(bloom_init2(&bloom) == 1){
+		fprintf(stderr,"[E] error bloom_init for 10000 elements.\n");
+		printf("[+] Loading data to the bloomfilter total: %.2f MB\n",(double)(((double) (&bloom)->bytes)/(double)1048576));
+		fprintf(stderr,"[E] Unenexpected error\n");
+		exit(EXIT_FAILURE);
+	}
+	printf("[+] Loading data to the bloomfilter total: %.2f MB\n",(double)(((double) (&bloom)->bytes)/(double)1048576));
+	memset(addressTable[0].value,0,20);
+
+	raw_value_length = 25;
+	b58tobin(rawvalue,&raw_value_length);
+	if(raw_value_length == 25)	{
+		bloom_add(&bloom, rawvalue+1);
+		memcpy(addressTable[0].value,rawvalue+1,20);
+	}
+	N = 1;
+	printf("[+] Sorting data ...");
+	_sort(addressTable,N);
+	printf(" done! %" PRIu64 " values were loaded and sorted\n",N);
+	writeFileIfNeeded();
+
+	steps = (uint64_t *) calloc(1,sizeof(uint64_t));
+	checkpointer((void *)steps,__FILE__,"calloc","steps" ,__LINE__ -1 );
+	ends = (unsigned int *) calloc(1,sizeof(int));
+	checkpointer((void *)ends,__FILE__,"calloc","ends" ,__LINE__ -1 );
+	tid = (pthread_t *) calloc(1,sizeof(pthread_t));
+	checkpointer((void *)tid,__FILE__,"calloc","tid" ,__LINE__ -1 );
+	steps[0] = 0;
+
+	continue_flag = 1;
+	do	{
+		check_flag = 1 & ends[0];
+		if(check_flag)	{
+			continue_flag = 0;
+		}
+
+		if(n_range_start.IsLower(&n_range_end))	{
+			key_mpz.Set(&n_range_start);
+			n_range_start.Add(N_SEQUENTIAL_MAX);
+		}
+		else	{
+			continue_flag = 0;
+		}
+		if(continue_flag)	{
+			count = 0;
+			hextemp = key_mpz.GetBase16();
+			printf("\rBase key: %s     \r",hextemp);
+			fflush(stdout);
+			free(hextemp);
+			do {
+				temp_stride.SetInt32(512);
+				temp_stride.Mult(&stride);
+				key_mpz.Add(&temp_stride);
+	 			startP = secp->ComputePublicKey(&key_mpz);
+				key_mpz.Sub(&temp_stride);
+
+				for(i = 0; i < hLength; i++) {
+					dx[i].ModSub(&Gn[i].x,&startP.x);
+				}
+
+				dx[i].ModSub(&Gn[i].x,&startP.x);  // For the first point
+				dx[i + 1].ModSub(&_2Gn.x,&startP.x); // For the next center point
+				grp->ModInv();
+
+				pts[512].Set(startP);
+
+				for(i = 0; i<hLength; i++) {
+					pp.Set(startP);
+					pn.Set(startP);
+
+					// P = startP + i*G
+					dy.ModSub(&Gn[i].y,&pp.y);
+
+					_s.ModMulK1(&dy,&dx[i]);        // s = (p2.y-p1.y)*inverse(p2.x-p1.x);
+					_p.ModSquareK1(&_s);            // _p = pow2(s)
+
+					pp.x.ModNeg();
+					pp.x.ModAdd(&_p);
+					pp.x.ModSub(&Gn[i].x);           // rx = pow2(s) - p1.x - p2.x;
+
+					// P = startP - i*G  , if (x,y) = i*G then (x,-y) = -i*G
+					dyn.Set(&Gn[i].y);
+					dyn.ModNeg();
+					dyn.ModSub(&pn.y);
+
+					_s.ModMulK1(&dyn,&dx[i]);      // s = (p2.y-p1.y)*inverse(p2.x-p1.x);
+					_p.ModSquareK1(&_s);            // _p = pow2(s)
+					pn.x.ModNeg();
+					pn.x.ModAdd(&_p);
+					pn.x.ModSub(&Gn[i].x);          // rx = pow2(s) - p1.x - p2.x;
+
+					pp_offset = 512 + (i + 1);
+					pn_offset = 512 - (i + 1);
+
+					pts[pp_offset].Set(pp);
+					pts[pn_offset].Set(pn);
+				}
+
+				// First point (startP - (GRP_SZIE/2)*G)
+				pn.Set(startP);
+				dyn.Set(&Gn[i].y);
+				dyn.ModNeg();
+				dyn.ModSub(&pn.y);
+
+				_s.ModMulK1(&dyn,&dx[i]);
+				_p.ModSquareK1(&_s);
+
+				pn.x.ModNeg();
+				pn.x.ModAdd(&_p);
+				pn.x.ModSub(&Gn[i].x);
+
+				pts[0].Set(pn);
+
+				for(j = 0; j < 256;j++){
+					secp->GetHash160_fromX(P2PKH,0x02,&pts[(j*4)].x,&pts[(j*4)+1].x,&pts[(j*4)+2].x,&pts[(j*4)+3].x,(uint8_t*)publickeyhashrmd160_endomorphism[0][0],(uint8_t*)publickeyhashrmd160_endomorphism[0][1],(uint8_t*)publickeyhashrmd160_endomorphism[0][2],(uint8_t*)publickeyhashrmd160_endomorphism[0][3]);
+					secp->GetHash160_fromX(P2PKH,0x03,&pts[(j*4)].x,&pts[(j*4)+1].x,&pts[(j*4)+2].x,&pts[(j*4)+3].x,(uint8_t*)publickeyhashrmd160_endomorphism[1][0],(uint8_t*)publickeyhashrmd160_endomorphism[1][1],(uint8_t*)publickeyhashrmd160_endomorphism[1][2],(uint8_t*)publickeyhashrmd160_endomorphism[1][3]);
+
+					for(k = 0; k < 4;k++)	{
+						for(l = 0;l < 2; l++)	{
+							r = bloom_check(&bloom,publickeyhashrmd160_endomorphism[l][k]);
+							if(r) {
+								r = searchbinary(addressTable,publickeyhashrmd160_endomorphism[l][k],N);
+								if(r) {
+									keyfound.SetInt32(k);
+									keyfound.Mult(&stride);
+									keyfound.Add(&key_mpz);
+
+									publickey = secp->ComputePublicKey(&keyfound);
+									secp->GetHash160(P2PKH,true,publickey,(uint8_t*)publickeyhashrmd160);
+									if(memcmp(publickeyhashrmd160_endomorphism[l][k],publickeyhashrmd160,20) != 0)	{
+										keyfound.Neg();
+										keyfound.Add(&secp->order);
+									}
+									writekey(true,&keyfound);
+								}
+							}
+						}
+					}
+					count+=4;
+					temp_stride.SetInt32(4);
+					temp_stride.Mult(&stride);
+					key_mpz.Add(&temp_stride);
+				}
+
+				steps[thread_number]++;
+
+				// Next start point (startP + GRP_SIZE*G)
+				pp.Set(startP);
+				dy.ModSub(&_2Gn.y,&pp.y);
+
+				_s.ModMulK1(&dy,&dx[i + 1]);
+				_p.ModSquareK1(&_s);
+
+				pp.x.ModNeg();
+				pp.x.ModAdd(&_p);
+				pp.x.ModSub(&_2Gn.x);
+
+				//The Y value for the next start point always need to be calculated
+				pp.y.ModSub(&_2Gn.x,&pp.x);
+				pp.y.ModMulK1(&_s);
+				pp.y.ModSub(&_2Gn.y);
+				startP.Set(pp);
+			}while(count < N_SEQUENTIAL_MAX && continue_flag);
+		}
+	} while(continue_flag);
+	delete grp;
+	ends[thread_number] = 1;
+	printf("\nEnd\n");
 }
