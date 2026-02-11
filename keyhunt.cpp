@@ -435,7 +435,7 @@ int main()	{
 	uint8_t rawvalue[25];
 	Point pts[1024];
 	Int dx[513];
-	IntGroup *grp = new IntGroup(513);
+	Int dx_inverse[513];
 	Point startP;
 	Int dy;
 	Int dyn;
@@ -461,8 +461,6 @@ int main()	{
 	struct address_value *addressTable;
 	Int n_range_start;
 	Int n_range_end;
-
-	grp->Set(dx);
 
 	srand(time(NULL));
 
@@ -675,7 +673,6 @@ int main()	{
 			free(hextemp);
 			do {
 				temp_stride.SetInt32(512);
-				temp_stride.Mult(&stride);
 				key_mpz.Add(&temp_stride);
 	 			startP = secp->ComputePublicKey(&key_mpz);
 				key_mpz.Sub(&temp_stride);
@@ -686,7 +683,26 @@ int main()	{
 
 				dx[i].ModSub(&Gn[i].x,&startP.x);  // For the first point
 				dx[i + 1].ModSub(&_2Gn.x,&startP.x); // For the next center point
-				grp->ModInv();
+
+				Int newValue;
+				Int inverse;
+
+				dx_inverse[0].Set(&(dx[0]));
+				for (int i = 1; i < 513; i++) {
+					dx_inverse[i].ModMulK1(&(dx_inverse[i - 1]), &(dx[i]));
+				}
+
+				// Do the inversion
+				inverse.Set(&(dx_inverse[513 - 1]));
+				inverse.ModInv();
+
+				for (int i = 513 - 1; i > 0; i--) {
+					newValue.ModMulK1(&(dx_inverse[i - 1]), &inverse);
+					inverse.ModMulK1(&(dx[i]));
+					dx[i].Set(&newValue);
+				}
+
+				dx[0].Set(&inverse);
 
 				pts[512].Set(startP);
 
@@ -748,7 +764,6 @@ int main()	{
 								r = searchbinary(addressTable,publickeyhashrmd160_endomorphism[l][k],N);
 								if(r) {
 									keyfound.SetInt32(k);
-									keyfound.Mult(&stride);
 									keyfound.Add(&key_mpz);
 
 									publickey = secp->ComputePublicKey(&keyfound);
@@ -764,7 +779,6 @@ int main()	{
 					}
 					count+=4;
 					temp_stride.SetInt32(4);
-					temp_stride.Mult(&stride);
 					key_mpz.Add(&temp_stride);
 				}
 
@@ -787,6 +801,7 @@ int main()	{
 			}while(count < N_SEQUENTIAL_MAX && continue_flag);
 		}
 	} while(continue_flag);
-	delete grp;
+	delete addressTable;
+	delete bloom.bf;
 	printf("\nEnd\n");
 }
