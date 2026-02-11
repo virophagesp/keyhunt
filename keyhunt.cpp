@@ -102,8 +102,6 @@ struct address_value	{
 std::vector<Point> Gn;
 Point _2Gn;
 
-pthread_t *tid = NULL;
-
 struct bloom bloom;
 
 uint64_t *steps = NULL;
@@ -114,7 +112,6 @@ uint64_t N_SEQUENTIAL_MAX;
 
 Int stride;
 
-uint64_t bytes;
 struct address_value *addressTable;
 
 Int n_range_start;
@@ -241,80 +238,6 @@ char *tohex(char *ptr,int length){
   }
   buffer[length*2] = 0;
   return buffer;
-}
-
-static const int8_t b58digits_map[] = {
-	-1,-1,-1,-1,-1,-1,-1,-1, -1,-1,-1,-1,-1,-1,-1,-1,
-	-1,-1,-1,-1,-1,-1,-1,-1, -1,-1,-1,-1,-1,-1,-1,-1,
-	-1,-1,-1,-1,-1,-1,-1,-1, -1,-1,-1,-1,-1,-1,-1,-1,
-	-1, 0, 1, 2, 3, 4, 5, 6,  7, 8,-1,-1,-1,-1,-1,-1,
-	-1, 9,10,11,12,13,14,15, 16,-1,17,18,19,20,21,-1,
-	22,23,24,25,26,27,28,29, 30,31,32,-1,-1,-1,-1,-1,
-	-1,33,34,35,36,37,38,39, 40,41,42,43,-1,44,45,46,
-	47,48,49,50,51,52,53,54, 55,56,57,-1,-1,-1,-1,-1,
-};
-
-void b58tobin(void *rawvalue, size_t *raw_value_length)
-{
-	// address
-	size_t binsz = *raw_value_length;
-	unsigned char *binu = (unsigned char *)rawvalue;
-	uint32_t outi[7];
-	size_t i, j;
-	if (strcmp(IMPORTANT, "small_test") == 0) {
-		outi[0] = 0;
-		outi[1] = 1881519343;
-		outi[2] = -1275116821;
-		outi[3] = 1299018234;
-		outi[4] = -1229636785;
-		outi[5] = 1231545309;
-		outi[6] = 617679621;
-	} else if (strcmp(IMPORTANT, "medium_test") == 0) {
-		outi[0] = 0;
-		outi[1] = -153715335;
-		outi[2] = -2084605883;
-		outi[3] = 254368924;
-		outi[4] = -1205282133;
-		outi[5] = 643767290;
-		outi[6] = -289356897;
-	} else if (strcmp(IMPORTANT, "big_test") == 0) {
-		outi[0] = 0;
-		outi[1] = 1642826320;
-		outi[2] = -932510332;
-		outi[3] = -1150124586;
-		outi[4] = 1542294820;
-		outi[5] = 14079402;
-		outi[6] = -852360005;
-	} else if (strcmp(IMPORTANT, "money") == 0) {
-		outi[0] = 0;
-		outi[1] = 550669646;
-		outi[2] = -2024523449;
-		outi[3] = -941321925;
-		outi[4] = -842094058;
-		outi[5] = -487002015;
-		outi[6] = -706377603;
-	}
-	
-	*(binu++) = (outi[0] >> 0) & 0xff;
-	
-	for (j = 1; j < 7; ++j)
-	{
-		for (i = sizeof(*outi); i > 0; --i) {
-			*(binu++) = (outi[j] >> (8 * (i - 1))) & 0xff;
-		}
-	}
-	
-	// Count canonical base58 byte count
-	binu = (unsigned char *)rawvalue;
-	for (i = 0; i < binsz; ++i)
-	{
-		if (binu[i])
-			break;
-		--*raw_value_length;
-	}
-	*raw_value_length += 1;
-	
-	return;
 }
 
 static const char b58digits_ordered[] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
@@ -705,9 +628,6 @@ void writeFileIfNeeded()	{
 int main()	{
 	int check_flag;
 
-	int s;
-
-	size_t raw_value_length;
 	uint8_t rawvalue[50];
 
 	Point pts[1024];
@@ -799,12 +719,70 @@ int main()	{
 	printf("[+] Loading data to the bloomfilter total: %.2f MB\n",(double)(((double) (&bloom)->bytes)/(double)1048576));
 	memset(addressTable[0].value,0,20);
 
-	raw_value_length = 25;
-	b58tobin(rawvalue,&raw_value_length);
-	if(raw_value_length == 25)	{
-		bloom_add(&bloom, rawvalue+1);
-		memcpy(addressTable[0].value,rawvalue+1,20);
+	// address
+	uint32_t outi[7];
+	if (strcmp(IMPORTANT, "small_test") == 0) {
+		outi[0] = 0;
+		outi[1] = 1881519343;
+		outi[2] = -1275116821;
+		outi[3] = 1299018234;
+		outi[4] = -1229636785;
+		outi[5] = 1231545309;
+		outi[6] = 617679621;
+	} else if (strcmp(IMPORTANT, "medium_test") == 0) {
+		outi[0] = 0;
+		outi[1] = -153715335;
+		outi[2] = -2084605883;
+		outi[3] = 254368924;
+		outi[4] = -1205282133;
+		outi[5] = 643767290;
+		outi[6] = -289356897;
+	} else if (strcmp(IMPORTANT, "big_test") == 0) {
+		outi[0] = 0;
+		outi[1] = 1642826320;
+		outi[2] = -932510332;
+		outi[3] = -1150124586;
+		outi[4] = 1542294820;
+		outi[5] = 14079402;
+		outi[6] = -852360005;
+	} else if (strcmp(IMPORTANT, "money") == 0) {
+		outi[0] = 0;
+		outi[1] = 550669646;
+		outi[2] = -2024523449;
+		outi[3] = -941321925;
+		outi[4] = -842094058;
+		outi[5] = -487002015;
+		outi[6] = -706377603;
 	}
+	
+	rawvalue[0] = (outi[0] >> 0) & 0xff;
+	rawvalue[1] = (outi[1] >> 24) & 0xff;
+	rawvalue[2] = (outi[1] >> 16) & 0xff;
+	rawvalue[3] = (outi[1] >> 8) & 0xff;
+	rawvalue[4] = (outi[1] >> 0) & 0xff;
+	rawvalue[5] = (outi[2] >> 24) & 0xff;
+	rawvalue[6] = (outi[2] >> 16) & 0xff;
+	rawvalue[7] = (outi[2] >> 8) & 0xff;
+	rawvalue[8] = (outi[2] >> 0) & 0xff;
+	rawvalue[9] = (outi[3] >> 24) & 0xff;
+	rawvalue[10] = (outi[3] >> 16) & 0xff;
+	rawvalue[11] = (outi[3] >> 8) & 0xff;
+	rawvalue[12] = (outi[3] >> 0) & 0xff;
+	rawvalue[13] = (outi[4] >> 24) & 0xff;
+	rawvalue[14] = (outi[4] >> 16) & 0xff;
+	rawvalue[15] = (outi[4] >> 8) & 0xff;
+	rawvalue[16] = (outi[4] >> 0) & 0xff;
+	rawvalue[17] = (outi[5] >> 24) & 0xff;
+	rawvalue[18] = (outi[5] >> 16) & 0xff;
+	rawvalue[19] = (outi[5] >> 8) & 0xff;
+	rawvalue[20] = (outi[5] >> 0) & 0xff;
+	rawvalue[21] = (outi[6] >> 24) & 0xff;
+	rawvalue[22] = (outi[6] >> 16) & 0xff;
+	rawvalue[23] = (outi[6] >> 8) & 0xff;
+	rawvalue[24] = (outi[6] >> 0) & 0xff;
+
+	bloom_add(&bloom, rawvalue+1);
+	memcpy(addressTable[0].value,rawvalue+1,20);
 	N = 1;
 	printf("[+] Sorting data ...");
 	_sort(addressTable,N);
@@ -815,8 +793,6 @@ int main()	{
 	checkpointer((void *)steps,__FILE__,"calloc","steps" ,__LINE__ -1 );
 	ends = (unsigned int *) calloc(1,sizeof(int));
 	checkpointer((void *)ends,__FILE__,"calloc","ends" ,__LINE__ -1 );
-	tid = (pthread_t *) calloc(1,sizeof(pthread_t));
-	checkpointer((void *)tid,__FILE__,"calloc","tid" ,__LINE__ -1 );
 	steps[0] = 0;
 
 	continue_flag = 1;
