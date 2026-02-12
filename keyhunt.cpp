@@ -75,23 +75,23 @@ email: albertobsd@gmail.com
  */
 struct bloom
 {
-  // These fields are part of the public interface of this structure.
-  // Client code may read these values if desired. Client code MUST NOT
-  // modify any of these.
-  uint64_t entries;
-  uint64_t bits;
-  uint64_t bytes;
-  uint8_t hashes;
-  long double error;
+	// These fields are part of the public interface of this structure.
+	// Client code may read these values if desired. Client code MUST NOT
+	// modify any of these.
+	uint64_t entries;
+	uint64_t bits;
+	uint64_t bytes;
+	uint8_t hashes;
+	long double error;
 
-  // Fields below are private to the implementation. These may go away or
-  // change incompatibly at any moment. Client code MUST NOT access or rely
-  // on these.
-  uint8_t ready;
-  uint8_t major;
-  uint8_t minor;
-  double bpe;
-  uint8_t *bf;
+	// Fields below are private to the implementation. These may go away or
+	// change incompatibly at any moment. Client code MUST NOT access or rely
+	// on these.
+	uint8_t ready;
+	uint8_t major;
+	uint8_t minor;
+	double bpe;
+	uint8_t *bf;
 };
 
 struct address_value	{
@@ -100,109 +100,76 @@ struct address_value	{
 
 Secp256K1 secp;
 
-inline static int test_bit_set_bit(uint8_t *bf, uint64_t bit)
+void bloom_init2(struct bloom * bloom)
 {
-  uint64_t byte = bit >> 3;
-  uint8_t c = bf[byte];	 // expensive memory access
-  uint8_t mask = 1 << (bit % 8);
-  if (c & mask) {
-    return 1;
-  } else {
-    bf[byte] = c | mask;
-    return 0;
-  }
+	memset(bloom, 0, sizeof(struct bloom));
+	bloom->entries = 10000;
+	bloom->error = 0.000001;
+
+	long double num = -log(bloom->error);
+	long double denom = 0.480453013918201; // ln(2)^2
+	bloom->bpe = (num / denom);
+
+	long double dentries = (long double)10000;
+	long double allbits = dentries * bloom->bpe;
+	bloom->bits = (uint64_t)allbits;
+
+	bloom->bytes = (uint64_t) bloom->bits / 8;
+	if (bloom->bits % 8) {
+		bloom->bytes +=1;
+	}
+
+	bloom->hashes = (uint8_t)ceil(0.693147180559945 * bloom->bpe);  // ln(2)
+	
+	bloom->bf = (uint8_t *)calloc(bloom->bytes, sizeof(uint8_t));
+	if (bloom->bf == NULL) {                                   // LCOV_EXCL_START
+		fprintf(stderr,"[E] error bloom_init for 10000 elements.\n");
+		printf("[+] Loading data to the bloomfilter total: %.2f MB\n",(double)(((double) bloom->bytes)/(double)1048576));
+		fprintf(stderr,"[E] Unenexpected error\n");
+		exit(EXIT_FAILURE);
+	}                                                          // LCOV_EXCL_STOP
+
+	bloom->ready = 1;
+	bloom->major = 2;
+	bloom->minor = 201;
 }
 
-inline static int test_bit(uint8_t *bf, uint64_t bit)
+bool bloom_check(struct bloom * bloom, const void * buffer)
 {
-  uint64_t byte = bit >> 3;
-  uint8_t c = bf[byte];	 // expensive memory access
-  uint8_t mask = 1 << (bit % 8);
-  if (c & mask) {
-    return 1;
-  } else {
-    return 0;
-  }
+	uint8_t hits = 0;
+	uint64_t a = XXH64(buffer, 20, 0x59f2815b16f81798);
+	uint64_t b = XXH64(buffer, 20, a);
+	uint64_t x,byte;
+	uint8_t i,c,mask;
+	for (i = 0; i < bloom->hashes; i++) {
+		x = (a + b*i) % bloom->bits;
+		byte = x >> 3;
+		c = bloom->bf[byte];	 // expensive memory access
+		mask = 1 << (x % 8);
+		if (c & mask) {
+			hits++;
+		} else {
+			return false;
+		}
+	}
+	return hits == bloom->hashes;                // 1 == element already in (or collision)
 }
 
-int bloom_init2(struct bloom * bloom)
+void bloom_add(struct bloom * bloom, const void * buffer)
 {
-  memset(bloom, 0, sizeof(struct bloom));
-  bloom->entries = 10000;
-  bloom->error = 0.000001;
-
-  long double num = -log(bloom->error);
-  long double denom = 0.480453013918201; // ln(2)^2
-  bloom->bpe = (num / denom);
-
-  long double dentries = (long double)10000;
-  long double allbits = dentries * bloom->bpe;
-  bloom->bits = (uint64_t)allbits;
-
-  bloom->bytes = (uint64_t) bloom->bits / 8;
-  if (bloom->bits % 8) {
-    bloom->bytes +=1;
-  }
-
-  bloom->hashes = (uint8_t)ceil(0.693147180559945 * bloom->bpe);  // ln(2)
-  
-  bloom->bf = (uint8_t *)calloc(bloom->bytes, sizeof(uint8_t));
-  if (bloom->bf == NULL) {                                   // LCOV_EXCL_START
-    return 1;
-  }                                                          // LCOV_EXCL_STOP
-
-  bloom->ready = 1;
-  bloom->major = 2;
-  bloom->minor = 201;
-  return 0;
-}
-
-int bloom_check(struct bloom * bloom, const void * buffer)
-{
-  if (bloom->ready == 0) {
-    printf("bloom at %p not initialized!\n", (void *)bloom);
-    return -1;
-  }
-  uint8_t hits = 0;
-  uint64_t a = XXH64(buffer, 20, 0x59f2815b16f81798);
-  uint64_t b = XXH64(buffer, 20, a);
-  uint64_t x;
-  uint8_t i;
-  for (i = 0; i < bloom->hashes; i++) {
-    x = (a + b*i) % bloom->bits;
-    if (test_bit(bloom->bf, x)) {
-      hits++;
-    } else {
-      return 0;
-    }
-  }
-  if (hits == bloom->hashes) {
-    return 1;                // 1 == element already in (or collision)
-  }
-  return 0;
-}
-
-int bloom_add(struct bloom * bloom, const void * buffer)
-{
-  if (bloom->ready == 0) {
-    printf("bloom at %p not initialized!\n", (void *)bloom);
-    return -1;
-  }
-  uint8_t hits = 0;
-  uint64_t a = XXH64(buffer, 20, 0x59f2815b16f81798);
-  uint64_t b = XXH64(buffer, 20, a);
-  uint64_t x;
-  uint8_t i;
-  for (i = 0; i < bloom->hashes; i++) {
-    x = (a + b*i) % bloom->bits;
-    if (test_bit_set_bit(bloom->bf, x)) {
-      hits++;
-    }
-  }
-  if (hits == bloom->hashes) {
-    return 1;                // 1 == element already in (or collision)
-  }
-  return 0;
+	uint64_t a = XXH64(buffer, 20, 0x59f2815b16f81798);
+	uint64_t b = XXH64(buffer, 20, a);
+	uint64_t x,byte;
+	uint8_t i,c,mask;
+	for (i = 0; i < bloom->hashes; i++) {
+		x = (a + b*i) % bloom->bits;
+		byte = x >> 3;
+		c = bloom->bf[byte];	 // expensive memory access
+		mask = 1 << (x % 8);
+		if (!(c & mask)) {
+			bloom->bf[byte] = c | mask;
+		}
+	}
 }
 
 static const char b58digits_ordered[] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
@@ -518,12 +485,7 @@ int main()	{
 		exit(EXIT_FAILURE);
 	}
 	printf("[+] Bloom filter for 1 elements.\n");
-	if(bloom_init2(&bloom) == 1){
-		fprintf(stderr,"[E] error bloom_init for 10000 elements.\n");
-		printf("[+] Loading data to the bloomfilter total: %.2f MB\n",(double)(((double) (&bloom)->bytes)/(double)1048576));
-		fprintf(stderr,"[E] Unenexpected error\n");
-		exit(EXIT_FAILURE);
-	}
+	bloom_init2(&bloom);
 	printf("[+] Loading data to the bloomfilter total: %.2f MB\n",(double)(((double) (&bloom)->bytes)/(double)1048576));
 	memset(addressTable[0].value,0,20);
 
@@ -749,8 +711,7 @@ int main()	{
 
 					for(k = 0; k < 4;k++)	{
 						for(l = 0;l < 2; l++)	{
-							r = bloom_check(&bloom,publickeyhashrmd160_endomorphism[l][k]);
-							if(r) {
+							if(bloom_check(&bloom,publickeyhashrmd160_endomorphism[l][k])) {
 								r = searchbinary(addressTable,publickeyhashrmd160_endomorphism[l][k],N);
 								if(r) {
 									keyfound.SetInt32(k);
