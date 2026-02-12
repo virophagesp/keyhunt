@@ -16,7 +16,6 @@
 */
 
 #include "Int.h"
-#include "IntGroup.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>

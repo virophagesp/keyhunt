@@ -42,7 +42,6 @@ email: albertobsd@gmail.com
 
 #include <math.h>
 #include <inttypes.h>
-
 #include <assert.h>
 #include <fcntl.h>
 #include <stdint.h>
@@ -53,15 +52,15 @@ email: albertobsd@gmail.com
 #include <sys/types.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <sys/random.h>
+#include <vector>
 
 #include "xxhash/xxhash.h"
 
 #include "secp256k1/SECP256k1.h"
-#include "secp256k1/IntGroup.h"
 
 #include "hash/sha256.h"
 
-#include <sys/random.h>
 
 #define IMPORTANT "small_test"
 //#define IMPORTANT "medium_test"
