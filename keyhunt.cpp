@@ -511,7 +511,7 @@ int main()	{
 		printf("[+] -- to   : 0x3ffffffffffffffffffff\n");
 	}
 
-	printf("[+] Allocating memory for 1 element: 0.00 MB\n");
+	printf("[+] Allocating memory for addressTable\n");
 	addressTable = (struct address_value*) malloc(20);
 	if((void *)addressTable == NULL)	{
 		fprintf(stderr,"[E] error in file %s, malloc pointer addressTable on line %i\n",__FILE__,__LINE__ -1 ); 
@@ -637,7 +637,7 @@ int main()	{
 	bloom_add(&bloom, rawvalue+1);
 	memcpy(addressTable[0].value,rawvalue+1,20);
 	N = 1;
-	printf("[+] Sorting data ...");
+	printf("[+] Sorting addressTable data ...");
 	_sort(addressTable,N);
 	printf(" done! %" PRIu64 " values were loaded and sorted\n",N);
 
