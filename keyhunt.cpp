@@ -10,7 +10,6 @@ email: albertobsd@gmail.com
  * under the terms of the standard MIT license.  See COPYING for more details.
  */
 
-
 /*
  * 
  * Copyright (c) 2012,2015,2016,2017 Jyri J. Virkki
@@ -122,12 +121,6 @@ void bloom_init2(struct bloom * bloom)
 	bloom->hashes = (uint8_t)ceil(0.693147180559945 * bloom->bpe);  // ln(2)
 	
 	bloom->bf = (uint8_t *)calloc(bloom->bytes, sizeof(uint8_t));
-	if (bloom->bf == NULL) {                                   // LCOV_EXCL_START
-		fprintf(stderr,"[E] error bloom_init for 10000 elements.\n");
-		printf("[+] Loading data to the bloomfilter total: %.2f MB\n",(double)(((double) bloom->bytes)/(double)1048576));
-		fprintf(stderr,"[E] Unenexpected error\n");
-		exit(EXIT_FAILURE);
-	}                                                          // LCOV_EXCL_STOP
 
 	bloom->ready = 1;
 	bloom->major = 2;
@@ -218,9 +211,10 @@ bool b58enc(char *b58, const void *data)
 	return true;
 }
 
-int searchbinary(struct address_value *buffer,char *data,int64_t array_length) {
+bool searchbinary(struct address_value *buffer,char *data,int64_t array_length) {
 	int64_t half,min,max,current;
-	int r = 0,rcmp;
+	bool r = false;
+	int rcmp;
 	min = 0;
 	current = 0;
 	max = array_length;
@@ -229,7 +223,7 @@ int searchbinary(struct address_value *buffer,char *data,int64_t array_length) {
 		half = (max - min)/2;
 		rcmp = memcmp(data,buffer[current+half].value,20);
 		if(rcmp == 0)	{
-			r = 1;	//Found!!
+			r = true;	//Found!!
 		}
 		else	{
 			if(rcmp < 0) { //data < temp_read
@@ -401,14 +395,14 @@ int main()	{
 	Int _p;
 	Point pp;
 	Point pn;
-	int i,l,pp_offset,pn_offset,hLength = (511);
+	int i,l;
 	uint64_t j,count;
 	Point R,publickey;
-	int r,continue_flag = 1,k;
+	int continue_flag,k;
 	char *hextemp = NULL;
 	char publickeyhashrmd160[20];
 	char publickeyhashrmd160_endomorphism[12][4][20];
-	Int key_mpz,keyfound,temp_stride;
+	Int key_mpz,keyfound;
 	Point G,g;
 	std::vector<Point> Gn;
 	Point _2Gn;
@@ -425,7 +419,7 @@ int main()	{
 	secp.Init();
 
 	unsigned long rseedvalue;
-	getrandom(&rseedvalue, sizeof(unsigned long), GRND_NONBLOCK);
+	getrandom(&rseedvalue, 8, GRND_NONBLOCK);
 	rseed(rseedvalue);
 
 	printf("[+] Version 0.7 bitcoin hunt, developed by virophagesp based upon 0.2.230519 Satoshi Quest by AlbertoBSD\n");
@@ -480,10 +474,6 @@ int main()	{
 
 	printf("[+] Allocating memory for addressTable\n");
 	addressTable = (struct address_value*) malloc(20);
-	if((void *)addressTable == NULL)	{
-		fprintf(stderr,"[E] error in file %s, malloc pointer addressTable on line %i\n",__FILE__,__LINE__ -1 ); 
-		exit(EXIT_FAILURE);
-	}
 	printf("[+] Bloom filter for 1 elements.\n");
 	bloom_init2(&bloom);
 	printf("[+] Loading data to the bloomfilter total: %.2f MB\n",(double)(((double) (&bloom)->bytes)/(double)1048576));
@@ -624,12 +614,11 @@ int main()	{
 			fflush(stdout);
 			free(hextemp);
 			do {
-				temp_stride.SetInt32(512);
-				key_mpz.Add(&temp_stride);
+				key_mpz.Add(512);
 	 			startP = secp.ComputePublicKey(&key_mpz);
-				key_mpz.Sub(&temp_stride);
+				key_mpz.Sub(512);
 
-				for(i = 0; i < hLength; i++) {
+				for(i = 0; i < 511; i++) {
 					dx[i].ModSub(&Gn[i].x,&startP.x);
 				}
 
@@ -658,7 +647,7 @@ int main()	{
 
 				pts[512].Set(startP);
 
-				for(i = 0; i<hLength; i++) {
+				for(i = 0; i<511; i++) {
 					pp.Set(startP);
 					pn.Set(startP);
 
@@ -683,11 +672,8 @@ int main()	{
 					pn.x.ModAdd(&_p);
 					pn.x.ModSub(&Gn[i].x);          // rx = pow2(s) - p1.x - p2.x;
 
-					pp_offset = 512 + (i + 1);
-					pn_offset = 512 - (i + 1);
-
-					pts[pp_offset].Set(pp);
-					pts[pn_offset].Set(pn);
+					pts[512 + (i + 1)].Set(pp);
+					pts[512 - (i + 1)].Set(pn);
 				}
 
 				// First point (startP - (GRP_SZIE/2)*G)
@@ -712,8 +698,7 @@ int main()	{
 					for(k = 0; k < 4;k++)	{
 						for(l = 0;l < 2; l++)	{
 							if(bloom_check(&bloom,publickeyhashrmd160_endomorphism[l][k])) {
-								r = searchbinary(addressTable,publickeyhashrmd160_endomorphism[l][k],N);
-								if(r) {
+								if(searchbinary(addressTable,publickeyhashrmd160_endomorphism[l][k],N)) {
 									keyfound.SetInt32(k);
 									keyfound.Add(&key_mpz);
 
@@ -729,8 +714,7 @@ int main()	{
 						}
 					}
 					count+=4;
-					temp_stride.SetInt32(4);
-					key_mpz.Add(&temp_stride);
+					key_mpz.Add(4);
 				}
 
 				// Next start point (startP + GRP_SIZE*G)
@@ -752,7 +736,7 @@ int main()	{
 			}while(count < N_SEQUENTIAL_MAX && continue_flag);
 		}
 	} while(continue_flag);
-	delete addressTable;
+	free(addressTable);
 	delete bloom.bf;
 	printf("\nEnd\n");
 }
