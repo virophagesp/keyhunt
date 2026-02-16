@@ -76,9 +76,7 @@ XXH64       13.8 GB/s            1.9 GB/s
 XXH32        6.8 GB/s            6.0 GB/s
 */
 
-#if defined (__cplusplus)
 extern "C" {
-#endif
 
 
 /* ****************************************************************
@@ -96,23 +94,8 @@ typedef enum { XXH_OK=0, XXH_ERROR } XXH_errorcode;
 /*-**********************************************************************
 *  32-bit hash
 ************************************************************************/
-#if !defined (__VMS) \
-  && (defined (__cplusplus) \
-  || (defined (__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L) /* C99 */) )
-#   include <stdint.h>
-    typedef uint32_t XXH32_hash_t;
-#else
-#   include <limits.h>
-#   if UINT_MAX == 0xFFFFFFFFUL
-      typedef unsigned int XXH32_hash_t;
-#   else
-#     if ULONG_MAX == 0xFFFFFFFFUL
-        typedef unsigned long XXH32_hash_t;
-#     else
-#       error "unsupported platform: need a 32-bit type"
-#     endif
-#   endif
-#endif
+#include <stdint.h>
+typedef uint32_t XXH32_hash_t;
 
 /*!
  * @}
@@ -269,7 +252,7 @@ typedef uint64_t XXH64_hash_t;
  * @see
  *    XXH64_createState(), XXH64_update(), XXH64_digest(): Streaming version.
  */
-XXH64_hash_t XXH64(const void* input, size_t length, XXH64_hash_t seed);
+XXH64_hash_t XXH64(const void* input, XXH64_hash_t seed);
 
 /*******   Streaming   *******/
 /*!
@@ -354,15 +337,6 @@ XXH64_hash_t XXH3_64bits(const void* data, size_t len);
  */
 XXH64_hash_t XXH3_64bits_withSeed(const void* data, size_t len, XXH64_hash_t seed);
 
-/*!
- * The bare minimum size for a custom secret.
- *
- * @see
- *  XXH3_64bits_withSecret(), XXH3_64bits_reset_withSecret(),
- *  XXH3_128bits_withSecret(), XXH3_128bits_reset_withSecret().
- */
-#define XXH3_SECRET_SIZE_MIN 136
-
 /*
  * XXH3_64bits_withSecret():
  * It's possible to provide any blob of bytes as a "secret" to generate the hash.
@@ -441,7 +415,6 @@ typedef struct {
 
 
 
-#define XXHASH_H_STATIC_13879238742
 /* ****************************************************************************
  * This section contains declarations which are not guaranteed to remain stable.
  * They may change in future versions, becoming incompatible with a different
@@ -505,42 +478,8 @@ struct XXH64_state_s {
    XXH64_hash_t reserved64;   /*!< Reserved field. Do not read or write to it, it may be removed. */
 };   /* typedef'd to XXH64_state_t */
 
-#if defined (__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L)   /* C11+ */
-#  include <stdalign.h>
-#  define XXH_ALIGN(n)      alignas(n)
-#elif defined(__GNUC__)
-#  define XXH_ALIGN(n)      __attribute__ ((aligned(n)))
-#elif defined(_MSC_VER)
-#  define XXH_ALIGN(n)      __declspec(align(n))
-#else
-#  define XXH_ALIGN(n)   /* disabled */
-#endif
-
 /* Old GCC versions only accept the attribute after the type in structures. */
-#if !(defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L))   /* C11+ */ \
-    && defined(__GNUC__)
-#   define XXH_ALIGN_MEMBER(align, type) type XXH_ALIGN(align)
-#else
-#   define XXH_ALIGN_MEMBER(align, type) XXH_ALIGN(align) type
-#endif
-
-/*!
- * @brief The size of the internal XXH3 buffer.
- *
- * This is the optimal update size for incremental hashing.
- *
- * @see XXH3_64b_update(), XXH3_128b_update().
- */
-#define XXH3_INTERNALBUFFER_SIZE 256
-
-/*!
- * @brief Default size of the secret buffer (and @ref XXH3_kSecret).
- *
- * This is the size used in @ref XXH3_kSecret and the seeded functions.
- *
- * Not to be confused with @ref XXH3_SECRET_SIZE_MIN.
- */
-#define XXH3_SECRET_DEFAULT_SIZE 192
+#define XXH_ALIGN_MEMBER(align, type) type __attribute__ ((aligned(align)))
 
 /*!
  * @internal
@@ -565,9 +504,9 @@ struct XXH64_state_s {
 struct XXH3_state_s {
    XXH_ALIGN_MEMBER(64, XXH64_hash_t acc[8]);
        /*!< The 8 accumulators. Similar to `vN` in @ref XXH32_state_s::v1 and @ref XXH64_state_s */
-   XXH_ALIGN_MEMBER(64, unsigned char customSecret[XXH3_SECRET_DEFAULT_SIZE]);
+   XXH_ALIGN_MEMBER(64, unsigned char customSecret[192]);
        /*!< Used to store a custom secret generated from a seed. */
-   XXH_ALIGN_MEMBER(64, unsigned char buffer[XXH3_INTERNALBUFFER_SIZE]);
+   XXH_ALIGN_MEMBER(64, unsigned char buffer[256]);
        /*!< The internal buffer. @see XXH32_state_s::mem32 */
    XXH32_hash_t bufferedSize;
        /*!< The amount of memory in @ref buffer, @see XXH32_state_s::memsize */
@@ -642,38 +581,6 @@ XXH128_hash_t XXH128(const void* data, size_t len, XXH64_hash_t seed);
  * @}
  */
 
-#define XXH_FORCE_MEMORY_ACCESS 1
-
-#ifndef XXH_ACCEPT_NULL_INPUT_POINTER   /* can be defined externally */
-#  define XXH_ACCEPT_NULL_INPUT_POINTER 0
-#endif
-
-#ifndef XXH_FORCE_ALIGN_CHECK  /* can be defined externally */
-#  if defined(__i386)  || defined(__x86_64__) || defined(__aarch64__) \
-   || defined(_M_IX86) || defined(_M_X64)     || defined(_M_ARM64) /* visual */
-#    define XXH_FORCE_ALIGN_CHECK 0
-#  else
-#    define XXH_FORCE_ALIGN_CHECK 1
-#  endif
-#endif
-
-#ifndef XXH_NO_INLINE_HINTS
-#  if defined(__OPTIMIZE_SIZE__) /* -Os, -Oz */ \
-   || defined(__NO_INLINE__)     /* -O0, -fno-inline */
-#    define XXH_NO_INLINE_HINTS 1
-#  else
-#    define XXH_NO_INLINE_HINTS 0
-#  endif
-#endif
-
-#ifndef XXH_REROLL
-#  if defined(__OPTIMIZE_SIZE__)
-#    define XXH_REROLL 1
-#  else
-#    define XXH_REROLL 0
-#  endif
-#endif
-
 /*!
  * @defgroup impl Implementation
  * @{
@@ -683,72 +590,14 @@ XXH128_hash_t XXH128(const void* data, size_t len, XXH64_hash_t seed);
 /* *************************************
 *  Compiler Specific Options
 ***************************************/
-#if XXH_NO_INLINE_HINTS  /* disable inlining hints */
-#  if defined(__GNUC__)
-#    define XXH_FORCE_INLINE static __attribute__((unused))
-#  else
-#    define XXH_FORCE_INLINE static
-#  endif
-#  define XXH_NO_INLINE static
-/* enable inlining hints */
-#elif defined(_MSC_VER)  /* Visual Studio */
-#  define XXH_FORCE_INLINE static __forceinline
-#  define XXH_NO_INLINE static __declspec(noinline)
-#elif defined(__GNUC__)
-#  define XXH_FORCE_INLINE static __inline__ __attribute__((always_inline, unused))
-#  define XXH_NO_INLINE static __attribute__((noinline))
-#elif defined (__cplusplus) \
-  || (defined (__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L))   /* C99 */
-#  define XXH_FORCE_INLINE static inline
-#  define XXH_NO_INLINE static
-#else
-#  define XXH_FORCE_INLINE static
-#  define XXH_NO_INLINE static
-#endif
-
-
-
-/* *************************************
-*  Debug
-***************************************/
-/*!
- * @ingroup tuning
- * @def XXH_DEBUGLEVEL
- * @brief Sets the debugging level.
- *
- * XXH_DEBUGLEVEL is expected to be defined externally, typically via the
- * compiler's command line options. The value must be a number.
- */
-#ifndef XXH_DEBUGLEVEL
-#  ifdef DEBUGLEVEL /* backwards compat */
-#    define XXH_DEBUGLEVEL DEBUGLEVEL
-#  else
-#    define XXH_DEBUGLEVEL 0
-#  endif
-#endif
-
-#if (XXH_DEBUGLEVEL>=1)
-#  include <assert.h>   /* note: can still be disabled with NDEBUG */
-#  define XXH_ASSERT(c)   assert(c)
-#else
-#  define XXH_ASSERT(c)   ((void)0)
-#endif
-
-/* note: use after variable declarations */
-#define XXH_STATIC_ASSERT(c)  do { enum { XXH_sa = 1/(int)(!!(c)) }; } while (0)
+#define XXH_FORCE_INLINE static __inline__ __attribute__((always_inline, unused))
 
 
 /* *************************************
 *  Basic Types
 ***************************************/
-#if !defined (__VMS) \
- && (defined (__cplusplus) \
- || (defined (__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L) /* C99 */) )
-# include <stdint.h>
-  typedef uint8_t xxh_u8;
-#else
-  typedef unsigned char xxh_u8;
-#endif
+#include <stdint.h>
+typedef uint8_t xxh_u8;
 typedef XXH32_hash_t xxh_u32;
 
 /* ***   Memory access   *** */
@@ -803,8 +652,6 @@ typedef XXH32_hash_t xxh_u32;
  * @return The 32-bit little endian integer from the bytes at @p ptr.
  */
 
-#if (defined(XXH_FORCE_MEMORY_ACCESS) && (XXH_FORCE_MEMORY_ACCESS==1))
-
 /*
  * __pack instructions are safer but compiler specific, hence potentially
  * problematic for some compilers.
@@ -817,72 +664,9 @@ static xxh_u32 XXH_read32(const void* ptr)
     return ((const xxh_unalign*)ptr)->u32;
 }
 
-#else
-
-/*
- * Portable and safe solution. Generally efficient.
- * see: https://stackoverflow.com/a/32095106/646947
- */
-static xxh_u32 XXH_read32(const void* memPtr)
-{
-    xxh_u32 val;
-    memcpy(&val, memPtr, sizeof(val));
-    return val;
-}
-
-#endif   /* XXH_FORCE_DIRECT_MEMORY_ACCESS */
-
 
 /* ***   Endianness   *** */
 typedef enum { XXH_bigEndian=0, XXH_littleEndian=1 } XXH_endianess;
-
-/*!
- * @ingroup tuning
- * @def XXH_CPU_LITTLE_ENDIAN
- * @brief Whether the target is little endian.
- *
- * Defined to 1 if the target is little endian, or 0 if it is big endian.
- * It can be defined externally, for example on the compiler command line.
- *
- * If it is not defined, a runtime check (which is usually constant folded)
- * is used instead.
- *
- * @note
- *   This is not necessarily defined to an integer constant.
- *
- * @see XXH_isLittleEndian() for the runtime check.
- */
-#ifndef XXH_CPU_LITTLE_ENDIAN
-/*
- * Try to detect endianness automatically, to avoid the nonstandard behavior
- * in `XXH_isLittleEndian()`
- */
-#  if defined(_WIN32) /* Windows is always little endian */ \
-     || defined(__LITTLE_ENDIAN__) \
-     || (defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
-#    define XXH_CPU_LITTLE_ENDIAN 1
-#  elif defined(__BIG_ENDIAN__) \
-     || (defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)
-#    define XXH_CPU_LITTLE_ENDIAN 0
-#  else
-/*!
- * @internal
- * @brief Runtime check for @ref XXH_CPU_LITTLE_ENDIAN.
- *
- * Most compilers will constant fold this.
- */
-static int XXH_isLittleEndian(void)
-{
-    /*
-     * Portable and well-defined behavior.
-     * Don't use static: it is detrimental to performance.
-     */
-    const union { xxh_u32 u; xxh_u8 c[4]; } one = { 1 };
-    return one.c[0];
-}
-#   define XXH_CPU_LITTLE_ENDIAN   XXH_isLittleEndian()
-#  endif
-#endif
 
 
 
@@ -890,13 +674,6 @@ static int XXH_isLittleEndian(void)
 /* ****************************************
 *  Compiler-specific Functions and Macros
 ******************************************/
-#define XXH_GCC_VERSION (__GNUC__ * 100 + __GNUC_MINOR__)
-
-#ifdef __has_builtin
-#  define XXH_HAS_BUILTIN(x) __has_builtin(x)
-#else
-#  define XXH_HAS_BUILTIN(x) 0
-#endif
 
 /*!
  * @internal
@@ -911,18 +688,8 @@ static int XXH_isLittleEndian(void)
  *   @p x and @p r may be evaluated multiple times.
  * @return The rotated result.
  */
-#if !defined(NO_CLANG_BUILTIN) && XXH_HAS_BUILTIN(__builtin_rotateleft32) \
-                               && XXH_HAS_BUILTIN(__builtin_rotateleft64)
-#  define XXH_rotl32 __builtin_rotateleft32
-#  define XXH_rotl64 __builtin_rotateleft64
-/* Note: although _rotl exists for minGW (GCC under windows), performance seems poor */
-#elif defined(_MSC_VER)
-#  define XXH_rotl32(x,r) _rotl(x,r)
-#  define XXH_rotl64(x,r) _rotl64(x,r)
-#else
-#  define XXH_rotl32(x,r) (((x) << (r)) | ((x) >> (32 - (r))))
-#  define XXH_rotl64(x,r) (((x) << (r)) | ((x) >> (64 - (r))))
-#endif
+#define XXH_rotl32(x,r) (((x) << (r)) | ((x) >> (32 - (r))))
+#define XXH_rotl64(x,r) (((x) << (r)) | ((x) >> (64 - (r))))
 
 /*!
  * @internal
@@ -932,19 +699,7 @@ static int XXH_isLittleEndian(void)
  * @param x The 32-bit integer to byteswap.
  * @return @p x, byteswapped.
  */
-#if defined(_MSC_VER)     /* Visual Studio */
-#  define XXH_swap32 _byteswap_ulong
-#elif XXH_GCC_VERSION >= 403
-#  define XXH_swap32 __builtin_bswap32
-#else
-static xxh_u32 XXH_swap32 (xxh_u32 x)
-{
-    return  ((x << 24) & 0xff000000 ) |
-            ((x <<  8) & 0x00ff0000 ) |
-            ((x >>  8) & 0x0000ff00 ) |
-            ((x >> 24) & 0x000000ff );
-}
-#endif
+#define XXH_swap32 __builtin_bswap32
 
 
 /* ***************************
@@ -962,7 +717,7 @@ typedef enum {
 
 XXH_FORCE_INLINE xxh_u32 XXH_readLE32(const void* ptr)
 {
-    return XXH_CPU_LITTLE_ENDIAN ? XXH_read32(ptr) : XXH_swap32(XXH_read32(ptr));
+    return XXH_read32(ptr);
 }
 
 XXH_FORCE_INLINE xxh_u32
@@ -971,7 +726,7 @@ XXH_readLE32_align(const void* ptr, XXH_alignment align)
     if (align==XXH_unaligned) {
         return XXH_readLE32(ptr);
     } else {
-        return XXH_CPU_LITTLE_ENDIAN ? *(const xxh_u32*)ptr : XXH_swap32(*(const xxh_u32*)ptr);
+        return *(const xxh_u32*)ptr;
     }
 }
 
@@ -1004,7 +759,7 @@ static xxh_u64 XXH_read64(const void* ptr)
 
 XXH_FORCE_INLINE xxh_u64 XXH_readLE64(const void* ptr)
 {
-    return XXH_CPU_LITTLE_ENDIAN ? XXH_read64(ptr) : __builtin_bswap64(XXH_read64(ptr));
+    return XXH_read64(ptr);
 }
 
 XXH_FORCE_INLINE xxh_u64
@@ -1013,7 +768,7 @@ XXH_readLE64_align(const void* ptr, XXH_alignment align)
     if (align==XXH_unaligned)
         return XXH_readLE64(ptr);
     else
-        return XXH_CPU_LITTLE_ENDIAN ? *(const xxh_u64*)ptr : __builtin_bswap64(*(const xxh_u64*)ptr);
+        return *(const xxh_u64*)ptr;
 }
 
 
@@ -1039,14 +794,6 @@ static xxh_u64 XXH64_round(xxh_u64 acc, xxh_u64 input)
     return acc;
 }
 
-static xxh_u64 XXH64_mergeRound(xxh_u64 acc, xxh_u64 val)
-{
-    val  = XXH64_round(0, val);
-    acc ^= val;
-    acc  = acc * XXH_PRIME64_1 + XXH_PRIME64_4;
-    return acc;
-}
-
 static xxh_u64 XXH64_avalanche(xxh_u64 h64)
 {
     h64 ^= h64 >> 33;
@@ -1058,16 +805,9 @@ static xxh_u64 XXH64_avalanche(xxh_u64 h64)
 }
 
 
-#define XXH_get64bits(p) XXH_readLE64_align(p, align)
-
 static xxh_u64
-XXH64_finalize(xxh_u64 h64, const xxh_u8* ptr, size_t len, XXH_alignment align)
+XXH64_finalize(xxh_u64 h64, const xxh_u8* ptr, XXH_alignment align)
 {
-#define XXH_PROCESS1_64 do {                                   \
-    h64 ^= (*ptr++) * XXH_PRIME64_5;                           \
-    h64 = XXH_rotl64(h64, 11) * XXH_PRIME64_1;                 \
-} while (0)
-
 #define XXH_PROCESS4_64 do {                                   \
     h64 ^= (xxh_u64)(XXH_readLE32_align(ptr, align)) * XXH_PRIME64_1;      \
     ptr += 4;                                              \
@@ -1075,175 +815,35 @@ XXH64_finalize(xxh_u64 h64, const xxh_u8* ptr, size_t len, XXH_alignment align)
 } while (0)
 
 #define XXH_PROCESS8_64 do {                                   \
-    xxh_u64 const k1 = XXH64_round(0, XXH_get64bits(ptr)); \
+    xxh_u64 const k1 = XXH64_round(0, XXH_readLE64_align(ptr, align)); \
     ptr += 8;                                              \
     h64 ^= k1;                                             \
     h64  = XXH_rotl64(h64,27) * XXH_PRIME64_1 + XXH_PRIME64_4;     \
 } while (0)
 
-    /* Rerolled version for 32-bit targets is faster and much smaller. */
-    if (XXH_REROLL) {
-        len &= 31;
-        while (len >= 8) {
-            XXH_PROCESS8_64;
-            len -= 8;
-        }
-        if (len >= 4) {
-            XXH_PROCESS4_64;
-            len -= 4;
-        }
-        while (len > 0) {
-            XXH_PROCESS1_64;
-            --len;
-        }
-         return  XXH64_avalanche(h64);
-    } else {
-        switch(len & 31) {
-           case 24: XXH_PROCESS8_64;
-                         /* fallthrough */
-           case 16: XXH_PROCESS8_64;
-                         /* fallthrough */
-           case  8: XXH_PROCESS8_64;
-                    return XXH64_avalanche(h64);
-
-           case 28: XXH_PROCESS8_64;
-                         /* fallthrough */
-           case 20: XXH_PROCESS8_64;
-                         /* fallthrough */
-           case 12: XXH_PROCESS8_64;
-                         /* fallthrough */
-           case  4: XXH_PROCESS4_64;
-                    return XXH64_avalanche(h64);
-
-           case 25: XXH_PROCESS8_64;
-                         /* fallthrough */
-           case 17: XXH_PROCESS8_64;
-                         /* fallthrough */
-           case  9: XXH_PROCESS8_64;
-                    XXH_PROCESS1_64;
-                    return XXH64_avalanche(h64);
-
-           case 29: XXH_PROCESS8_64;
-                         /* fallthrough */
-           case 21: XXH_PROCESS8_64;
-                         /* fallthrough */
-           case 13: XXH_PROCESS8_64;
-                         /* fallthrough */
-           case  5: XXH_PROCESS4_64;
-                    XXH_PROCESS1_64;
-                    return XXH64_avalanche(h64);
-
-           case 26: XXH_PROCESS8_64;
-                         /* fallthrough */
-           case 18: XXH_PROCESS8_64;
-                         /* fallthrough */
-           case 10: XXH_PROCESS8_64;
-                    XXH_PROCESS1_64;
-                    XXH_PROCESS1_64;
-                    return XXH64_avalanche(h64);
-
-           case 30: XXH_PROCESS8_64;
-                         /* fallthrough */
-           case 22: XXH_PROCESS8_64;
-                         /* fallthrough */
-           case 14: XXH_PROCESS8_64;
-                         /* fallthrough */
-           case  6: XXH_PROCESS4_64;
-                    XXH_PROCESS1_64;
-                    XXH_PROCESS1_64;
-                    return XXH64_avalanche(h64);
-
-           case 27: XXH_PROCESS8_64;
-                         /* fallthrough */
-           case 19: XXH_PROCESS8_64;
-                         /* fallthrough */
-           case 11: XXH_PROCESS8_64;
-                    XXH_PROCESS1_64;
-                    XXH_PROCESS1_64;
-                    XXH_PROCESS1_64;
-                    return XXH64_avalanche(h64);
-
-           case 31: XXH_PROCESS8_64;
-                         /* fallthrough */
-           case 23: XXH_PROCESS8_64;
-                         /* fallthrough */
-           case 15: XXH_PROCESS8_64;
-                         /* fallthrough */
-           case  7: XXH_PROCESS4_64;
-                         /* fallthrough */
-           case  3: XXH_PROCESS1_64;
-                         /* fallthrough */
-           case  2: XXH_PROCESS1_64;
-                         /* fallthrough */
-           case  1: XXH_PROCESS1_64;
-                         /* fallthrough */
-           case  0: return XXH64_avalanche(h64);
-        }
-    }
-    /* impossible to reach */
-    XXH_ASSERT(0);
-    return 0;  /* unreachable, but some compilers complain without it */
+    XXH_PROCESS8_64;
+    XXH_PROCESS8_64;
+    XXH_PROCESS4_64;
+    return XXH64_avalanche(h64);
 }
 
-#undef XXH_PROCESS1_64
 #undef XXH_PROCESS4_64
 #undef XXH_PROCESS8_64
 
 XXH_FORCE_INLINE xxh_u64
-XXH64_endian_align(const xxh_u8* input, size_t len, xxh_u64 seed, XXH_alignment align)
+XXH64_endian_align(const xxh_u8* input, xxh_u64 seed, XXH_alignment align)
 {
-    const xxh_u8* bEnd = input + len;
-    xxh_u64 h64;
+    xxh_u64 h64 = seed + XXH_PRIME64_5 + (xxh_u64) 20;
 
-#if defined(XXH_ACCEPT_NULL_INPUT_POINTER) && (XXH_ACCEPT_NULL_INPUT_POINTER>=1)
-    if (input==NULL) {
-        len=0;
-        bEnd=input=(const xxh_u8*)(size_t)32;
-    }
-#endif
-
-    if (len>=32) {
-        const xxh_u8* const limit = bEnd - 32;
-        xxh_u64 v1 = seed + XXH_PRIME64_1 + XXH_PRIME64_2;
-        xxh_u64 v2 = seed + XXH_PRIME64_2;
-        xxh_u64 v3 = seed + 0;
-        xxh_u64 v4 = seed - XXH_PRIME64_1;
-
-        do {
-            v1 = XXH64_round(v1, XXH_get64bits(input)); input+=8;
-            v2 = XXH64_round(v2, XXH_get64bits(input)); input+=8;
-            v3 = XXH64_round(v3, XXH_get64bits(input)); input+=8;
-            v4 = XXH64_round(v4, XXH_get64bits(input)); input+=8;
-        } while (input<=limit);
-
-        h64 = XXH_rotl64(v1, 1) + XXH_rotl64(v2, 7) + XXH_rotl64(v3, 12) + XXH_rotl64(v4, 18);
-        h64 = XXH64_mergeRound(h64, v1);
-        h64 = XXH64_mergeRound(h64, v2);
-        h64 = XXH64_mergeRound(h64, v3);
-        h64 = XXH64_mergeRound(h64, v4);
-
-    } else {
-        h64  = seed + XXH_PRIME64_5;
-    }
-
-    h64 += (xxh_u64) len;
-
-    return XXH64_finalize(h64, input, len, align);
+    return XXH64_finalize(h64, input, align);
 }
 
 
 /*! @ingroup xxh64_family */
-XXH64_hash_t XXH64 (const void* input, size_t len, XXH64_hash_t seed)
+XXH64_hash_t XXH64 (const void* input, XXH64_hash_t seed)
 {
-    if (XXH_FORCE_ALIGN_CHECK) {
-        if ((((size_t)input) & 7)==0) {  /* Input is aligned, let's leverage the speed advantage */
-            return XXH64_endian_align((const xxh_u8*)input, len, seed, XXH_aligned);
-    }   }
-
-    return XXH64_endian_align((const xxh_u8*)input, len, seed, XXH_unaligned);
+    return XXH64_endian_align((const xxh_u8*)input, seed, XXH_unaligned);
 }
 
 
-#if defined (__cplusplus)
 }
-#endif

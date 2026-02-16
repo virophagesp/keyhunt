@@ -60,7 +60,6 @@ email: albertobsd@gmail.com
 
 #include "hash/sha256.h"
 
-
 #define IMPORTANT "small_test"
 //#define IMPORTANT "medium_test"
 //#define IMPORTANT "big_test"
@@ -130,8 +129,8 @@ void bloom_init2(struct bloom * bloom)
 bool bloom_check(struct bloom * bloom, const void * buffer)
 {
 	uint8_t hits = 0;
-	uint64_t a = XXH64(buffer, 20, 0x59f2815b16f81798);
-	uint64_t b = XXH64(buffer, 20, a);
+	uint64_t a = XXH64(buffer, 0x59f2815b16f81798);
+	uint64_t b = XXH64(buffer, a);
 	uint64_t x,byte;
 	uint8_t i,c,mask;
 	for (i = 0; i < bloom->hashes; i++) {
@@ -150,8 +149,8 @@ bool bloom_check(struct bloom * bloom, const void * buffer)
 
 void bloom_add(struct bloom * bloom, const void * buffer)
 {
-	uint64_t a = XXH64(buffer, 20, 0x59f2815b16f81798);
-	uint64_t b = XXH64(buffer, 20, a);
+	uint64_t a = XXH64(buffer, 0x59f2815b16f81798);
+	uint64_t b = XXH64(buffer, a);
 	uint64_t x,byte;
 	uint8_t i,c,mask;
 	for (i = 0; i < bloom->hashes; i++) {
