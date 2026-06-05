@@ -46,63 +46,8 @@ void rk_seed(unsigned long seed, rk_state *state)
   state->pos = RK_STATE_LEN;
 }
 
-/* Magic Mersenne Twister constants */
-#define N 624
-#define M 397
-#define MATRIX_A 0x9908b0dfUL
-#define UPPER_MASK 0x80000000UL
-#define LOWER_MASK 0x7fffffffUL
-
-/* Slightly optimised reference implementation of the Mersenne Twister */
-inline unsigned long rk_random(rk_state *state)
-{
-  unsigned long y;
-
-  if (state->pos == RK_STATE_LEN)
-  {
-    int i;
-
-    for (i=0;i<N-M;i++)
-    {
-      y = (state->key[i] & UPPER_MASK) | (state->key[i+1] & LOWER_MASK);
-      state->key[i] = state->key[i+M] ^ (y>>1) ^ (-(y & 1) & MATRIX_A);
-    }
-    for (;i<N-1;i++)
-    {
-      y = (state->key[i] & UPPER_MASK) | (state->key[i+1] & LOWER_MASK);
-      state->key[i] = state->key[i+(M-N)] ^ (y>>1) ^ (-(y & 1) & MATRIX_A);
-    }
-    y = (state->key[N-1] & UPPER_MASK) | (state->key[0] & LOWER_MASK);
-    state->key[N-1] = state->key[M-1] ^ (y>>1) ^ (-(y & 1) & MATRIX_A);
-
-    state->pos = 0;
-  }
-  
-  y = state->key[state->pos++];
-
-  /* Tempering */
-  y ^= (y >> 11);
-  y ^= (y << 7) & 0x9d2c5680UL;
-  y ^= (y << 15) & 0xefc60000UL;
-  y ^= (y >> 18);
-
-  return y;
-}
-
 // Initialise the random generator with the specified seed
 void rseed(unsigned long seed) {
 	rk_seed(seed,&localState);
 	//srand(seed);
-}
-
-unsigned long rndl() {
-	unsigned long r;
-	int bytes_read = getrandom(&r, sizeof(unsigned long), GRND_NONBLOCK );
-	if (bytes_read > 0) {
-		return r;
-	}
-	else	{
-		/*Fail safe */
-		return rk_random(&localState);
-	}
 }

@@ -117,8 +117,6 @@ public:
   void ModDouble();                          // this <- 2*this (mod n)
   void ModExp(Int *e);                       // this <- this^e (mod n)
   void ModNeg();                             // this <- -this (mod n)
-  void ModSqrt();                            // this <- +/-sqrt(this) (mod n)
-  bool HasSqrt();                            // true if this admit a square root
 
   // Specific SecpK1
   static void InitK1(Int *order);
@@ -137,8 +135,6 @@ public:
   void SetBase16(const char *value);
   void SetBaseN(int n,const char *charset,const char *value);
   void SetByte(int n,unsigned char byte);
-  void Rand(int nbit);
-  void Rand(Int *min,Int *max);
 
   // Getter
   int GetBit(uint32_t n);

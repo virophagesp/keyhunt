@@ -18,7 +18,6 @@
 #ifndef RANDOM_H
 #define RANDOM_H
 
-unsigned long rndl();
 void rseed(unsigned long seed);
 
 #endif

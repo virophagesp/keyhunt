@@ -621,37 +621,6 @@ void Int::Mod(Int *n) {
 
 // ------------------------------------------------
 
-void Int::Rand(int nbit) {
-
-	CLEAR();
-
-	uint32_t nb = nbit/32;
-	uint32_t leftBit = nbit%32;
-	uint32_t mask = 1;
-	mask = (mask << leftBit) - 1;
-	uint32_t i=0;
-	for(;i<nb;i++)
-		bits[i]=rndl();
-	bits[i]=rndl()&mask;
-
-}
-
-void Int::Rand(Int *min,Int *max) {
-	CLEAR();
-  Int diff;
-  int nbit = 256;
-  uint32_t nb = nbit/32;
-  diff.Set(max);
-  diff.Sub(min);
-	uint32_t i=0;
-	for(;i<nb;i++)
-		bits[i]=rndl();
-  this->Mod(&diff);
-  this->Add(min);
-}
-
-// ------------------------------------------------
-
 void Int::Div(Int *a,Int *mod) {
 
   if(a->IsGreater(this)) {

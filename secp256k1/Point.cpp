@@ -43,12 +43,6 @@ void Point::Clear() {
   z.SetInt32(0);
 }
 
-void Point::Set(Int *cx, Int *cy,Int *cz) {
-  x.Set(cx);
-  y.Set(cy);
-  z.Set(cz);
-}
-
 Point::~Point() {
 }
 

@@ -30,7 +30,6 @@ public:
   Point(const Point &p);
   ~Point();
   void Set(Point &p);
-  void Set(Int *cx, Int *cy,Int *cz);
   void Clear();
   void Reduce();
   //std::string toString();

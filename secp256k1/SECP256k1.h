@@ -35,7 +35,7 @@ public:
   void  Init();
   Point ComputePublicKey(Int *privKey);
   
-  void GetPublicKeyHex(bool compressed, Point &pubKey,char *dst);
+  void GetPublicKeyHex(Point &pubKey,char *dst);
 
   void GetHash160(int type,bool compressed,
     Point &k0, Point &k1, Point &k2, Point &k3,

@@ -79,33 +79,24 @@ Point Secp256K1::ComputePublicKey(Int *privKey) {
 }
 
 
-void tohex_dst(char *ptr,int length,char *dst)	{
+void tohex_dst(char *ptr,char *dst)	{
   int offset = 0;
   unsigned char c;
-  for (int i = 0; i <length; i++) {
+  for (int i = 0; i <33; i++) {
     c = ptr[i];
 	sprintf((char*) (dst + offset),"%.2x",c);
 	offset+=2;
   }
-  dst[length*2] = 0;
+  dst[66] = 0;
 }
 
 
-void Secp256K1::GetPublicKeyHex(bool compressed, Point &pubKey,char *dst){
+void Secp256K1::GetPublicKeyHex(Point &pubKey,char *dst){
   unsigned char publicKeyBytes[65];
-  if (!compressed) {
-    //Uncompressed public key
-    publicKeyBytes[0] = 0x4;
-    pubKey.x.Get32Bytes(publicKeyBytes + 1);
-    pubKey.y.Get32Bytes(publicKeyBytes + 33);
-    tohex_dst((char*)publicKeyBytes,65,dst);
-  }
-  else {
-    // Compressed public key
-    publicKeyBytes[0] = pubKey.y.IsEven() ? 0x2 : 0x3;
-    pubKey.x.Get32Bytes(publicKeyBytes + 1);
-	tohex_dst((char*)publicKeyBytes,33,dst);
-  }
+  // Compressed public key
+  publicKeyBytes[0] = pubKey.y.IsEven() ? 0x2 : 0x3;
+  pubKey.x.Get32Bytes(publicKeyBytes + 1);
+	tohex_dst((char*)publicKeyBytes,dst);
 }
 
 Point Secp256K1::AddDirect(Point &p1,Point &p2) {

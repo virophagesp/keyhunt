@@ -351,7 +351,7 @@ void writekey(Int *key)	{
 	memset(public_key_hex,0,132);
 	hextemp = key->GetBase16();
 	publickey = secp.ComputePublicKey(key);
-	secp.GetPublicKeyHex(true,publickey,public_key_hex);
+	secp.GetPublicKeyHex(publickey,public_key_hex);
 	secp.GetHash160(P2PKH,true,publickey,(uint8_t*)rmdhash);
 
 	hexrmd = (char *) malloc(41);
