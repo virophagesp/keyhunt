@@ -352,7 +352,7 @@ void writekey(Int *key)	{
 	hextemp = key->GetBase16();
 	publickey = secp.ComputePublicKey(key);
 	secp.GetPublicKeyHex(publickey,public_key_hex);
-	secp.GetHash160(P2PKH,true,publickey,(uint8_t*)rmdhash);
+	secp.GetHash160(publickey,(uint8_t*)rmdhash);
 
 	hexrmd = (char *) malloc(41);
 	for (int i = 0; i <20; i++) {
@@ -382,7 +382,6 @@ void writekey(Int *key)	{
 }
 
 int main()	{
-	int check_flag;
 	uint8_t rawvalue[25];
 	Point pts[1024];
 	Int dx[513];
@@ -594,11 +593,6 @@ int main()	{
 
 	continue_flag = 1;
 	do	{
-		check_flag = 1 & 0;
-		if(check_flag)	{
-			continue_flag = 0;
-		}
-
 		if(n_range_start.IsLower(&n_range_end))	{
 			key_mpz.Set(&n_range_start);
 			n_range_start.Add(N_SEQUENTIAL_MAX);
@@ -691,8 +685,8 @@ int main()	{
 				pts[0].Set(pn);
 
 				for(j = 0; j < 256;j++){
-					secp.GetHash160_fromX(P2PKH,0x02,&pts[(j*4)].x,&pts[(j*4)+1].x,&pts[(j*4)+2].x,&pts[(j*4)+3].x,(uint8_t*)publickeyhashrmd160_endomorphism[0][0],(uint8_t*)publickeyhashrmd160_endomorphism[0][1],(uint8_t*)publickeyhashrmd160_endomorphism[0][2],(uint8_t*)publickeyhashrmd160_endomorphism[0][3]);
-					secp.GetHash160_fromX(P2PKH,0x03,&pts[(j*4)].x,&pts[(j*4)+1].x,&pts[(j*4)+2].x,&pts[(j*4)+3].x,(uint8_t*)publickeyhashrmd160_endomorphism[1][0],(uint8_t*)publickeyhashrmd160_endomorphism[1][1],(uint8_t*)publickeyhashrmd160_endomorphism[1][2],(uint8_t*)publickeyhashrmd160_endomorphism[1][3]);
+					secp.GetHash160_fromX(0x02,&pts[(j*4)].x,&pts[(j*4)+1].x,&pts[(j*4)+2].x,&pts[(j*4)+3].x,(uint8_t*)publickeyhashrmd160_endomorphism[0][0],(uint8_t*)publickeyhashrmd160_endomorphism[0][1],(uint8_t*)publickeyhashrmd160_endomorphism[0][2],(uint8_t*)publickeyhashrmd160_endomorphism[0][3]);
+					secp.GetHash160_fromX(0x03,&pts[(j*4)].x,&pts[(j*4)+1].x,&pts[(j*4)+2].x,&pts[(j*4)+3].x,(uint8_t*)publickeyhashrmd160_endomorphism[1][0],(uint8_t*)publickeyhashrmd160_endomorphism[1][1],(uint8_t*)publickeyhashrmd160_endomorphism[1][2],(uint8_t*)publickeyhashrmd160_endomorphism[1][3]);
 
 					for(k = 0; k < 4;k++)	{
 						for(l = 0;l < 2; l++)	{
@@ -702,7 +696,7 @@ int main()	{
 									keyfound.Add(&key_mpz);
 
 									publickey = secp.ComputePublicKey(&keyfound);
-									secp.GetHash160(P2PKH,true,publickey,(uint8_t*)publickeyhashrmd160);
+									secp.GetHash160(publickey,(uint8_t*)publickeyhashrmd160);
 									if(memcmp(publickeyhashrmd160_endomorphism[l][k],publickeyhashrmd160,20) != 0)	{
 										keyfound.Neg();
 										keyfound.Add(&secp.order);

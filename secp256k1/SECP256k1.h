@@ -20,11 +20,6 @@
 
 #include "Point.h"
 
-// Address type
-#define P2PKH  0
-#define P2SH   1
-#define BECH32 2
-
 
 class Secp256K1 {
 
@@ -37,13 +32,9 @@ public:
   
   void GetPublicKeyHex(Point &pubKey,char *dst);
 
-  void GetHash160(int type,bool compressed,
-    Point &k0, Point &k1, Point &k2, Point &k3,
-    uint8_t *h0, uint8_t *h1, uint8_t *h2, uint8_t *h3);
-
-  void GetHash160(int type,bool compressed, Point &pubKey, unsigned char *hash);
+  void GetHash160(Point &pubKey, unsigned char *hash);
   
-  void GetHash160_fromX(int type,unsigned char prefix,
+  void GetHash160_fromX(unsigned char prefix,
   Int *k0,Int *k1,Int *k2,Int *k3,
   uint8_t *h0,uint8_t *h1,uint8_t *h2,uint8_t *h3);
 

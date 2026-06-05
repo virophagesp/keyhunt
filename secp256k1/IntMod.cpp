@@ -56,16 +56,6 @@ void Int::ModAdd(Int *a, Int *b) {
 
 // ------------------------------------------------
 
-void Int::ModDouble() {
-  Int p;
-  Add(this);
-  p.Sub(this,&_P);
-  if(p.IsPositive())
-    Set(&p);
-}
-
-// ------------------------------------------------
-
 void Int::ModAdd(uint64_t a) {
   Int p;
   Add(a);
@@ -512,64 +502,12 @@ void Int::ModInv() {
 
 // ------------------------------------------------
 
-void Int::ModExp(Int *e) {
-  Int base(this);
-  SetInt32(1);
-  uint32_t nbBit = e->GetBitLength();
-  for(int i=0;i<(int)nbBit;i++) {
-    if (e->GetBit(i))
-      ModMul(&base);
-    base.ModMul(&base);
-  }
-
-}
-
-// ------------------------------------------------
-
-void Int::ModMul(Int *a) {
-
-  Int p;
-  p.MontgomeryMult(a, this);
-  MontgomeryMult(&_R2, &p);
-
-}
-
-// ------------------------------------------------
-
-void Int::ModSquare(Int *a) {
-
-  Int p;
-  p.MontgomeryMult(a, a);
-  MontgomeryMult(&_R2, &p);
-
-}
-
-// ------------------------------------------------
-
-void Int::ModCube(Int *a) {
-
-  Int p;
-  Int p2;
-  p.MontgomeryMult(a, a);
-  p2.MontgomeryMult(&p, a);
-  MontgomeryMult(&_R3, &p2);
-
-}
-
-// ------------------------------------------------
-
 void Int::ModMul(Int *a, Int *b) {
 
   Int p;
   p.MontgomeryMult(a,b);
   MontgomeryMult(&_R2,&p);
 
-}
-
-// ------------------------------------------------
-
-Int* Int::GetFieldCharacteristic() {
-  return &_P;
 }
 
 // ------------------------------------------------
@@ -681,44 +619,6 @@ void Int::AddAndShift(Int *a, Int *b, uint64_t cH) {
 }
 
 // ------------------------------------------------
-void Int::MontgomeryMult(Int *a) {
-
-  // Compute a*b*R^-1 (mod n),  R=2^k (mod n), k = Msize*64
-  // a and b must be lower than n
-  // See SetupField()
-
-  Int t;
-  Int pr;
-  Int p;
-  uint64_t ML;
-  uint64_t c;
-
-  // i = 0
-  imm_umul(a->bits64, bits64[0], pr.bits64);
-  ML = pr.bits64[0] * MM64;
-  imm_umul(_P.bits64, ML, p.bits64);
-  c = pr.AddC(&p);
-  memcpy(t.bits64, pr.bits64 + 1, 8 * (NB64BLOCK - 1));
-  t.bits64[NB64BLOCK - 1] = c;
-
-  for (int i = 1; i < Msize; i++) {
-
-    imm_umul(a->bits64, bits64[i], pr.bits64);
-    ML = (pr.bits64[0] + t.bits64[0]) * MM64;
-    imm_umul(_P.bits64, ML, p.bits64);
-	  c = pr.AddC(&p);
-    t.AddAndShift(&t, &pr, c);
-
-  }
-
-  p.Sub(&t,&_P);
-  if (p.IsPositive())
-    Set(&p);
-  else
-    Set(&t);
-
-}
-
 void Int::MontgomeryMult(Int *a, Int *b) {
 
   // Compute a*b*R^-1 (mod n),  R=2^k (mod n), k = Msize*64

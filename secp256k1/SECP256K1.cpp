@@ -331,137 +331,18 @@ Point Secp256K1::DoubleDirect(Point &p) {
 (buff)[15] = 0xB0;
 
 
-void Secp256K1::GetHash160(int type,bool compressed,
-  Point &k0,Point &k1,Point &k2,Point &k3,
-  uint8_t *h0,uint8_t *h1,uint8_t *h2,uint8_t *h3) {
 
-  unsigned char sh0[64] __attribute__((aligned(16)));
-  unsigned char sh1[64] __attribute__((aligned(16)));
-  unsigned char sh2[64] __attribute__((aligned(16)));
-  unsigned char sh3[64] __attribute__((aligned(16)));
-
-  switch (type) {
-
-  case P2PKH:
-  case BECH32:
-  {
-
-    if (!compressed) {
-
-      uint32_t b0[32];
-      uint32_t b1[32];
-      uint32_t b2[32];
-      uint32_t b3[32];
-
-      KEYBUFFUNCOMP(b0, k0);
-      KEYBUFFUNCOMP(b1, k1);
-      KEYBUFFUNCOMP(b2, k2);
-      KEYBUFFUNCOMP(b3, k3);
-
-      sha256sse_2B(b0, b1, b2, b3, sh0, sh1, sh2, sh3);
-      ripemd160sse_32(sh0, sh1, sh2, sh3, h0, h1, h2, h3);
-
-    } else {
-
-      uint32_t b0[16];
-      uint32_t b1[16];
-      uint32_t b2[16];
-      uint32_t b3[16];
-
-      KEYBUFFCOMP(b0, k0);
-      KEYBUFFCOMP(b1, k1);
-      KEYBUFFCOMP(b2, k2);
-      KEYBUFFCOMP(b3, k3);
-
-      sha256sse_1B(b0, b1, b2, b3, sh0, sh1, sh2, sh3);
-      ripemd160sse_32(sh0, sh1, sh2, sh3, h0, h1, h2, h3);
-
-    }
-
-  }
-  break;
-
-  case P2SH:
-  {
-
-    unsigned char kh0[20];
-    unsigned char kh1[20];
-    unsigned char kh2[20];
-    unsigned char kh3[20];
-
-    GetHash160(P2PKH,compressed,k0,k1,k2,k3,kh0,kh1,kh2,kh3);
-
-    // Redeem Script (1 to 1 P2SH)
-    uint32_t b0[16];
-    uint32_t b1[16];
-    uint32_t b2[16];
-    uint32_t b3[16];
-
-    KEYBUFFSCRIPT(b0, kh0);
-    KEYBUFFSCRIPT(b1, kh1);
-    KEYBUFFSCRIPT(b2, kh2);
-    KEYBUFFSCRIPT(b3, kh3);
-
-    sha256sse_1B(b0, b1, b2, b3, sh0, sh1, sh2, sh3);
-    ripemd160sse_32(sh0, sh1, sh2, sh3, h0, h1, h2, h3);
-
-  }
-  break;
-
-  }
-}
-
-
-
-void Secp256K1::GetHash160(int type, bool compressed, Point &pubKey, unsigned char *hash) {
+void Secp256K1::GetHash160(Point &pubKey, unsigned char *hash) {
 
   unsigned char shapk[64];
+  unsigned char publicKeyBytes[128];
 
-  switch (type) {
+  // Compressed public key
+  publicKeyBytes[0] = pubKey.y.IsEven() ? 0x2 : 0x3;
+  pubKey.x.Get32Bytes(publicKeyBytes + 1);
+  sha256_33(publicKeyBytes, shapk);
 
-  case P2PKH:
-  case BECH32:
-  {
-    unsigned char publicKeyBytes[128];
-
-    if (!compressed) {
-
-      // Full public key
-      publicKeyBytes[0] = 0x4;
-      pubKey.x.Get32Bytes(publicKeyBytes + 1);
-      pubKey.y.Get32Bytes(publicKeyBytes + 33);
-      sha256_65(publicKeyBytes, shapk);
-
-    } else {
-
-      // Compressed public key
-      publicKeyBytes[0] = pubKey.y.IsEven() ? 0x2 : 0x3;
-      pubKey.x.Get32Bytes(publicKeyBytes + 1);
-      sha256_33(publicKeyBytes, shapk);
-
-    }
-
-    ripemd160_32(shapk, hash);
-  }
-  break;
-
-  case P2SH:
-  {
-
-    // Redeem Script (1 to 1 P2SH)
-    unsigned char script[64];
-
-    script[0] = 0x00;  // OP_0
-    script[1] = 0x14;  // PUSH 20 bytes
-    GetHash160(P2PKH, compressed, pubKey, script + 2);
-
-    sha256(script, 22, shapk);
-    ripemd160_32(shapk, hash);
-
-  }
-  break;
-
-  }
+  ripemd160_32(shapk, hash);
 
 }
 
@@ -486,7 +367,7 @@ void Secp256K1::GetHash160(int type, bool compressed, Point &pubKey, unsigned ch
 
 
 
-void Secp256K1::GetHash160_fromX(int type,unsigned char prefix,
+void Secp256K1::GetHash160_fromX(unsigned char prefix,
   Int *k0,Int *k1,Int *k2,Int *k3,
   uint8_t *h0,uint8_t *h1,uint8_t *h2,uint8_t *h3) {
 
@@ -495,32 +376,17 @@ void Secp256K1::GetHash160_fromX(int type,unsigned char prefix,
   unsigned char sh2[64] __attribute__((aligned(16)));
   unsigned char sh3[64] __attribute__((aligned(16)));
 
-  switch (type) {
+  uint32_t b0[16];
+  uint32_t b1[16];
+  uint32_t b2[16];
+  uint32_t b3[16];
 
-  case P2PKH:
-  {
-      uint32_t b0[16];
-      uint32_t b1[16];
-      uint32_t b2[16];
-      uint32_t b3[16];
+  KEYBUFFPREFIX(b0, k0, prefix);
+  KEYBUFFPREFIX(b1, k1, prefix);
+  KEYBUFFPREFIX(b2, k2, prefix);
+  KEYBUFFPREFIX(b3, k3, prefix);
 
-      KEYBUFFPREFIX(b0, k0, prefix);
-      KEYBUFFPREFIX(b1, k1, prefix);
-      KEYBUFFPREFIX(b2, k2, prefix);
-      KEYBUFFPREFIX(b3, k3, prefix);
-
-      sha256sse_1B(b0, b1, b2, b3, sh0, sh1, sh2, sh3);
-      ripemd160sse_32(sh0, sh1, sh2, sh3, h0, h1, h2, h3);
-  }
-  break;
-
-  case P2SH:
-  {
-	fprintf(stderr,"[E] Fixme unsopported case");
-	exit(0);
-  }
-  break;
-
-  }
+  sha256sse_1B(b0, b1, b2, b3, sh0, sh1, sh2, sh3);
+  ripemd160sse_32(sh0, sh1, sh2, sh3, h0, h1, h2, h3);
 }
 

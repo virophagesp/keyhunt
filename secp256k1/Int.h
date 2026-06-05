@@ -97,13 +97,11 @@ public:
   static Int *GetR2();                           // Return R2
   static Int *GetR3();                           // Return R3
   static Int *GetR4();                           // Return R4
-  static Int* GetFieldCharacteristic();          // Return field characteristic
 
   void GCD(Int *a);                          // this <- GCD(this,a)
   void Mod(Int *n);                          // this <- this (mod n)
   void ModInv();                             // this <- this^-1 (mod n)
   void MontgomeryMult(Int *a,Int *b);        // this <- a*b*R^-1 (mod n)
-  void MontgomeryMult(Int *a);               // this <- this*a*R^-1 (mod n)
   void ModAdd(Int *a);                       // this <- this+a (mod n) [0<a<P]
   void ModAdd(Int *a,Int *b);                // this <- a+b (mod n) [0<a,b<P]
   void ModAdd(uint64_t a);                   // this <- this+a (mod n) [0<a<P]
@@ -111,11 +109,6 @@ public:
   void ModSub(Int *a, Int *b);               // this <- a-b (mod n) [0<a,b<P]
   void ModSub(uint64_t a);                   // this <- this-a (mod n) [0<a<P]
   void ModMul(Int *a,Int *b);                // this <- a*b (mod n)
-  void ModMul(Int *a);                       // this <- this*b (mod n)
-  void ModSquare(Int *a);                    // this <- a^2 (mod n)
-  void ModCube(Int *a);                      // this <- a^3 (mod n)
-  void ModDouble();                          // this <- 2*this (mod n)
-  void ModExp(Int *e);                       // this <- this^e (mod n)
   void ModNeg();                             // this <- -this (mod n)
 
   // Specific SecpK1
