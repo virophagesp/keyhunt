@@ -76,19 +76,9 @@ struct bloom
 	// These fields are part of the public interface of this structure.
 	// Client code may read these values if desired. Client code MUST NOT
 	// modify any of these.
-	uint64_t entries;
 	uint64_t bits;
 	uint64_t bytes;
 	uint8_t hashes;
-	long double error;
-
-	// Fields below are private to the implementation. These may go away or
-	// change incompatibly at any moment. Client code MUST NOT access or rely
-	// on these.
-	uint8_t ready;
-	uint8_t major;
-	uint8_t minor;
-	double bpe;
 	uint8_t *bf;
 };
 
@@ -101,15 +91,13 @@ Secp256K1 secp;
 void bloom_init2(struct bloom * bloom)
 {
 	memset(bloom, 0, sizeof(struct bloom));
-	bloom->entries = 10000;
-	bloom->error = 0.000001;
 
-	long double num = -log(bloom->error);
+	long double num = -log(0.000001);
 	long double denom = 0.480453013918201; // ln(2)^2
-	bloom->bpe = (num / denom);
+	double bpe = (num / denom);
 
 	long double dentries = (long double)10000;
-	long double allbits = dentries * bloom->bpe;
+	long double allbits = dentries * bpe;
 	bloom->bits = (uint64_t)allbits;
 
 	bloom->bytes = (uint64_t) bloom->bits / 8;
@@ -117,13 +105,9 @@ void bloom_init2(struct bloom * bloom)
 		bloom->bytes +=1;
 	}
 
-	bloom->hashes = (uint8_t)ceil(0.693147180559945 * bloom->bpe);  // ln(2)
+	bloom->hashes = (uint8_t)ceil(0.693147180559945 * bpe);  // ln(2)
 	
 	bloom->bf = (uint8_t *)calloc(bloom->bytes, sizeof(uint8_t));
-
-	bloom->ready = 1;
-	bloom->major = 2;
-	bloom->minor = 201;
 }
 
 bool bloom_check(struct bloom * bloom, const void * buffer)
@@ -722,7 +706,7 @@ int main()	{
 				pp.y.ModMulK1(&_s);
 				pp.y.ModSub(&_2Gn.y);
 				startP.Set(pp);
-			}while(count < N_SEQUENTIAL_MAX && continue_flag);
+			}while(count < N_SEQUENTIAL_MAX);
 		}
 	} while(continue_flag);
 	free(addressTable);
