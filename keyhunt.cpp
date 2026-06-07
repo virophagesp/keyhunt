@@ -110,27 +110,6 @@ void bloom_init2(struct bloom * bloom)
 	bloom->bf = (uint8_t *)calloc(bloom->bytes, sizeof(uint8_t));
 }
 
-bool bloom_check(struct bloom * bloom, const void * buffer)
-{
-	uint8_t hits = 0;
-	uint64_t a = XXH64(buffer, 0x59f2815b16f81798);
-	uint64_t b = XXH64(buffer, a);
-	uint64_t x,byte;
-	uint8_t i,c,mask;
-	for (i = 0; i < bloom->hashes; i++) {
-		x = (a + b*i) % bloom->bits;
-		byte = x >> 3;
-		c = bloom->bf[byte];	 // expensive memory access
-		mask = 1 << (x % 8);
-		if (c & mask) {
-			hits++;
-		} else {
-			return false;
-		}
-	}
-	return hits == bloom->hashes;                // 1 == element already in (or collision)
-}
-
 void bloom_add(struct bloom * bloom, const void * buffer)
 {
 	uint64_t a = XXH64(buffer, 0x59f2815b16f81798);
@@ -643,7 +622,25 @@ int main()	{
 
 					for(k = 0; k < 4;k++)	{
 						for(l = 0;l < 2; l++)	{
-							if(bloom_check(&bloom,publickeyhashrmd160_endomorphism[l][k])) {
+							uint8_t hits = 0;
+							uint64_t a = XXH64(publickeyhashrmd160_endomorphism[l][k], 0x59f2815b16f81798);
+							uint64_t b = XXH64(publickeyhashrmd160_endomorphism[l][k], a);
+							uint64_t x,byte;
+							uint8_t bloom_check_looper,c,mask;
+							bool continuer = true;
+							for (bloom_check_looper = 0; bloom_check_looper < (&bloom)->hashes; bloom_check_looper++) {
+								x = (a + b*bloom_check_looper) % (&bloom)->bits;
+								byte = x >> 3;
+								c = (&bloom)->bf[byte];	 // expensive memory access
+								mask = 1 << (x % 8);
+								if (c & mask) {
+									hits++;
+								} else {
+									continuer = false;
+								}
+							}
+
+							if(continuer && hits == (&bloom)->hashes) {
 								int64_t half,min,max,current;
 								bool searchbinary = false;
 								int rcmp;
