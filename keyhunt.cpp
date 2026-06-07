@@ -110,23 +110,6 @@ void bloom_init2(struct bloom * bloom)
 	bloom->bf = (uint8_t *)calloc(bloom->bytes, sizeof(uint8_t));
 }
 
-void bloom_add(struct bloom * bloom, const void * buffer)
-{
-	uint64_t a = XXH64(buffer, 0x59f2815b16f81798);
-	uint64_t b = XXH64(buffer, a);
-	uint64_t x,byte;
-	uint8_t i,c,mask;
-	for (i = 0; i < bloom->hashes; i++) {
-		x = (a + b*i) % bloom->bits;
-		byte = x >> 3;
-		c = bloom->bf[byte];	 // expensive memory access
-		mask = 1 << (x % 8);
-		if (!(c & mask)) {
-			bloom->bf[byte] = c | mask;
-		}
-	}
-}
-
 static const char b58digits_ordered[] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
 bool b58enc(char *b58, const void *data)
@@ -516,7 +499,19 @@ int main()	{
 		rawvalue[24] = 125;
 	}
 
-	bloom_add(&bloom, rawvalue+1);
+	uint64_t a = XXH64(rawvalue+1, 0x59f2815b16f81798);
+	uint64_t b = XXH64(rawvalue+1, a);
+	uint64_t x,byte;
+	uint8_t bloom_add_looper,c,mask;
+	for (bloom_add_looper = 0; bloom_add_looper < (&bloom)->hashes; bloom_add_looper++) {
+		x = (a + b*bloom_add_looper) % (&bloom)->bits;
+		byte = x >> 3;
+		c = (&bloom)->bf[byte];	 // expensive memory access
+		mask = 1 << (x % 8);
+		if (!(c & mask)) {
+			(&bloom)->bf[byte] = c | mask;
+		}
+	}
 	memcpy(addressTable[0].value,rawvalue+1,20);
 	N = 1;
 	printf("[+] Sorting addressTable data ...");
