@@ -73,12 +73,6 @@ email: albertobsd@gmail.com
  */
 struct bloom
 {
-	// These fields are part of the public interface of this structure.
-	// Client code may read these values if desired. Client code MUST NOT
-	// modify any of these.
-	uint64_t bits;
-	uint64_t bytes;
-	uint8_t hashes;
 	uint8_t *bf;
 };
 
@@ -333,19 +327,8 @@ int main()	{
 	addressTable = (struct address_value*) malloc(20);
 	printf("[+] Bloom filter for 1 elements.\n");
 	memset((&bloom), 0, sizeof(struct bloom));
-	long double num = -log(0.000001);
-	long double denom = 0.480453013918201; // ln(2)^2
-	double bpe = (num / denom);
-	long double dentries = (long double)10000;
-	long double allbits = dentries * bpe;
-	(&bloom)->bits = (uint64_t)allbits;
-	(&bloom)->bytes = (uint64_t) (&bloom)->bits / 8;
-	if ((&bloom)->bits % 8) {
-		(&bloom)->bytes +=1;
-	}
-	(&bloom)->hashes = (uint8_t)ceil(0.693147180559945 * bpe);  // ln(2)
-	(&bloom)->bf = (uint8_t *)calloc((&bloom)->bytes, sizeof(uint8_t));
-	printf("[+] Loading data to the bloomfilter total: %.2f MB\n",(double)(((double) (&bloom)->bytes)/(double)1048576));
+	(&bloom)->bf = (uint8_t *)calloc((uint64_t)35944, sizeof(uint8_t));
+	printf("[+] Loading data to the bloomfilter total: 0.03 MB\n");
 	memset(addressTable[0].value,0,20);
 
 	printf("[+] Setting search for btc adddress\n");
@@ -355,35 +338,14 @@ int main()	{
 	printf("[+] N = %p\n",(void*)N_SEQUENTIAL_MAX);
 	printf("[+] Range \n");
 
-	// range
+	// range and address
 	if (strcmp(IMPORTANT, "small_test") == 0) {
+		printf("[+] -- from : 0x8000\n");
+		printf("[+] -- to   : 0xffff\n");
+
 		n_range_start.SetBase16((char *)"8000");
 		n_range_end.SetBase16((char *)"ffff");
 
-		printf("[+] -- from : 0x8000\n");
-		printf("[+] -- to   : 0xffff\n");
-	} else if (strcmp(IMPORTANT, "medium_test") == 0) {
-		n_range_start.SetBase16((char *)"200000000");
-		n_range_end.SetBase16((char *)"3ffffffff");
-
-		printf("[+] -- from : 0x200000000\n");
-		printf("[+] -- to   : 0x3ffffffff\n");
-	} else if (strcmp(IMPORTANT, "big_test") == 0) {
-		n_range_start.SetBase16((char *)"100000000000000000");
-		n_range_end.SetBase16((char *)"1fffffffffffffffff");
-
-		printf("[+] -- from : 0x100000000000000000\n");
-		printf("[+] -- to   : 0x1fffffffffffffffff\n");
-	} else if (strcmp(IMPORTANT, "money") == 0) {
-		n_range_start.SetBase16((char *)"200000000000000000000");
-		n_range_end.SetBase16((char *)"3ffffffffffffffffffff");
-
-		printf("[+] -- from : 0x200000000000000000000\n");
-		printf("[+] -- to   : 0x3ffffffffffffffffffff\n");
-	}
-
-	// address
-	if (strcmp(IMPORTANT, "small_test") == 0) {
 		rawvalue[0] = 0;
 		rawvalue[1] = 112;
 		rawvalue[2] = 37;
@@ -410,6 +372,12 @@ int main()	{
 		rawvalue[23] = 11;
 		rawvalue[24] = 5;
 	} else if (strcmp(IMPORTANT, "medium_test") == 0) {
+		printf("[+] -- from : 0x200000000\n");
+		printf("[+] -- to   : 0x3ffffffff\n");
+
+		n_range_start.SetBase16((char *)"200000000");
+		n_range_end.SetBase16((char *)"3ffffffff");
+
 		rawvalue[0] = 0;
 		rawvalue[1] = 246;
 		rawvalue[2] = 214;
@@ -436,6 +404,12 @@ int main()	{
 		rawvalue[23] = 195;
 		rawvalue[24] = 159;
 	} else if (strcmp(IMPORTANT, "big_test") == 0) {
+		printf("[+] -- from : 0x100000000000000000\n");
+		printf("[+] -- to   : 0x1fffffffffffffffff\n");
+
+		n_range_start.SetBase16((char *)"100000000000000000");
+		n_range_end.SetBase16((char *)"1fffffffffffffffff");
+
 		rawvalue[0] = 0;
 		rawvalue[1] = 97;
 		rawvalue[2] = 235;
@@ -462,6 +436,12 @@ int main()	{
 		rawvalue[23] = 4;
 		rawvalue[24] = 187;
 	} else if (strcmp(IMPORTANT, "money") == 0) {
+		printf("[+] -- from : 0x200000000000000000000\n");
+		printf("[+] -- to   : 0x3ffffffffffffffffffff\n");
+
+		n_range_start.SetBase16((char *)"200000000000000000000");
+		n_range_end.SetBase16((char *)"3ffffffffffffffffffff");
+
 		rawvalue[0] = 0;
 		rawvalue[1] = 32;
 		rawvalue[2] = 210;
@@ -493,8 +473,8 @@ int main()	{
 	uint64_t b = XXH64(rawvalue+1, a);
 	uint64_t x,byte;
 	uint8_t bloom_add_looper,c,mask;
-	for (bloom_add_looper = 0; bloom_add_looper < (&bloom)->hashes; bloom_add_looper++) {
-		x = (a + b*bloom_add_looper) % (&bloom)->bits;
+	for (bloom_add_looper = 0; bloom_add_looper < 20; bloom_add_looper++) {
+		x = (a + b*bloom_add_looper) % 35944;
 		byte = x >> 3;
 		c = (&bloom)->bf[byte];	 // expensive memory access
 		mask = 1 << (x % 8);
@@ -613,8 +593,8 @@ int main()	{
 							uint64_t x,byte;
 							uint8_t bloom_check_looper,c,mask;
 							bool continuer = true;
-							for (bloom_check_looper = 0; bloom_check_looper < (&bloom)->hashes; bloom_check_looper++) {
-								x = (a + b*bloom_check_looper) % (&bloom)->bits;
+							for (bloom_check_looper = 0; bloom_check_looper < 20; bloom_check_looper++) {
+								x = (a + b*bloom_check_looper) % 35944;
 								byte = x >> 3;
 								c = (&bloom)->bf[byte];	 // expensive memory access
 								mask = 1 << (x % 8);
@@ -625,7 +605,7 @@ int main()	{
 								}
 							}
 
-							if(continuer && hits == (&bloom)->hashes) {
+							if(continuer && hits == 20) {
 								int64_t half,min,max,current;
 								bool searchbinary = false;
 								int rcmp;
