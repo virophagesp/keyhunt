@@ -194,33 +194,6 @@ bool b58enc(char *b58, const void *data)
 	return true;
 }
 
-bool searchbinary(struct address_value *buffer,char *data,int64_t array_length) {
-	int64_t half,min,max,current;
-	bool r = false;
-	int rcmp;
-	min = 0;
-	current = 0;
-	max = array_length;
-	half = array_length;
-	while(!r && half >= 1) {
-		half = (max - min)/2;
-		rcmp = memcmp(data,buffer[current+half].value,20);
-		if(rcmp == 0)	{
-			r = true;	//Found!!
-		}
-		else	{
-			if(rcmp < 0) { //data < temp_read
-				max = (max-half);
-			}
-			else	{ // data > temp_read
-				min = (min+half);
-			}
-			current = min;
-		}
-	}
-	return r;
-}
-
 void _swap(struct address_value *a,struct address_value *b)	{
 	struct address_value t;
 	t  = *a;
@@ -671,7 +644,31 @@ int main()	{
 					for(k = 0; k < 4;k++)	{
 						for(l = 0;l < 2; l++)	{
 							if(bloom_check(&bloom,publickeyhashrmd160_endomorphism[l][k])) {
-								if(searchbinary(addressTable,publickeyhashrmd160_endomorphism[l][k],N)) {
+								int64_t half,min,max,current;
+								bool searchbinary = false;
+								int rcmp;
+								min = 0;
+								current = 0;
+								max = N;
+								half = N;
+								while(!searchbinary && half >= 1) {
+									half = (max - min)/2;
+									rcmp = memcmp(publickeyhashrmd160_endomorphism[l][k],addressTable[current+half].value,20);
+									if(rcmp == 0)	{
+										searchbinary = true;	//Found!!
+									}
+									else	{
+										if(rcmp < 0) { //data < temp_read
+											max = (max-half);
+										}
+										else	{ // data > temp_read
+											min = (min+half);
+										}
+										current = min;
+									}
+								}
+
+								if(searchbinary) {
 									keyfound.SetInt32(k);
 									keyfound.Add(&key_mpz);
 
