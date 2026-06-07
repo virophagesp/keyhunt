@@ -669,6 +669,6 @@ int main()	{
 		}
 	} while(continue_flag);
 	free(addressTable);
-	delete bloom.bf;
+	free(bloom.bf);
 	printf("\nEnd\n");
 }
