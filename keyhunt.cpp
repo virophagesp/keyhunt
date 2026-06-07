@@ -329,6 +329,25 @@ int main()	{
 	}
 	_2Gn = secp.DoubleDirect(Gn[511]);
 
+	printf("[+] Allocating memory for addressTable\n");
+	addressTable = (struct address_value*) malloc(20);
+	printf("[+] Bloom filter for 1 elements.\n");
+	memset((&bloom), 0, sizeof(struct bloom));
+	long double num = -log(0.000001);
+	long double denom = 0.480453013918201; // ln(2)^2
+	double bpe = (num / denom);
+	long double dentries = (long double)10000;
+	long double allbits = dentries * bpe;
+	(&bloom)->bits = (uint64_t)allbits;
+	(&bloom)->bytes = (uint64_t) (&bloom)->bits / 8;
+	if ((&bloom)->bits % 8) {
+		(&bloom)->bytes +=1;
+	}
+	(&bloom)->hashes = (uint8_t)ceil(0.693147180559945 * bpe);  // ln(2)
+	(&bloom)->bf = (uint8_t *)calloc((&bloom)->bytes, sizeof(uint8_t));
+	printf("[+] Loading data to the bloomfilter total: %.2f MB\n",(double)(((double) (&bloom)->bytes)/(double)1048576));
+	memset(addressTable[0].value,0,20);
+
 	printf("[+] Setting search for btc adddress\n");
 
 	// sequential number option (putting this IMPORTANT here for easy finding )
@@ -362,25 +381,6 @@ int main()	{
 		printf("[+] -- from : 0x200000000000000000000\n");
 		printf("[+] -- to   : 0x3ffffffffffffffffffff\n");
 	}
-
-	printf("[+] Allocating memory for addressTable\n");
-	addressTable = (struct address_value*) malloc(20);
-	printf("[+] Bloom filter for 1 elements.\n");
-	memset((&bloom), 0, sizeof(struct bloom));
-	long double num = -log(0.000001);
-	long double denom = 0.480453013918201; // ln(2)^2
-	double bpe = (num / denom);
-	long double dentries = (long double)10000;
-	long double allbits = dentries * bpe;
-	(&bloom)->bits = (uint64_t)allbits;
-	(&bloom)->bytes = (uint64_t) (&bloom)->bits / 8;
-	if ((&bloom)->bits % 8) {
-		(&bloom)->bytes +=1;
-	}
-	(&bloom)->hashes = (uint8_t)ceil(0.693147180559945 * bpe);  // ln(2)
-	(&bloom)->bf = (uint8_t *)calloc((&bloom)->bytes, sizeof(uint8_t));
-	printf("[+] Loading data to the bloomfilter total: %.2f MB\n",(double)(((double) (&bloom)->bytes)/(double)1048576));
-	memset(addressTable[0].value,0,20);
 
 	// address
 	if (strcmp(IMPORTANT, "small_test") == 0) {
