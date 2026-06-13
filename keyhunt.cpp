@@ -80,54 +80,6 @@ struct address_value	{
 	uint8_t value[20];
 };
 
-Secp256K1 secp;
-
-static const char b58digits_ordered[] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
-
-bool b58enc(char *b58, const void *data)
-{
-	const uint8_t *bin = (const uint8_t *)data;
-	int carry;
-	size_t i, j, high, zcount = 0;
-	size_t size;
-	
-	while (zcount < 25 && !bin[zcount])
-		++zcount;
-	
-	size = (25 - zcount) * 138 / 100 + 1;
-	uint8_t buf[size];
-	memset(buf, 0, size);
-	
-	for (i = zcount, high = size - 1; i < 25; ++i, high = j)
-	{
-		for (carry = bin[i], j = size - 1; (j > high) || carry; --j)
-		{
-			carry += 256 * buf[j];
-			buf[j] = carry % 58;
-			carry /= 58;
-			if (!j) {
-				// Otherwise j wraps to maxint which is > high
-				break;
-			}
-		}
-	}
-	
-	for (j = 0; j < size && !buf[j]; ++j);
-	
-	if (40 <= zcount + size - j)
-	{
-		return false;
-	}
-	
-	if (zcount)
-		memset(b58, '1', zcount);
-	for (i = zcount; j < size; ++i, ++j)
-		b58[i] = b58digits_ordered[buf[j]];
-	b58[i] = '\0';
-	
-	return true;
-}
-
 void _swap(struct address_value *a,struct address_value *b)	{
 	struct address_value t;
 	t  = *a;
@@ -244,6 +196,8 @@ int main()	{
 	struct address_value *addressTable;
 	Int n_range_start;
 	Int n_range_end;
+	const char b58digits_ordered[] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+	Secp256K1 secp;
 
 	srand(time(NULL));
 
@@ -608,8 +562,46 @@ int main()	{
 									memcpy(digest+1,rmdhash,20);
 									sha256((uint8_t*)digest, 21,(uint8_t*) digest+21);
 									sha256((uint8_t*)digest+21, 32,(uint8_t*) digest+21);
-									if(!b58enc(address,digest)){
+
+									const uint8_t *bin = (const uint8_t *)digest;
+									int carry;
+									size_t i2, j2, high, zcount = 0;
+									size_t size;
+
+									while (zcount < 25 && !bin[zcount])
+										++zcount;
+
+									size = (25 - zcount) * 138 / 100 + 1;
+									uint8_t buf[size];
+									memset(buf, 0, size);
+
+									for (i2 = zcount, high = size - 1; i2 < 25; ++i2, high = j2)
+									{
+										for (carry = bin[i2], j2 = size - 1; (j2 > high) || carry; --j2)
+										{
+											carry += 256 * buf[j2];
+											buf[j2] = carry % 58;
+											carry /= 58;
+											if (!j2) {
+												// Otherwise j2 wraps to maxint which is > high
+												break;
+											}
+										}
+									}
+
+									for (j2 = 0; j2 < size && !buf[j2]; ++j2);
+
+									if (40 <= zcount + size - j2)
+									{
 										fprintf(stderr,"error b58enc\n");
+									}
+									else
+									{
+										if (zcount)
+											memset(address, '1', zcount);
+										for (i2 = zcount; j2 < size; ++i2, ++j2)
+											address[i2] = b58digits_ordered[buf[j2]];
+										address[i2] = '\0';
 									}
 
 									keys = fopen("KEYFOUNDKEYFOUND.txt","a+");
