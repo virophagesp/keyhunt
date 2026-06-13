@@ -80,92 +80,6 @@ struct address_value	{
 	uint8_t value[20];
 };
 
-void _swap(struct address_value *a,struct address_value *b)	{
-	struct address_value t;
-	t  = *a;
-	*a = *b;
-	*b =  t;
-}
-
-void _heapify(struct address_value *arr, int64_t n, int64_t i) {
-	int64_t largest = i;
-	int64_t l = 2 * i + 1;
-	int64_t r = 2 * i + 2;
-	if (l < n && memcmp(arr[l].value,arr[largest].value,20) > 0)
-		largest = l;
-	if (r < n && memcmp(arr[r].value,arr[largest].value,20) > 0)
-		largest = r;
-	if (largest != i) {
-		_swap(&arr[i],&arr[largest]);
-		_heapify(arr, n, largest);
-	}
-}
-
-void _introsort(struct address_value *arr,uint32_t depthLimit, int64_t n) {
-	int64_t p;
-	if(n > 1)	{
-		if(n <= 16) {
-			int64_t j;
-			int64_t i;
-			struct address_value key;
-			for(i = 1; i < n ; i++ ) {
-				key = arr[i];
-				j= i-1;
-				while(j >= 0 && memcmp(arr[j].value,key.value,20) > 0) {
-					arr[j+1] = arr[j];
-					j--;
-				}
-				arr[j+1] = key;
-			}
-		}
-		else	{
-			if(depthLimit == 0) {
-				int64_t i;
-				for ( i = (n / 2) - 1; i >=	0; i--)	{
-					_heapify(arr, n, i);
-				}
-				for ( i = n - 1; i > 0; i--) {
-					_swap(&arr[0] , &arr[i]);
-					_heapify(arr, i, 0);
-				}
-			}
-			else	{
-				struct address_value pivot;
-				int64_t r,left,right;
-				r = n/2;
-				pivot = arr[r];
-				left = 0;
-				right = n-1;
-				do {
-					while(left	< right && memcmp(arr[left].value,pivot.value,20) <= 0 )	{
-						left++;
-					}
-					while(right >= left && memcmp(arr[right].value,pivot.value,20) > 0)	{
-						right--;
-					}
-					if(left < right)	{
-						if(left == r || right == r)	{
-							if(left == r)	{
-								r = right;
-							}
-							if(right == r)	{
-								r = left;
-							}
-						}
-						_swap(&arr[right],&arr[left]);
-					}
-				}while(left < right);
-				if(right != r)	{
-					_swap(&arr[right],&arr[r]);
-				}
-				p = right;
-				if(p > 0) _introsort(arr , depthLimit-1 , p);
-				if(p < n) _introsort(&arr[p+1],depthLimit-1,n-(p+1));
-			}
-		}
-	}
-}
-
 int main()	{
 	uint8_t rawvalue[25];
 	Point pts[1024];
@@ -190,7 +104,6 @@ int main()	{
 	std::vector<Point> Gn;
 	Point _2Gn;
 	struct bloom bloom;
-	uint64_t N = 0;
 	uint64_t N_SEQUENTIAL_MAX;
 	Int stride;
 	struct address_value *addressTable;
@@ -379,10 +292,6 @@ int main()	{
 		}
 	}
 	memcpy(addressTable[0].value,rawvalue+1,20);
-	N = 1;
-	printf("[+] Sorting addressTable data ...");
-	_introsort(addressTable,((uint32_t) ceil(log(N))) * 2,N);
-	printf(" done! %" PRIu64 " values were loaded and sorted\n",N);
 
 	continue_flag = 1;
 	do	{
@@ -507,8 +416,8 @@ int main()	{
 								int rcmp;
 								min = 0;
 								current = 0;
-								max = N;
-								half = N;
+								max = 1;
+								half = 1;
 								while(!searchbinary && half >= 1) {
 									half = (max - min)/2;
 									rcmp = memcmp(publickeyhashrmd160_endomorphism[l][k],addressTable[current+half].value,20);
