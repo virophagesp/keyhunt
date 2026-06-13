@@ -135,53 +135,6 @@ void _swap(struct address_value *a,struct address_value *b)	{
 	*b =  t;
 }
 
-int64_t _partition(struct address_value *arr, int64_t n)	{
-	struct address_value pivot;
-	int64_t r,left,right;
-	r = n/2;
-	pivot = arr[r];
-	left = 0;
-	right = n-1;
-	do {
-		while(left	< right && memcmp(arr[left].value,pivot.value,20) <= 0 )	{
-			left++;
-		}
-		while(right >= left && memcmp(arr[right].value,pivot.value,20) > 0)	{
-			right--;
-		}
-		if(left < right)	{
-			if(left == r || right == r)	{
-				if(left == r)	{
-					r = right;
-				}
-				if(right == r)	{
-					r = left;
-				}
-			}
-			_swap(&arr[right],&arr[left]);
-		}
-	}while(left < right);
-	if(right != r)	{
-		_swap(&arr[right],&arr[r]);
-	}
-	return right;
-}
-
-void _insertionsort(struct address_value *arr, int64_t n) {
-	int64_t j;
-	int64_t i;
-	struct address_value key;
-	for(i = 1; i < n ; i++ ) {
-		key = arr[i];
-		j= i-1;
-		while(j >= 0 && memcmp(arr[j].value,key.value,20) > 0) {
-			arr[j+1] = arr[j];
-			j--;
-		}
-		arr[j+1] = key;
-	}
-}
-
 void _heapify(struct address_value *arr, int64_t n, int64_t i) {
 	int64_t largest = i;
 	int64_t l = 2 * i + 1;
@@ -196,80 +149,69 @@ void _heapify(struct address_value *arr, int64_t n, int64_t i) {
 	}
 }
 
-void _myheapsort(struct address_value	*arr, int64_t n)	{
-	int64_t i;
-	for ( i = (n / 2) - 1; i >=	0; i--)	{
-		_heapify(arr, n, i);
-	}
-	for ( i = n - 1; i > 0; i--) {
-		_swap(&arr[0] , &arr[i]);
-		_heapify(arr, i, 0);
-	}
-}
-
 void _introsort(struct address_value *arr,uint32_t depthLimit, int64_t n) {
 	int64_t p;
 	if(n > 1)	{
 		if(n <= 16) {
-			_insertionsort(arr,n);
+			int64_t j;
+			int64_t i;
+			struct address_value key;
+			for(i = 1; i < n ; i++ ) {
+				key = arr[i];
+				j= i-1;
+				while(j >= 0 && memcmp(arr[j].value,key.value,20) > 0) {
+					arr[j+1] = arr[j];
+					j--;
+				}
+				arr[j+1] = key;
+			}
 		}
 		else	{
 			if(depthLimit == 0) {
-				_myheapsort(arr,n);
+				int64_t i;
+				for ( i = (n / 2) - 1; i >=	0; i--)	{
+					_heapify(arr, n, i);
+				}
+				for ( i = n - 1; i > 0; i--) {
+					_swap(&arr[0] , &arr[i]);
+					_heapify(arr, i, 0);
+				}
 			}
 			else	{
-				p = _partition(arr,n);
+				struct address_value pivot;
+				int64_t r,left,right;
+				r = n/2;
+				pivot = arr[r];
+				left = 0;
+				right = n-1;
+				do {
+					while(left	< right && memcmp(arr[left].value,pivot.value,20) <= 0 )	{
+						left++;
+					}
+					while(right >= left && memcmp(arr[right].value,pivot.value,20) > 0)	{
+						right--;
+					}
+					if(left < right)	{
+						if(left == r || right == r)	{
+							if(left == r)	{
+								r = right;
+							}
+							if(right == r)	{
+								r = left;
+							}
+						}
+						_swap(&arr[right],&arr[left]);
+					}
+				}while(left < right);
+				if(right != r)	{
+					_swap(&arr[right],&arr[r]);
+				}
+				p = right;
 				if(p > 0) _introsort(arr , depthLimit-1 , p);
 				if(p < n) _introsort(&arr[p+1],depthLimit-1,n-(p+1));
 			}
 		}
 	}
-}
-
-void _sort(struct address_value *arr,int64_t n)	{
-	uint32_t depthLimit = ((uint32_t) ceil(log(n))) * 2;
-	_introsort(arr,depthLimit,n);
-}
-
-void writekey(Int *key)	{
-	Point publickey;
-	FILE *keys;
-	char *hextemp,*hexrmd,public_key_hex[132],address[50],rmdhash[20];
-	int offset = 0;
-	unsigned char c;
-	char digest[60];
-	memset(address,0,50);
-	memset(public_key_hex,0,132);
-	hextemp = key->GetBase16();
-	publickey = secp.ComputePublicKey(key);
-	secp.GetPublicKeyHex(publickey,public_key_hex);
-	secp.GetHash160(publickey,(uint8_t*)rmdhash);
-
-	hexrmd = (char *) malloc(41);
-	for (int i = 0; i <20; i++) {
-		c = rmdhash[i];
-		sprintf((char*) (hexrmd + offset),"%.2x",c);
-		offset+=2;
-	}
-	hexrmd[40] = 0;
-
-	digest[0] = 0x00;
-	memcpy(digest+1,rmdhash,20);
-	sha256((uint8_t*)digest, 21,(uint8_t*) digest+21);
-	sha256((uint8_t*)digest+21, 32,(uint8_t*) digest+21);
-	if(!b58enc(address,digest)){
-		fprintf(stderr,"error b58enc\n");
-	}
-
-	keys = fopen("KEYFOUNDKEYFOUND.txt","a+");
-	if(keys != NULL)	{
-		fprintf(keys,"Private Key: %s\npubkey: %s\nAddress %s\nrmd160 %s\n",hextemp,public_key_hex,address,hexrmd);
-		fclose(keys);
-	}
-	printf("\nHit! Private Key: %s\npubkey: %s\nAddress %s\nrmd160 %s\n",hextemp,public_key_hex,address,hexrmd);
-
-	free(hextemp);
-	free(hexrmd);
 }
 
 int main()	{
@@ -485,7 +427,7 @@ int main()	{
 	memcpy(addressTable[0].value,rawvalue+1,20);
 	N = 1;
 	printf("[+] Sorting addressTable data ...");
-	_sort(addressTable,N);
+	_introsort(addressTable,((uint32_t) ceil(log(N))) * 2,N);
 	printf(" done! %" PRIu64 " values were loaded and sorted\n",N);
 
 	continue_flag = 1;
@@ -640,7 +582,45 @@ int main()	{
 										keyfound.Neg();
 										keyfound.Add(&secp.order);
 									}
-									writekey(&keyfound);
+
+									Point publickey2;
+									FILE *keys;
+									char *hextemp,*hexrmd,public_key_hex[132],address[50],rmdhash[20];
+									int offset = 0;
+									unsigned char c2;
+									char digest[60];
+									memset(address,0,50);
+									memset(public_key_hex,0,132);
+									hextemp = (&keyfound)->GetBase16();
+									publickey2 = secp.ComputePublicKey(&keyfound);
+									secp.GetPublicKeyHex(publickey2,public_key_hex);
+									secp.GetHash160(publickey2,(uint8_t*)rmdhash);
+
+									hexrmd = (char *) malloc(41);
+									for (int i = 0; i <20; i++) {
+										c2 = rmdhash[i];
+										sprintf((char*) (hexrmd + offset),"%.2x",c2);
+										offset+=2;
+									}
+									hexrmd[40] = 0;
+
+									digest[0] = 0x00;
+									memcpy(digest+1,rmdhash,20);
+									sha256((uint8_t*)digest, 21,(uint8_t*) digest+21);
+									sha256((uint8_t*)digest+21, 32,(uint8_t*) digest+21);
+									if(!b58enc(address,digest)){
+										fprintf(stderr,"error b58enc\n");
+									}
+
+									keys = fopen("KEYFOUNDKEYFOUND.txt","a+");
+									if(keys != NULL)	{
+										fprintf(keys,"Private Key: %s\npubkey: %s\nAddress %s\nrmd160 %s\n",hextemp,public_key_hex,address,hexrmd);
+										fclose(keys);
+									}
+									printf("\nHit! Private Key: %s\npubkey: %s\nAddress %s\nrmd160 %s\n",hextemp,public_key_hex,address,hexrmd);
+
+									free(hextemp);
+									free(hexrmd);
 								}
 							}
 						}
