@@ -76,10 +76,6 @@ struct bloom
 	uint8_t *bf;
 };
 
-struct address_value	{
-	uint8_t value[20];
-};
-
 int main()	{
 	uint8_t rawvalue[25];
 	Point pts[1024];
@@ -106,7 +102,7 @@ int main()	{
 	struct bloom bloom;
 	uint64_t N_SEQUENTIAL_MAX;
 	Int stride;
-	struct address_value *addressTable;
+	uint8_t *addressTable;
 	Int n_range_start;
 	Int n_range_end;
 	const char b58digits_ordered[] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
@@ -133,12 +129,12 @@ int main()	{
 	_2Gn = secp.DoubleDirect(Gn[511]);
 
 	printf("[+] Allocating memory for addressTable\n");
-	addressTable = (struct address_value*) malloc(20);
+	addressTable = (uint8_t *) malloc(20);
 	printf("[+] Bloom filter for 1 elements.\n");
 	memset((&bloom), 0, sizeof(struct bloom));
 	(&bloom)->bf = (uint8_t *)calloc((uint64_t)35944, sizeof(uint8_t));
 	printf("[+] Loading data to the bloomfilter total: 0.03 MB\n");
-	memset(addressTable[0].value,0,20);
+	memset(addressTable,0,20);
 
 	printf("[+] Setting search for btc adddress\n");
 
@@ -291,7 +287,7 @@ int main()	{
 			(&bloom)->bf[byte] = c | mask;
 		}
 	}
-	memcpy(addressTable[0].value,rawvalue+1,20);
+	memcpy(addressTable,rawvalue+1,20);
 
 	continue_flag = 1;
 	do	{
@@ -407,7 +403,7 @@ int main()	{
 							}
 
 							if(bloom_check_looper == 20) {
-								if(memcmp(publickeyhashrmd160_endomorphism[l][k],addressTable[0].value,20) == 0)	{
+								if(memcmp(publickeyhashrmd160_endomorphism[l][k],addressTable,20) == 0)	{
 									keyfound.SetInt32(k);
 									keyfound.Add(&key_mpz);
 
