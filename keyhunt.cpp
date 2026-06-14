@@ -76,6 +76,10 @@ struct bloom
 	uint8_t *bf;
 };
 
+struct address_value	{
+	uint8_t value[20];
+};
+
 int main()	{
 	uint8_t rawvalue[25];
 	Point pts[1024];
@@ -102,6 +106,7 @@ int main()	{
 	struct bloom bloom;
 	uint64_t N_SEQUENTIAL_MAX;
 	Int stride;
+	struct address_value *addressTable;
 	Int n_range_start;
 	Int n_range_end;
 	const char b58digits_ordered[] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
@@ -127,10 +132,13 @@ int main()	{
 	}
 	_2Gn = secp.DoubleDirect(Gn[511]);
 
+	printf("[+] Allocating memory for addressTable\n");
+	addressTable = (struct address_value*) malloc(20);
 	printf("[+] Bloom filter for 1 elements.\n");
 	memset((&bloom), 0, sizeof(struct bloom));
 	(&bloom)->bf = (uint8_t *)calloc((uint64_t)35944, sizeof(uint8_t));
 	printf("[+] Loading data to the bloomfilter total: 0.03 MB\n");
+	memset(addressTable[0].value,0,20);
 
 	printf("[+] Setting search for btc adddress\n");
 
@@ -283,6 +291,7 @@ int main()	{
 			(&bloom)->bf[byte] = c | mask;
 		}
 	}
+	memcpy(addressTable[0].value,rawvalue+1,20);
 
 	continue_flag = 1;
 	do	{
@@ -398,92 +407,94 @@ int main()	{
 							}
 
 							if(bloom_check_looper == 20) {
-								keyfound.SetInt32(k);
-								keyfound.Add(&key_mpz);
+								if(memcmp(publickeyhashrmd160_endomorphism[l][k],addressTable[0].value,20) == 0)	{
+									keyfound.SetInt32(k);
+									keyfound.Add(&key_mpz);
 
-								publickey = secp.ComputePublicKey(&keyfound);
-								secp.GetHash160(publickey,(uint8_t*)publickeyhashrmd160);
-								if(memcmp(publickeyhashrmd160_endomorphism[l][k],publickeyhashrmd160,20) != 0)	{
-									keyfound.Neg();
-									keyfound.Add(&secp.order);
-								}
+									publickey = secp.ComputePublicKey(&keyfound);
+									secp.GetHash160(publickey,(uint8_t*)publickeyhashrmd160);
+									if(memcmp(publickeyhashrmd160_endomorphism[l][k],publickeyhashrmd160,20) != 0)	{
+										keyfound.Neg();
+										keyfound.Add(&secp.order);
+									}
 
-								Point publickey2;
-								FILE *keys;
-								char *hextemp,*hexrmd,public_key_hex[132],address[50],rmdhash[20];
-								int offset = 0;
-								unsigned char c2;
-								char digest[60];
-								memset(address,0,50);
-								memset(public_key_hex,0,132);
-								hextemp = (&keyfound)->GetBase16();
-								publickey2 = secp.ComputePublicKey(&keyfound);
-								secp.GetPublicKeyHex(publickey2,public_key_hex);
-								secp.GetHash160(publickey2,(uint8_t*)rmdhash);
+									Point publickey2;
+									FILE *keys;
+									char *hextemp,*hexrmd,public_key_hex[132],address[50],rmdhash[20];
+									int offset = 0;
+									unsigned char c2;
+									char digest[60];
+									memset(address,0,50);
+									memset(public_key_hex,0,132);
+									hextemp = (&keyfound)->GetBase16();
+									publickey2 = secp.ComputePublicKey(&keyfound);
+									secp.GetPublicKeyHex(publickey2,public_key_hex);
+									secp.GetHash160(publickey2,(uint8_t*)rmdhash);
 
-								hexrmd = (char *) malloc(41);
-								for (int i = 0; i <20; i++) {
-									c2 = rmdhash[i];
-									sprintf((char*) (hexrmd + offset),"%.2x",c2);
-									offset+=2;
-								}
-								hexrmd[40] = 0;
+									hexrmd = (char *) malloc(41);
+									for (int i = 0; i <20; i++) {
+										c2 = rmdhash[i];
+										sprintf((char*) (hexrmd + offset),"%.2x",c2);
+										offset+=2;
+									}
+									hexrmd[40] = 0;
 
-								digest[0] = 0x00;
-								memcpy(digest+1,rmdhash,20);
-								sha256((uint8_t*)digest, 21,(uint8_t*) digest+21);
-								sha256((uint8_t*)digest+21, 32,(uint8_t*) digest+21);
+									digest[0] = 0x00;
+									memcpy(digest+1,rmdhash,20);
+									sha256((uint8_t*)digest, 21,(uint8_t*) digest+21);
+									sha256((uint8_t*)digest+21, 32,(uint8_t*) digest+21);
 
-								const uint8_t *bin = (const uint8_t *)digest;
-								int carry;
-								size_t i2, j2, high, zcount = 0;
-								size_t size;
+									const uint8_t *bin = (const uint8_t *)digest;
+									int carry;
+									size_t i2, j2, high, zcount = 0;
+									size_t size;
 
-								while (zcount < 25 && !bin[zcount])
-									++zcount;
+									while (zcount < 25 && !bin[zcount])
+										++zcount;
 
-								size = (25 - zcount) * 138 / 100 + 1;
-								uint8_t buf[size];
-								memset(buf, 0, size);
+									size = (25 - zcount) * 138 / 100 + 1;
+									uint8_t buf[size];
+									memset(buf, 0, size);
 
-								for (i2 = zcount, high = size - 1; i2 < 25; ++i2, high = j2)
-								{
-									for (carry = bin[i2], j2 = size - 1; (j2 > high) || carry; --j2)
+									for (i2 = zcount, high = size - 1; i2 < 25; ++i2, high = j2)
 									{
-										carry += 256 * buf[j2];
-										buf[j2] = carry % 58;
-										carry /= 58;
-										if (!j2) {
-											// Otherwise j2 wraps to maxint which is > high
-											break;
+										for (carry = bin[i2], j2 = size - 1; (j2 > high) || carry; --j2)
+										{
+											carry += 256 * buf[j2];
+											buf[j2] = carry % 58;
+											carry /= 58;
+											if (!j2) {
+												// Otherwise j2 wraps to maxint which is > high
+												break;
+											}
 										}
 									}
-								}
 
-								for (j2 = 0; j2 < size && !buf[j2]; ++j2);
+									for (j2 = 0; j2 < size && !buf[j2]; ++j2);
 
-								if (40 <= zcount + size - j2)
-								{
-									fprintf(stderr,"error b58enc\n");
-								}
-								else
-								{
-									if (zcount)
-										memset(address, '1', zcount);
-									for (i2 = zcount; j2 < size; ++i2, ++j2)
-										address[i2] = b58digits_ordered[buf[j2]];
-									address[i2] = '\0';
-								}
+									if (40 <= zcount + size - j2)
+									{
+										fprintf(stderr,"error b58enc\n");
+									}
+									else
+									{
+										if (zcount)
+											memset(address, '1', zcount);
+										for (i2 = zcount; j2 < size; ++i2, ++j2)
+											address[i2] = b58digits_ordered[buf[j2]];
+										address[i2] = '\0';
+									}
 
-								keys = fopen("KEYFOUNDKEYFOUND.txt","a+");
-								if(keys != NULL)	{
-									fprintf(keys,"Private Key: %s\npubkey: %s\nAddress %s\nrmd160 %s\n",hextemp,public_key_hex,address,hexrmd);
-									fclose(keys);
-								}
-								printf("\nHit! Private Key: %s\npubkey: %s\nAddress %s\nrmd160 %s\n",hextemp,public_key_hex,address,hexrmd);
+									keys = fopen("KEYFOUNDKEYFOUND.txt","a+");
+									if(keys != NULL)	{
+										fprintf(keys,"Private Key: %s\npubkey: %s\nAddress %s\nrmd160 %s\n",hextemp,public_key_hex,address,hexrmd);
+										fclose(keys);
+									}
+									printf("\nHit! Private Key: %s\npubkey: %s\nAddress %s\nrmd160 %s\n",hextemp,public_key_hex,address,hexrmd);
 
-								free(hextemp);
-								free(hexrmd);
+									free(hextemp);
+									free(hexrmd);
+								}
 							}
 						}
 					}
@@ -510,6 +521,7 @@ int main()	{
 			}while(count < N_SEQUENTIAL_MAX);
 		}
 	} while(continue_flag);
+	free(addressTable);
 	free(bloom.bf);
 	printf("\nEnd\n");
 }
