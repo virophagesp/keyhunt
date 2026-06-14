@@ -116,7 +116,7 @@ int main()	{
 
 	secp.Init();
 
-	printf("[+] Version 0.9 bitcoin hunt, developed by virophagesp based upon 0.2.230519 Satoshi Quest by AlbertoBSD\n");
+	printf("[+] Version 1.0 bitcoin hunt, developed by virophagesp based upon 0.2.230519 Satoshi Quest by AlbertoBSD\n");
 
 	stride.SetInt32(1);
 
