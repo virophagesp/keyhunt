@@ -125,25 +125,18 @@ struct bloom
 	uint8_t *bf;
 };
 
-#define XXH_rotl64(x,r) (((x) << (r)) | ((x) >> (64 - (r))))
-
 typedef union { uint32_t u32; } __attribute__((packed)) xxh_unalign;
-
 typedef union { uint32_t u32; uint64_t u64; } __attribute__((packed)) xxh_unalign64;
 
-uint64_t XXH64(const void* input, uint64_t seed)
+uint64_t XXH64(const uint8_t* input, uint64_t seed)
 {
     uint64_t h64 = seed + 0x27D4EB2F165667C5ULL + (uint64_t) 20;
-    uint8_t* ptr = (uint8_t*)input;
-    h64 ^= XXH_rotl64(((const xxh_unalign64*)ptr)->u64 * 0xC2B2AE3D27D4EB4FULL, 31) * 0x9E3779B185EBCA87ULL;
-    h64  = XXH_rotl64(h64,27) * 0x9E3779B185EBCA87ULL + 0x85EBCA77C2B2AE63ULL;
-    ptr += 8;
-    h64 ^= XXH_rotl64(((const xxh_unalign64*)ptr)->u64 * 0xC2B2AE3D27D4EB4FULL, 31) * 0x9E3779B185EBCA87ULL;
-    h64  = XXH_rotl64(h64,27) * 0x9E3779B185EBCA87ULL + 0x85EBCA77C2B2AE63ULL;
-    ptr += 8;
-    h64 ^= (uint64_t)(((const xxh_unalign*)ptr)->u32) * 0x9E3779B185EBCA87ULL;
-    h64 = XXH_rotl64(h64, 23) * 0xC2B2AE3D27D4EB4FULL + 0x165667B19E3779F9ULL;
-    ptr += 4;
+    h64 ^= ((((const xxh_unalign64*)input)->u64 * 0xC2B2AE3D27D4EB4FULL << 31) | (((const xxh_unalign64*)input)->u64 * 0xC2B2AE3D27D4EB4FULL >> 33)) * 0x9E3779B185EBCA87ULL;
+    h64  = ((h64 << 27) | (h64 >> 37)) * 0x9E3779B185EBCA87ULL + 0x85EBCA77C2B2AE63ULL;
+    h64 ^= ((((const xxh_unalign64*)(input + 8))->u64 * 0xC2B2AE3D27D4EB4FULL << 31) | (((const xxh_unalign64*)(input + 8))->u64 * 0xC2B2AE3D27D4EB4FULL >> 33)) * 0x9E3779B185EBCA87ULL;
+    h64  = ((h64 << 27) | (h64 >> 37)) * 0x9E3779B185EBCA87ULL + 0x85EBCA77C2B2AE63ULL;
+    h64 ^= (uint64_t)(((const xxh_unalign*)(input + 16))->u32) * 0x9E3779B185EBCA87ULL;
+    h64 = ((h64 << 23) | (h64 >> 41)) * 0xC2B2AE3D27D4EB4FULL + 0x165667B19E3779F9ULL;
     h64 ^= h64 >> 33;
     h64 *= 0xC2B2AE3D27D4EB4FULL;
     h64 ^= h64 >> 29;
@@ -350,8 +343,8 @@ int main()	{
 		rawvalue[24] = 125;
 	}
 
-	uint64_t a = XXH64(rawvalue+1, 0x59f2815b16f81798);
-	uint64_t b = XXH64(rawvalue+1, a);
+	uint64_t a = XXH64((const uint8_t*)(rawvalue+1), 0x59f2815b16f81798);
+	uint64_t b = XXH64((const uint8_t*)(rawvalue+1), a);
 	uint64_t x,byte;
 	uint8_t bloom_add_looper,c,mask;
 	for (bloom_add_looper = 0; bloom_add_looper < 20; bloom_add_looper++) {
@@ -464,8 +457,8 @@ int main()	{
 
 					for(k = 0; k < 4;k++)	{
 						for(l = 0;l < 2; l++)	{
-							uint64_t a = XXH64(publickeyhashrmd160_endomorphism[l][k], 0x59f2815b16f81798);
-							uint64_t b = XXH64(publickeyhashrmd160_endomorphism[l][k], a);
+							uint64_t a = XXH64((const uint8_t*)(publickeyhashrmd160_endomorphism[l][k]), 0x59f2815b16f81798);
+							uint64_t b = XXH64((const uint8_t*)(publickeyhashrmd160_endomorphism[l][k]), a);
 							uint64_t x,byte;
 							uint8_t bloom_check_looper,c,mask;
 							for (bloom_check_looper = 0; bloom_check_looper < 20; bloom_check_looper++) {
