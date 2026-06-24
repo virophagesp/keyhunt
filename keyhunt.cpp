@@ -130,17 +130,17 @@ typedef union { uint32_t u32; uint64_t u64; } __attribute__((packed)) xxh_unalig
 
 uint64_t XXH64(const uint8_t* input, uint64_t seed)
 {
-    uint64_t h64 = seed + 0x27D4EB2F165667C5ULL + (uint64_t) 20;
-    h64 ^= ((((const xxh_unalign64*)input)->u64 * 0xC2B2AE3D27D4EB4FULL << 31) | (((const xxh_unalign64*)input)->u64 * 0xC2B2AE3D27D4EB4FULL >> 33)) * 0x9E3779B185EBCA87ULL;
-    h64  = ((h64 << 27) | (h64 >> 37)) * 0x9E3779B185EBCA87ULL + 0x85EBCA77C2B2AE63ULL;
-    h64 ^= ((((const xxh_unalign64*)(input + 8))->u64 * 0xC2B2AE3D27D4EB4FULL << 31) | (((const xxh_unalign64*)(input + 8))->u64 * 0xC2B2AE3D27D4EB4FULL >> 33)) * 0x9E3779B185EBCA87ULL;
-    h64  = ((h64 << 27) | (h64 >> 37)) * 0x9E3779B185EBCA87ULL + 0x85EBCA77C2B2AE63ULL;
-    h64 ^= (uint64_t)(((const xxh_unalign*)(input + 16))->u32) * 0x9E3779B185EBCA87ULL;
-    h64 = ((h64 << 23) | (h64 >> 41)) * 0xC2B2AE3D27D4EB4FULL + 0x165667B19E3779F9ULL;
+    uint64_t h64 = seed + 2870177450012600261 + (uint64_t) 20;
+    h64 ^= ((((const xxh_unalign64*)input)->u64 * -4417276706812531889 << 31) | (((const xxh_unalign64*)input)->u64 * -4417276706812531889 >> 33)) * -7046029288634856825;
+    h64  = ((h64 << 27) | (h64 >> 37)) * -7046029288634856825 + -8796714831421723037;
+    h64 ^= ((((const xxh_unalign64*)(input + 8))->u64 * -4417276706812531889 << 31) | (((const xxh_unalign64*)(input + 8))->u64 * -4417276706812531889 >> 33)) * -7046029288634856825;
+    h64  = ((h64 << 27) | (h64 >> 37)) * -7046029288634856825 + -8796714831421723037;
+    h64 ^= (uint64_t)(((const xxh_unalign*)(input + 16))->u32) * -7046029288634856825;
+    h64 = ((h64 << 23) | (h64 >> 41)) * -4417276706812531889 + 1609587929392839161;
     h64 ^= h64 >> 33;
-    h64 *= 0xC2B2AE3D27D4EB4FULL;
+    h64 *= -4417276706812531889;
     h64 ^= h64 >> 29;
-    h64 *= 0x165667B19E3779F9ULL;
+    h64 *= 1609587929392839161;
     h64 ^= h64 >> 32;
     return h64;
 }
@@ -343,7 +343,7 @@ int main()	{
 		rawvalue[24] = 125;
 	}
 
-	uint64_t a = XXH64((const uint8_t*)(rawvalue+1), 0x59f2815b16f81798);
+	uint64_t a = XXH64((const uint8_t*)(rawvalue+1), 6481385041966929816);
 	uint64_t b = XXH64((const uint8_t*)(rawvalue+1), a);
 	uint64_t x,byte;
 	uint8_t bloom_add_looper,c,mask;
@@ -452,12 +452,12 @@ int main()	{
 				pts[0].Set(pn);
 
 				for(j = 0; j < 256;j++){
-					secp.GetHash160_fromX(0x02,&pts[(j*4)].x,&pts[(j*4)+1].x,&pts[(j*4)+2].x,&pts[(j*4)+3].x,(uint8_t*)publickeyhashrmd160_endomorphism[0][0],(uint8_t*)publickeyhashrmd160_endomorphism[0][1],(uint8_t*)publickeyhashrmd160_endomorphism[0][2],(uint8_t*)publickeyhashrmd160_endomorphism[0][3]);
-					secp.GetHash160_fromX(0x03,&pts[(j*4)].x,&pts[(j*4)+1].x,&pts[(j*4)+2].x,&pts[(j*4)+3].x,(uint8_t*)publickeyhashrmd160_endomorphism[1][0],(uint8_t*)publickeyhashrmd160_endomorphism[1][1],(uint8_t*)publickeyhashrmd160_endomorphism[1][2],(uint8_t*)publickeyhashrmd160_endomorphism[1][3]);
+					secp.GetHash160_fromX(2,&pts[(j*4)].x,&pts[(j*4)+1].x,&pts[(j*4)+2].x,&pts[(j*4)+3].x,(uint8_t*)publickeyhashrmd160_endomorphism[0][0],(uint8_t*)publickeyhashrmd160_endomorphism[0][1],(uint8_t*)publickeyhashrmd160_endomorphism[0][2],(uint8_t*)publickeyhashrmd160_endomorphism[0][3]);
+					secp.GetHash160_fromX(3,&pts[(j*4)].x,&pts[(j*4)+1].x,&pts[(j*4)+2].x,&pts[(j*4)+3].x,(uint8_t*)publickeyhashrmd160_endomorphism[1][0],(uint8_t*)publickeyhashrmd160_endomorphism[1][1],(uint8_t*)publickeyhashrmd160_endomorphism[1][2],(uint8_t*)publickeyhashrmd160_endomorphism[1][3]);
 
 					for(k = 0; k < 4;k++)	{
 						for(l = 0;l < 2; l++)	{
-							uint64_t a = XXH64((const uint8_t*)(publickeyhashrmd160_endomorphism[l][k]), 0x59f2815b16f81798);
+							uint64_t a = XXH64((const uint8_t*)(publickeyhashrmd160_endomorphism[l][k]), 6481385041966929816);
 							uint64_t b = XXH64((const uint8_t*)(publickeyhashrmd160_endomorphism[l][k]), a);
 							uint64_t x,byte;
 							uint8_t bloom_check_looper,c,mask;
@@ -504,7 +504,7 @@ int main()	{
 									}
 									hexrmd[40] = 0;
 
-									digest[0] = 0x00;
+									digest[0] = 0;
 									memcpy(digest+1,rmdhash,20);
 									sha256((uint8_t*)digest, 21,(uint8_t*) digest+21);
 									sha256((uint8_t*)digest+21, 32,(uint8_t*) digest+21);
