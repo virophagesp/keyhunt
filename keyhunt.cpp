@@ -125,23 +125,6 @@ struct bloom
 	uint8_t *bf;
 };
 
-uint64_t XXH64(const uint8_t* input, uint64_t seed)
-{
-    uint64_t h64 = seed + 2870177450012600281;
-    h64 ^= (((*((const uint64_t*)input) * -4417276706812531889) << 31) | ((*((const uint64_t*)input) * -4417276706812531889) >> 33)) * -7046029288634856825;
-    h64  = ((h64 << 27) | (h64 >> 37)) * -7046029288634856825 + -8796714831421723037;
-    h64 ^= ((*((const uint64_t*)(input + 8)) * -4417276706812531889 << 31) | (*((const uint64_t*)(input + 8)) * -4417276706812531889 >> 33)) * -7046029288634856825;
-    h64  = ((h64 << 27) | (h64 >> 37)) * -7046029288634856825 + -8796714831421723037;
-    h64 ^= (uint64_t)(*((const uint32_t*)(input + 16))) * -7046029288634856825;
-    h64 = ((h64 << 23) | (h64 >> 41)) * -4417276706812531889 + 1609587929392839161;
-    h64 ^= h64 >> 33;
-    h64 *= -4417276706812531889;
-    h64 ^= h64 >> 29;
-    h64 *= 1609587929392839161;
-    h64 ^= h64 >> 32;
-    return h64;
-}
-
 int main()	{
 	uint8_t rawvalue[25];
 	Point pts[1024];
@@ -340,8 +323,30 @@ int main()	{
 		rawvalue[24] = 125;
 	}
 
-	uint64_t a = XXH64((const uint8_t*)(rawvalue+1), 6481385041966929816);
-	uint64_t b = XXH64((const uint8_t*)(rawvalue+1), a);
+    uint64_t a = 6481385041966929816 + 2870177450012600281;
+    a ^= (((*((const uint64_t*)((const uint8_t*)(rawvalue+1))) * -4417276706812531889) << 31) | ((*((const uint64_t*)((const uint8_t*)(rawvalue+1))) * -4417276706812531889) >> 33)) * -7046029288634856825;
+    a  = ((a << 27) | (a >> 37)) * -7046029288634856825 + -8796714831421723037;
+    a ^= ((*((const uint64_t*)(((const uint8_t*)(rawvalue+1)) + 8)) * -4417276706812531889 << 31) | (*((const uint64_t*)(((const uint8_t*)(rawvalue+1)) + 8)) * -4417276706812531889 >> 33)) * -7046029288634856825;
+    a  = ((a << 27) | (a >> 37)) * -7046029288634856825 + -8796714831421723037;
+    a ^= (uint64_t)(*((const uint32_t*)(((const uint8_t*)(rawvalue+1)) + 16))) * -7046029288634856825;
+    a = ((a << 23) | (a >> 41)) * -4417276706812531889 + 1609587929392839161;
+    a ^= a >> 33;
+    a *= -4417276706812531889;
+    a ^= a >> 29;
+    a *= 1609587929392839161;
+    a ^= a >> 32;
+    uint64_t b = a + 2870177450012600281;
+    b ^= (((*((const uint64_t*)((const uint8_t*)(rawvalue+1))) * -4417276706812531889) << 31) | ((*((const uint64_t*)((const uint8_t*)(rawvalue+1))) * -4417276706812531889) >> 33)) * -7046029288634856825;
+    b  = ((b << 27) | (b >> 37)) * -7046029288634856825 + -8796714831421723037;
+    b ^= ((*((const uint64_t*)(((const uint8_t*)(rawvalue+1)) + 8)) * -4417276706812531889 << 31) | (*((const uint64_t*)(((const uint8_t*)(rawvalue+1)) + 8)) * -4417276706812531889 >> 33)) * -7046029288634856825;
+    b  = ((b << 27) | (b >> 37)) * -7046029288634856825 + -8796714831421723037;
+    b ^= (uint64_t)(*((const uint32_t*)(((const uint8_t*)(rawvalue+1)) + 16))) * -7046029288634856825;
+    b = ((b << 23) | (b >> 41)) * -4417276706812531889 + 1609587929392839161;
+    b ^= b >> 33;
+    b *= -4417276706812531889;
+    b ^= b >> 29;
+    b *= 1609587929392839161;
+    b ^= b >> 32;
 	uint64_t x,byte;
 	uint8_t bloom_add_looper,c,mask;
 	for (bloom_add_looper = 0; bloom_add_looper < 20; bloom_add_looper++) {
@@ -454,8 +459,30 @@ int main()	{
 
 					for(k = 0; k < 4;k++)	{
 						for(l = 0;l < 2; l++)	{
-							uint64_t a = XXH64((const uint8_t*)(publickeyhashrmd160_endomorphism[l][k]), 6481385041966929816);
-							uint64_t b = XXH64((const uint8_t*)(publickeyhashrmd160_endomorphism[l][k]), a);
+							uint64_t a = 6481385041966929816 + 2870177450012600281;
+							a ^= (((*((const uint64_t*)((const uint8_t*)(publickeyhashrmd160_endomorphism[l][k]))) * -4417276706812531889) << 31) | ((*((const uint64_t*)((const uint8_t*)(publickeyhashrmd160_endomorphism[l][k]))) * -4417276706812531889) >> 33)) * -7046029288634856825;
+							a  = ((a << 27) | (a >> 37)) * -7046029288634856825 + -8796714831421723037;
+							a ^= ((*((const uint64_t*)(((const uint8_t*)(publickeyhashrmd160_endomorphism[l][k])) + 8)) * -4417276706812531889 << 31) | (*((const uint64_t*)(((const uint8_t*)(publickeyhashrmd160_endomorphism[l][k])) + 8)) * -4417276706812531889 >> 33)) * -7046029288634856825;
+							a  = ((a << 27) | (a >> 37)) * -7046029288634856825 + -8796714831421723037;
+							a ^= (uint64_t)(*((const uint32_t*)(((const uint8_t*)(publickeyhashrmd160_endomorphism[l][k])) + 16))) * -7046029288634856825;
+							a = ((a << 23) | (a >> 41)) * -4417276706812531889 + 1609587929392839161;
+							a ^= a >> 33;
+							a *= -4417276706812531889;
+							a ^= a >> 29;
+							a *= 1609587929392839161;
+							a ^= a >> 32;
+							uint64_t b = a + 2870177450012600281;
+							b ^= (((*((const uint64_t*)((const uint8_t*)(publickeyhashrmd160_endomorphism[l][k]))) * -4417276706812531889) << 31) | ((*((const uint64_t*)((const uint8_t*)(publickeyhashrmd160_endomorphism[l][k]))) * -4417276706812531889) >> 33)) * -7046029288634856825;
+							b  = ((b << 27) | (b >> 37)) * -7046029288634856825 + -8796714831421723037;
+							b ^= ((*((const uint64_t*)(((const uint8_t*)(publickeyhashrmd160_endomorphism[l][k])) + 8)) * -4417276706812531889 << 31) | (*((const uint64_t*)(((const uint8_t*)(publickeyhashrmd160_endomorphism[l][k])) + 8)) * -4417276706812531889 >> 33)) * -7046029288634856825;
+							b  = ((b << 27) | (b >> 37)) * -7046029288634856825 + -8796714831421723037;
+							b ^= (uint64_t)(*((const uint32_t*)(((const uint8_t*)(publickeyhashrmd160_endomorphism[l][k])) + 16))) * -7046029288634856825;
+							b = ((b << 23) | (b >> 41)) * -4417276706812531889 + 1609587929392839161;
+							b ^= b >> 33;
+							b *= -4417276706812531889;
+							b ^= b >> 29;
+							b *= 1609587929392839161;
+							b ^= b >> 32;
 							uint64_t x,byte;
 							uint8_t bloom_check_looper,c,mask;
 							for (bloom_check_looper = 0; bloom_check_looper < 20; bloom_check_looper++) {
