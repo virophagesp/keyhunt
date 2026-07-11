@@ -323,12 +323,12 @@ int main()	{
 		rawvalue[24] = 125;
 	}
 
-    uint64_t a = 6481385041966929816 + 2870177450012600281;
-    a ^= (((*((const uint64_t*)((const uint8_t*)(rawvalue+1))) * -4417276706812531889) << 31) | ((*((const uint64_t*)((const uint8_t*)(rawvalue+1))) * -4417276706812531889) >> 33)) * -7046029288634856825;
+    uint64_t a = -9095181581730021519;
+    a ^= (((*((const uint64_t*)&rawvalue[1]) * -4417276706812531889) << 31) | ((*((const uint64_t*)&rawvalue[1]) * -4417276706812531889) >> 33)) * -7046029288634856825;
     a  = ((a << 27) | (a >> 37)) * -7046029288634856825 + -8796714831421723037;
-    a ^= ((*((const uint64_t*)(((const uint8_t*)(rawvalue+1)) + 8)) * -4417276706812531889 << 31) | (*((const uint64_t*)(((const uint8_t*)(rawvalue+1)) + 8)) * -4417276706812531889 >> 33)) * -7046029288634856825;
+    a ^= ((*((const uint64_t*)&rawvalue[9]) * -4417276706812531889 << 31) | (*((const uint64_t*)&rawvalue[9]) * -4417276706812531889 >> 33)) * -7046029288634856825;
     a  = ((a << 27) | (a >> 37)) * -7046029288634856825 + -8796714831421723037;
-    a ^= (uint64_t)(*((const uint32_t*)(((const uint8_t*)(rawvalue+1)) + 16))) * -7046029288634856825;
+    a ^= (uint64_t)(*((const uint32_t*)&rawvalue[17])) * -7046029288634856825;
     a = ((a << 23) | (a >> 41)) * -4417276706812531889 + 1609587929392839161;
     a ^= a >> 33;
     a *= -4417276706812531889;
@@ -336,11 +336,11 @@ int main()	{
     a *= 1609587929392839161;
     a ^= a >> 32;
     uint64_t b = a + 2870177450012600281;
-    b ^= (((*((const uint64_t*)((const uint8_t*)(rawvalue+1))) * -4417276706812531889) << 31) | ((*((const uint64_t*)((const uint8_t*)(rawvalue+1))) * -4417276706812531889) >> 33)) * -7046029288634856825;
+    b ^= (((*((const uint64_t*)&rawvalue[1]) * -4417276706812531889) << 31) | ((*((const uint64_t*)&rawvalue[1]) * -4417276706812531889) >> 33)) * -7046029288634856825;
     b  = ((b << 27) | (b >> 37)) * -7046029288634856825 + -8796714831421723037;
-    b ^= ((*((const uint64_t*)(((const uint8_t*)(rawvalue+1)) + 8)) * -4417276706812531889 << 31) | (*((const uint64_t*)(((const uint8_t*)(rawvalue+1)) + 8)) * -4417276706812531889 >> 33)) * -7046029288634856825;
+    b ^= ((*((const uint64_t*)&rawvalue[9]) * -4417276706812531889 << 31) | (*((const uint64_t*)&rawvalue[9]) * -4417276706812531889 >> 33)) * -7046029288634856825;
     b  = ((b << 27) | (b >> 37)) * -7046029288634856825 + -8796714831421723037;
-    b ^= (uint64_t)(*((const uint32_t*)(((const uint8_t*)(rawvalue+1)) + 16))) * -7046029288634856825;
+    b ^= (uint64_t)(*((const uint32_t*)&rawvalue[17])) * -7046029288634856825;
     b = ((b << 23) | (b >> 41)) * -4417276706812531889 + 1609587929392839161;
     b ^= b >> 33;
     b *= -4417276706812531889;
@@ -459,12 +459,12 @@ int main()	{
 
 					for(k = 0; k < 4;k++)	{
 						for(l = 0;l < 2; l++)	{
-							uint64_t a = 6481385041966929816 + 2870177450012600281;
-							a ^= (((*((const uint64_t*)((const uint8_t*)(publickeyhashrmd160_endomorphism[l][k]))) * -4417276706812531889) << 31) | ((*((const uint64_t*)((const uint8_t*)(publickeyhashrmd160_endomorphism[l][k]))) * -4417276706812531889) >> 33)) * -7046029288634856825;
+							uint64_t a = -9095181581730021519;
+							a ^= (((*((const uint64_t*)&publickeyhashrmd160_endomorphism[l][k][0]) * -4417276706812531889) << 31) | ((*((const uint64_t*)&publickeyhashrmd160_endomorphism[l][k][0]) * -4417276706812531889) >> 33)) * -7046029288634856825;
 							a  = ((a << 27) | (a >> 37)) * -7046029288634856825 + -8796714831421723037;
-							a ^= ((*((const uint64_t*)(((const uint8_t*)(publickeyhashrmd160_endomorphism[l][k])) + 8)) * -4417276706812531889 << 31) | (*((const uint64_t*)(((const uint8_t*)(publickeyhashrmd160_endomorphism[l][k])) + 8)) * -4417276706812531889 >> 33)) * -7046029288634856825;
+							a ^= ((*((const uint64_t*)&publickeyhashrmd160_endomorphism[l][k][8]) * -4417276706812531889 << 31) | (*((const uint64_t*)&publickeyhashrmd160_endomorphism[l][k][8]) * -4417276706812531889 >> 33)) * -7046029288634856825;
 							a  = ((a << 27) | (a >> 37)) * -7046029288634856825 + -8796714831421723037;
-							a ^= (uint64_t)(*((const uint32_t*)(((const uint8_t*)(publickeyhashrmd160_endomorphism[l][k])) + 16))) * -7046029288634856825;
+							a ^= (uint64_t)(*((const uint32_t*)&publickeyhashrmd160_endomorphism[l][k][16])) * -7046029288634856825;
 							a = ((a << 23) | (a >> 41)) * -4417276706812531889 + 1609587929392839161;
 							a ^= a >> 33;
 							a *= -4417276706812531889;
@@ -472,11 +472,11 @@ int main()	{
 							a *= 1609587929392839161;
 							a ^= a >> 32;
 							uint64_t b = a + 2870177450012600281;
-							b ^= (((*((const uint64_t*)((const uint8_t*)(publickeyhashrmd160_endomorphism[l][k]))) * -4417276706812531889) << 31) | ((*((const uint64_t*)((const uint8_t*)(publickeyhashrmd160_endomorphism[l][k]))) * -4417276706812531889) >> 33)) * -7046029288634856825;
+							b ^= (((*((const uint64_t*)&publickeyhashrmd160_endomorphism[l][k][0]) * -4417276706812531889) << 31) | ((*((const uint64_t*)&publickeyhashrmd160_endomorphism[l][k][0]) * -4417276706812531889) >> 33)) * -7046029288634856825;
 							b  = ((b << 27) | (b >> 37)) * -7046029288634856825 + -8796714831421723037;
-							b ^= ((*((const uint64_t*)(((const uint8_t*)(publickeyhashrmd160_endomorphism[l][k])) + 8)) * -4417276706812531889 << 31) | (*((const uint64_t*)(((const uint8_t*)(publickeyhashrmd160_endomorphism[l][k])) + 8)) * -4417276706812531889 >> 33)) * -7046029288634856825;
+							b ^= ((*((const uint64_t*)&publickeyhashrmd160_endomorphism[l][k][8]) * -4417276706812531889 << 31) | (*((const uint64_t*)&publickeyhashrmd160_endomorphism[l][k][8]) * -4417276706812531889 >> 33)) * -7046029288634856825;
 							b  = ((b << 27) | (b >> 37)) * -7046029288634856825 + -8796714831421723037;
-							b ^= (uint64_t)(*((const uint32_t*)(((const uint8_t*)(publickeyhashrmd160_endomorphism[l][k])) + 16))) * -7046029288634856825;
+							b ^= (uint64_t)(*((const uint32_t*)&publickeyhashrmd160_endomorphism[l][k][16])) * -7046029288634856825;
 							b = ((b << 23) | (b >> 41)) * -4417276706812531889 + 1609587929392839161;
 							b ^= b >> 33;
 							b *= -4417276706812531889;
