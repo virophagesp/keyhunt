@@ -126,7 +126,7 @@ struct bloom
 };
 
 int main()	{
-	uint8_t rawvalue[25];
+	uint8_t rawvalue[21];
 	Point pts[1024];
 	Int dx[513];
 	Int dx_inverse[513];
@@ -221,10 +221,6 @@ int main()	{
 		rawvalue[18] = 103;
 		rawvalue[19] = 227;
 		rawvalue[20] = 221;
-		rawvalue[21] = 36;
-		rawvalue[22] = 209;
-		rawvalue[23] = 11;
-		rawvalue[24] = 5;
 	} else if (strcmp(IMPORTANT, "medium_test") == 0) {
 		printf("[+] -- from : 0x200000000\n");
 		printf("[+] -- to   : 0x3ffffffff\n");
@@ -253,10 +249,6 @@ int main()	{
 		rawvalue[18] = 95;
 		rawvalue[19] = 27;
 		rawvalue[20] = 250;
-		rawvalue[21] = 238;
-		rawvalue[22] = 192;
-		rawvalue[23] = 195;
-		rawvalue[24] = 159;
 	} else if (strcmp(IMPORTANT, "big_test") == 0) {
 		printf("[+] -- from : 0x100000000000000000\n");
 		printf("[+] -- to   : 0x1fffffffffffffffff\n");
@@ -285,10 +277,6 @@ int main()	{
 		rawvalue[18] = 214;
 		rawvalue[19] = 213;
 		rawvalue[20] = 170;
-		rawvalue[21] = 205;
-		rawvalue[22] = 50;
-		rawvalue[23] = 4;
-		rawvalue[24] = 187;
 	} else if (strcmp(IMPORTANT, "money") == 0) {
 		printf("[+] -- from : 0x200000000000000000000\n");
 		printf("[+] -- to   : 0x3ffffffffffffffffffff\n");
@@ -317,10 +305,6 @@ int main()	{
 		rawvalue[18] = 248;
 		rawvalue[19] = 240;
 		rawvalue[20] = 97;
-		rawvalue[21] = 213;
-		rawvalue[22] = 229;
-		rawvalue[23] = 136;
-		rawvalue[24] = 125;
 	}
 
     uint64_t a = -9095181581730021519;
