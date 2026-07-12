@@ -30,6 +30,7 @@ public:
   Point(const Point &p);
   ~Point();
   void Set(Point &p);
+  void Set2(Point p);
   void Clear();
   void Reduce();
   //std::string toString();

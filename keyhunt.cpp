@@ -165,17 +165,17 @@ int main()	{
 
 	stride.SetInt32(1);
 
-	G = secp.ComputePublicKey(&stride);
+	G.Set2(secp.ComputePublicKey(&stride));
 	g.Set(G);
 	Gn.reserve(512);
 	Gn[0].Set(g);
-	g = secp.DoubleDirect(g);
+	g.Set2(secp.DoubleDirect(g));
 	Gn[1].Set(g);
 	for(int i = 2; i < 512; i++) {
-		g = secp.AddDirect(g,G);
+		g.Set2(secp.AddDirect(g,G));
 		Gn[i].Set(g);
 	}
-	_2Gn = secp.DoubleDirect(Gn[511]);
+	_2Gn.Set2(secp.DoubleDirect(Gn[511]));
 
 	printf("[+] Allocating memory for addressTable\n");
 	addressTable = (uint8_t *) malloc(20);
@@ -361,7 +361,7 @@ int main()	{
 			free(hextemp);
 			do {
 				key_mpz.Add(512);
-	 			startP = secp.ComputePublicKey(&key_mpz);
+	 			startP.Set2(secp.ComputePublicKey(&key_mpz));
 				key_mpz.Sub(512);
 
 				for(i = 0; i < 511; i++) {
@@ -484,7 +484,7 @@ int main()	{
 									keyfound.SetInt32(k);
 									keyfound.Add(&key_mpz);
 
-									publickey = secp.ComputePublicKey(&keyfound);
+									publickey.Set2(secp.ComputePublicKey(&keyfound));
 									secp.GetHash160(publickey,(uint8_t*)publickeyhashrmd160);
 									if(memcmp(publickeyhashrmd160_endomorphism[l][k],publickeyhashrmd160,20) != 0)	{
 										keyfound.Neg();
@@ -500,7 +500,7 @@ int main()	{
 									memset(address,0,50);
 									memset(public_key_hex,0,132);
 									hextemp = (&keyfound)->GetBase16();
-									publickey2 = secp.ComputePublicKey(&keyfound);
+									publickey2.Set2(secp.ComputePublicKey(&keyfound));
 									secp.GetPublicKeyHex(publickey2,public_key_hex);
 									secp.GetHash160(publickey2,(uint8_t*)rmdhash);
 

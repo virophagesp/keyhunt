@@ -52,6 +52,12 @@ void Point::Set(Point &p) {
   z.Set(&p.z);
 }
 
+void Point::Set2(Point p) {
+  x.Set(&(p.x));
+  y.Set(&(p.y));
+  z.Set(&(p.z));
+}
+
 void Point::Reduce() {
 
   Int i(&z);

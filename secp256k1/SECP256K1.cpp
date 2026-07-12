@@ -42,10 +42,10 @@ void Secp256K1::Init() {
   Point N(G);
   for(int i = 0; i < 32; i++) {
     GTable[i * 256].Set(N);
-    N = DoubleDirect(N);
+    N.Set2(DoubleDirect(N));
     for (int j = 1; j < 255; j++) {
       GTable[i * 256 + j].Set(N);
-      N = AddDirect(N, GTable[i * 256]);
+      N.Set2(AddDirect(N, GTable[i * 256]));
     }
     GTable[i * 256 + 255].Set(N); // Dummy point for check function
   }
@@ -72,7 +72,7 @@ Point Secp256K1::ComputePublicKey(Int *privKey) {
   for(; i < 32; i++) {
     b = privKey->GetByte(i);
     if(b)
-      Q = Add2(Q, GTable[256 * i + (b-1)]);
+      Q.Set2(Add2(Q, GTable[256 * i + (b-1)]));
   }
   Q.Reduce();
   return Q;
