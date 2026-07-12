@@ -54,7 +54,6 @@ public:
   void Sub(uint64_t a);
   void Sub(Int *a);
   void Sub(Int *a, Int *b);
-  void SubOne();
   void Mult(Int *a);
   void Mult(uint64_t a);
   void IMult(int64_t a);
@@ -74,7 +73,6 @@ public:
   // Comp
   bool IsGreater(Int *a);
   bool IsGreaterOrEqual(Int *a);
-  bool IsLowerOrEqual(Int *a);
   bool IsLower(Int *a);
   bool IsEqual(Int *a);
   bool IsZero();
@@ -92,13 +90,7 @@ public:
   // R used in Montgomery mult (R = 2^size(n))
   // R2 = R^2, R3 = R^3, R4 = R^4
   static void SetupField(Int *n, Int *R = NULL, Int *R2 = NULL, Int *R3 = NULL, Int *R4 = NULL);
-  static Int *GetR();                            // Return R
-  static Int *GetR2();                           // Return R2
-  static Int *GetR3();                           // Return R3
-  static Int *GetR4();                           // Return R4
 
-  void GCD(Int *a);                          // this <- GCD(this,a)
-  void Mod(Int *n);                          // this <- this (mod n)
   void ModInv();                             // this <- this^-1 (mod n)
   void MontgomeryMult(Int *a,Int *b);        // this <- a*b*R^-1 (mod n)
   void ModAdd(Int *a);                       // this <- this+a (mod n) [0<a<P]
@@ -118,22 +110,17 @@ public:
 
   // Size
   int GetSize();
-  int GetBitLength();
 
   // Setter
   void SetInt32(uint32_t value);
   void Set(Int *a);
-  void SetBase10(const char *value);
   void SetBase16(const char *value);
   void SetBaseN(int n,const char *charset,const char *value);
-  void SetByte(int n,unsigned char byte);
 
   // Getter
-  int GetBit(uint32_t n);
   unsigned char GetByte(int n);
   void Get32Bytes(unsigned char *buff);
 
-  char* GetBase10();
   char* GetBase16();
   char* GetBaseN(int n,const char *charset);
 

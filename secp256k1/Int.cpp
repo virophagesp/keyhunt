@@ -205,24 +205,6 @@ bool Int::IsGreaterOrEqual(Int *a) {
 
 // ------------------------------------------------
 
-bool Int::IsLowerOrEqual(Int *a) {
-
-  int i = NB64BLOCK - 1;
-
-  while (i >= 0) {
-    if (a->bits64[i] != bits64[i])
-      break;
-    i--;
-}
-
-  if (i >= 0) {
-    return bits64[i]<a->bits64[i];
-  } else {
-    return true;
-  }
-
-}
-
 bool Int::IsEqual(Int *a) {
 
 return
@@ -282,15 +264,6 @@ void Int::Get32Bytes(unsigned char *buff) {
 
 // ------------------------------------------------
 
-void Int::SetByte(int n,unsigned char byte) {
-
-	unsigned char *bbPtr = (unsigned char *)bits;
-	bbPtr[n] = byte;
-
-}
-
-// ------------------------------------------------
-
 void Int::Sub(Int *a) {
 
   unsigned char c = 0;
@@ -331,23 +304,6 @@ void Int::Sub(uint64_t a) {
 
   unsigned char c = 0;
   c = _subborrow_u64(c, bits64[0], a, bits64 + 0);
-  c = _subborrow_u64(c, bits64[1], 0, bits64 + 1);
-  c = _subborrow_u64(c, bits64[2], 0, bits64 + 2);
-  c = _subborrow_u64(c, bits64[3], 0, bits64 + 3);
-  c = _subborrow_u64(c, bits64[4], 0, bits64 + 4);
-#if NB64BLOCK > 5
-  c = _subborrow_u64(c, bits64[5], 0, bits64 + 5);
-  c = _subborrow_u64(c, bits64[6], 0, bits64 + 6);
-  c = _subborrow_u64(c, bits64[7], 0, bits64 + 7);
-  c = _subborrow_u64(c, bits64[8], 0, bits64 + 8);
-#endif
-
-}
-
-void Int::SubOne() {
-
-  unsigned char c = 0;
-  c = _subborrow_u64(c, bits64[0], 1, bits64 + 0);
   c = _subborrow_u64(c, bits64[1], 0, bits64 + 1);
   c = _subborrow_u64(c, bits64[2], 0, bits64 + 2);
   c = _subborrow_u64(c, bits64[3], 0, bits64 + 3);
@@ -586,36 +542,11 @@ static uint32_t bitLength(uint32_t dw) {
 
 // ------------------------------------------------
 
-int Int::GetBitLength() {
-
-  Int t(this);
-  if(IsNegative())
-	  t.Neg();
-
-  int i=NB32BLOCK-1;
-  while(i>=0 && t.bits[i]==0) i--;
-  if(i<0) return 0;
-  return (32-bitLength(t.bits[i])) + i*32;
-
-}
-
-// ------------------------------------------------
-
 int Int::GetSize() {
 
   int i=NB32BLOCK-1;
   while(i>0 && bits[i]==0) i--;
   return i+1;
-
-}
-
-// ------------------------------------------------
-
-void Int::Mod(Int *n) {
-
-  Int r;
-  Div(n,&r);
-  Set(&r);
 
 }
 
@@ -730,79 +661,8 @@ void Int::Div(Int *a,Int *mod) {
 
 // ------------------------------------------------
 
-void Int::GCD(Int *a) {
-    uint32_t k;
-    uint32_t b;
-    Int U(this);
-    Int V(a);
-    Int T;
-    if(U.IsZero()) {
-      Set(&V);
-      return;
-    }
-    if(V.IsZero()) {
-      Set(&U);
-      return;
-    }
-    if(U.IsNegative()) U.Neg();
-    if(V.IsNegative()) V.Neg();
-    k = 0;
-    while (U.GetBit(k)==0 && V.GetBit(k)==0)
-      k++;
-    U.ShiftR(k);
-    V.ShiftR(k);
-    if (U.GetBit(0)==1) {
-      T.Set(&V);
-      T.Neg();
-    } else {
-      T.Set(&U);
-    }
-    do {
-      if( T.IsNegative() ) {
-        T.Neg();
-        b=0;while(T.GetBit(b)==0) b++;
-        T.ShiftR(b);
-        V.Set(&T);
-        T.Set(&U);
-      } else {
-        b=0;while(T.GetBit(b)==0) b++;
-        T.ShiftR(b);
-        U.Set(&T);
-      }
-      T.Sub(&V);
-    } while (!T.IsZero());
-    // Store gcd
-    Set(&U);
-    ShiftL(k);
-}
-
-// ------------------------------------------------
-
-void Int::SetBase10(const char *value) {
-  CLEAR();
-  Int pw((uint64_t)1);
-  Int c;
-  int lgth = (int)strlen(value);
-  for(int i=lgth-1;i>=0;i--) {
-    uint32_t id = (uint32_t)(value[i]-'0');
-    c.Set(&pw);
-    c.Mult(id);
-    Add(&c);
-    pw.Mult(10);
-  }
-
-}
-
-// ------------------------------------------------
-
 void  Int::SetBase16(const char *value) {
   SetBaseN(16,"0123456789ABCDEF",value);
-}
-
-// ------------------------------------------------
-
-char* Int::GetBase10() {
-  return GetBaseN(10,"0123456789");
 }
 
 // ------------------------------------------------
@@ -871,14 +731,4 @@ char* Int::GetBaseN(int n,const char *charset) {
   if (offset == 0)
     ret[offset] = '0';
   return ret;
-}
-
-// ------------------------------------------------
-
-
-int Int::GetBit(uint32_t n) {
-  uint32_t byte = n>>5;
-  uint32_t bit  = n&31;
-  uint32_t mask = 1 << bit;
-  return (bits[byte] & mask)!=0;
 }

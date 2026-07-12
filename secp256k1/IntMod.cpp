@@ -19,9 +19,6 @@
 #include <emmintrin.h>
 #include <string.h>
 
-#define MAX(x,y) (((x)>(y))?(x):(y))
-#define MIN(x,y) (((x)<(y))?(x):(y))
-
 static Int     _P;       // Field characteristic
 static Int     _R;       // Montgomery multiplication R
 static Int     _R2;      // Montgomery multiplication R2
@@ -508,21 +505,6 @@ void Int::ModMul(Int *a, Int *b) {
   p.MontgomeryMult(a,b);
   MontgomeryMult(&_R2,&p);
 
-}
-
-// ------------------------------------------------
-
-Int* Int::GetR() {
-  return &_R;
-}
-Int* Int::GetR2() {
-  return &_R2;
-}
-Int* Int::GetR3() {
-  return &_R3;
-}
-Int* Int::GetR4() {
-  return &_R4;
 }
 
 // ------------------------------------------------
