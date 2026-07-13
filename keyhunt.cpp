@@ -135,31 +135,6 @@ Point Add2(Point &p1, Point &p2);
 Point AddDirect(Point &p1, Point &p2);
 Point DoubleDirect(Point &p);
 
-Point *Init(Point *secp) {
-  // Prime for the finite field
-  Int P;
-  P.SetBase16("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F");
-  // Set up field
-  Int::SetupField(&P);
-  // Generator point
-  Point G;
-  G.x.SetBase16("79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798");
-  G.y.SetBase16("483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8");
-  G.z.SetInt32(1);
-  // Compute Generator table
-  Point N(G);
-  for(int i = 0; i < 32; i++) {
-    secp[i * 256].Set(N);
-    N.Set2(DoubleDirect(N));
-    for (int j = 1; j < 255; j++) {
-      secp[i * 256 + j].Set(N);
-      N.Set2(AddDirect(N, secp[i * 256]));
-    }
-    secp[i * 256 + 255].Set(N); // Dummy point for check function
-  }
-  return secp;
-}
-
 Point ComputePublicKey(Point *secp, Int *privKey) {
   int i = 0;
   uint8_t b;
@@ -392,7 +367,27 @@ int main()	{
 
 	srand(time(NULL));
 
-	memcpy(secp,Init(secp),sizeof(Point [256*32]));
+	// Prime for the finite field
+	Int P;
+	P.SetBase16("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F");
+	// Set up field
+	Int::SetupField(&P);
+	// Generator point
+	Point G2;
+	G2.x.SetBase16("79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798");
+	G2.y.SetBase16("483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8");
+	G2.z.SetInt32(1);
+	// Compute Generator table
+	Point N(G2);
+	for(int i = 0; i < 32; i++) {
+		secp[i * 256].Set(N);
+		N.Set2(DoubleDirect(N));
+		for (int j = 1; j < 255; j++) {
+			secp[i * 256 + j].Set(N);
+			N.Set2(AddDirect(N, secp[i * 256]));
+		}
+		secp[i * 256 + 255].Set(N); // Dummy point for check function
+	}
 	// Generator order
 	curve_order.SetBase16("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141");
 	Int::InitK1(&curve_order);
