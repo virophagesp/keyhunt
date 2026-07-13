@@ -131,22 +131,11 @@ email: albertobsd@gmail.com
 //#define IMPORTANT "big_test"
 //#define IMPORTANT "money"
 
-class Secp256K1 {
-public:
-  Secp256K1();
-  ~Secp256K1();
-
-  Point GTable[256*32]; // Generator table
-};
-
 Point Add2(Point &p1, Point &p2);
 Point AddDirect(Point &p1, Point &p2);
 Point DoubleDirect(Point &p);
 
-Secp256K1::Secp256K1() {
-}
-
-Secp256K1 Init(Secp256K1 secp) {
+Point *Init(Point *secp) {
   // Prime for the finite field
   Int P;
   P.SetBase16("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F");
@@ -160,21 +149,18 @@ Secp256K1 Init(Secp256K1 secp) {
   // Compute Generator table
   Point N(G);
   for(int i = 0; i < 32; i++) {
-    secp.GTable[i * 256].Set(N);
+    secp[i * 256].Set(N);
     N.Set2(DoubleDirect(N));
     for (int j = 1; j < 255; j++) {
-      secp.GTable[i * 256 + j].Set(N);
-      N.Set2(AddDirect(N, secp.GTable[i * 256]));
+      secp[i * 256 + j].Set(N);
+      N.Set2(AddDirect(N, secp[i * 256]));
     }
-    secp.GTable[i * 256 + 255].Set(N); // Dummy point for check function
+    secp[i * 256 + 255].Set(N); // Dummy point for check function
   }
   return secp;
 }
 
-Secp256K1::~Secp256K1() {
-}
-
-Point ComputePublicKey(Secp256K1 secp, Int *privKey) {
+Point ComputePublicKey(Point *secp, Int *privKey) {
   int i = 0;
   uint8_t b;
   Point Q;
@@ -185,13 +171,13 @@ Point ComputePublicKey(Secp256K1 secp, Int *privKey) {
     if(b)
       break;
   }
-  Q.Set(secp.GTable[256 * i + (b-1)]);
+  Q.Set(secp[256 * i + (b-1)]);
   i++;
 
   for(; i < 32; i++) {
     b = privKey->GetByte(i);
     if(b)
-      Q.Set2(Add2(Q, secp.GTable[256 * i + (b-1)]));
+      Q.Set2(Add2(Q, secp[256 * i + (b-1)]));
   }
   Q.Reduce();
   return Q;
@@ -401,12 +387,12 @@ int main()	{
 	Int n_range_start;
 	Int n_range_end;
 	const char b58digits_ordered[] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
-	Secp256K1 secp;
+	Point secp[256*32];
 	Int curve_order;
 
 	srand(time(NULL));
 
-	secp = Init(secp);
+	memcpy(secp,Init(secp),sizeof(Point [256*32]));
 	// Generator order
 	curve_order.SetBase16("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141");
 	Int::InitK1(&curve_order);
