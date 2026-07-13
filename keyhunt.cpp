@@ -105,9 +105,9 @@ email: albertobsd@gmail.com
 #include <sys/random.h>
 #include <vector>
 
-#include "secp256k1/SECP256k1.h"
+#include "SECP256k1.h"
 
-#include "hash/sha256.h"
+#include "sha256.h"
 
 #define IMPORTANT "small_test"
 //#define IMPORTANT "medium_test"

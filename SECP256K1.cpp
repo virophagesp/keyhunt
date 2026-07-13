@@ -17,8 +17,8 @@
 
 #include "SECP256k1.h"
 #include "Point.h"
-#include "../hash/sha256.h"
-#include "../hash/ripemd160.h"
+#include "sha256.h"
+#include "ripemd160.h"
 
 Secp256K1::Secp256K1() {
 }
