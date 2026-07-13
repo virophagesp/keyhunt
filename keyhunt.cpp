@@ -151,12 +151,8 @@ public:
   Point AddDirect(Point &p1, Point &p2);
   Point DoubleDirect(Point &p);
 
-  Point G;                 // Generator
-  Int P;                   // Prime for the finite field
-  Int   order;             // Curve order
-
-private:
-  Point GTable[256*32];       // Generator table
+  Int order;            // Curve order
+  Point GTable[256*32]; // Generator table
 };
 
 Secp256K1::Secp256K1() {
@@ -164,12 +160,14 @@ Secp256K1::Secp256K1() {
 
 void Secp256K1::Init() {
   // Prime for the finite field
+  Int P;
   P.SetBase16("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F");
 
   // Set up field
   Int::SetupField(&P);
 
   // Generator point and order
+  Point G;
   G.x.SetBase16("79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798");
   G.y.SetBase16("483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8");
   G.z.SetInt32(1);
