@@ -137,22 +137,13 @@ public:
   ~Secp256K1();
   void  Init();
   Point ComputePublicKey(Int *privKey);
-  
-  void GetPublicKeyHex(Point &pubKey,char *dst);
-
-  void GetHash160(Point &pubKey, unsigned char *hash);
-  
-  void GetHash160_fromX(unsigned char prefix,
-  Int *k0,Int *k1,Int *k2,Int *k3,
-  uint8_t *h0,uint8_t *h1,uint8_t *h2,uint8_t *h3);
-
-  Point Add(Point &p1, Point &p2);
-  Point Add2(Point &p1, Point &p2);
-  Point AddDirect(Point &p1, Point &p2);
-  Point DoubleDirect(Point &p);
 
   Point GTable[256*32]; // Generator table
 };
+
+Point Add2(Point &p1, Point &p2);
+Point AddDirect(Point &p1, Point &p2);
+Point DoubleDirect(Point &p);
 
 Secp256K1::Secp256K1() {
 }
@@ -218,15 +209,15 @@ void tohex_dst(char *ptr,char *dst)	{
   dst[66] = 0;
 }
 
-void Secp256K1::GetPublicKeyHex(Point &pubKey,char *dst){
+void GetPublicKeyHex(Point &pubKey,char *dst){
   unsigned char publicKeyBytes[65];
   // Compressed public key
   publicKeyBytes[0] = pubKey.y.IsEven() ? 0x2 : 0x3;
   pubKey.x.Get32Bytes(publicKeyBytes + 1);
-	tohex_dst((char*)publicKeyBytes,dst);
+  tohex_dst((char*)publicKeyBytes,dst);
 }
 
-Point Secp256K1::AddDirect(Point &p1,Point &p2) {
+Point AddDirect(Point &p1,Point &p2) {
   Int _s;
   Int _p;
   Int dy;
@@ -251,7 +242,7 @@ Point Secp256K1::AddDirect(Point &p1,Point &p2) {
   return r;
 }
 
-Point Secp256K1::Add2(Point &p1, Point &p2) {
+Point Add2(Point &p1, Point &p2) {
   // P2.z = 1
   Int u;
   Int v;
@@ -291,75 +282,7 @@ Point Secp256K1::Add2(Point &p1, Point &p2) {
   return r;
 }
 
-Point Secp256K1::Add(Point &p1,Point &p2) {
-  Int u;
-  Int v;
-  Int u1;
-  Int u2;
-  Int v1;
-  Int v2;
-  Int vs2;
-  Int vs3;
-  Int us2;
-  Int w;
-  Int a;
-  Int us2w;
-  Int vs2v2;
-  Int vs3u2;
-  Int _2vs2v2;
-  Int x3;
-  Int vs3y1;
-  Point r;
-
-  /*
-  U1 = Y2 * Z1
-  U2 = Y1 * Z2
-  V1 = X2 * Z1
-  V2 = X1 * Z2
-  if (V1 == V2)
-    if (U1 != U2)
-      return POINT_AT_INFINITY
-    else
-      return POINT_DOUBLE(X1, Y1, Z1)
-  U = U1 - U2
-  V = V1 - V2
-  W = Z1 * Z2
-  A = U ^ 2 * W - V ^ 3 - 2 * V ^ 2 * V2
-  X3 = V * A
-  Y3 = U * (V ^ 2 * V2 - A) - V ^ 3 * U2
-  Z3 = V ^ 3 * W
-  return (X3, Y3, Z3)
-  */
-
-  u1.ModMulK1(&p2.y,&p1.z);
-  u2.ModMulK1(&p1.y,&p2.z);
-  v1.ModMulK1(&p2.x,&p1.z);
-  v2.ModMulK1(&p1.x,&p2.z);
-  u.ModSub(&u1,&u2);
-  v.ModSub(&v1,&v2);
-  w.ModMulK1(&p1.z,&p2.z);
-  us2.ModSquareK1(&u);
-  vs2.ModSquareK1(&v);
-  vs3.ModMulK1(&vs2,&v);
-  us2w.ModMulK1(&us2,&w);
-  vs2v2.ModMulK1(&vs2,&v2);
-  _2vs2v2.ModAdd(&vs2v2,&vs2v2);
-  a.ModSub(&us2w,&vs3);
-  a.ModSub(&_2vs2v2);
-
-  r.x.ModMulK1(&v,&a);
-
-  vs3u2.ModMulK1(&vs3,&u2);
-  r.y.ModSub(&vs2v2,&a);
-  r.y.ModMulK1(&r.y,&u);
-  r.y.ModSub(&vs3u2);
-
-  r.z.ModMulK1(&vs3,&w);
-
-  return r;
-}
-
-Point Secp256K1::DoubleDirect(Point &p) {
+Point DoubleDirect(Point &p) {
   Int _s;
   Int _p;
   Int a;
@@ -386,7 +309,7 @@ Point Secp256K1::DoubleDirect(Point &p) {
   return r;
 }
 
-void Secp256K1::GetHash160(Point &pubKey, unsigned char *hash) {
+void GetHash160(Point &pubKey, unsigned char *hash) {
   unsigned char shapk[64];
   unsigned char publicKeyBytes[128];
 
@@ -416,7 +339,7 @@ void Secp256K1::GetHash160(Point &pubKey, unsigned char *hash) {
 (buff)[14] = 0; \
 (buff)[15] = 0x108;
 
-void Secp256K1::GetHash160_fromX(unsigned char prefix,
+void GetHash160_fromX(unsigned char prefix,
   Int *k0,Int *k1,Int *k2,Int *k3,
   uint8_t *h0,uint8_t *h1,uint8_t *h2,uint8_t *h3) {
   unsigned char sh0[64] __attribute__((aligned(16)));
@@ -497,13 +420,13 @@ int main()	{
 	g.Set(G);
 	Gn.reserve(512);
 	Gn[0].Set(g);
-	g.Set2(secp.DoubleDirect(g));
+	g.Set2(DoubleDirect(g));
 	Gn[1].Set(g);
 	for(int i = 2; i < 512; i++) {
-		g.Set2(secp.AddDirect(g,G));
+		g.Set2(AddDirect(g,G));
 		Gn[i].Set(g);
 	}
-	_2Gn.Set2(secp.DoubleDirect(Gn[511]));
+	_2Gn.Set2(DoubleDirect(Gn[511]));
 
 	printf("[+] Allocating memory for addressTable\n");
 	addressTable = (uint8_t *) malloc(20);
@@ -766,8 +689,8 @@ int main()	{
 				pts[0].Set(pn);
 
 				for(j = 0; j < 256;j++){
-					secp.GetHash160_fromX(2,&pts[(j*4)].x,&pts[(j*4)+1].x,&pts[(j*4)+2].x,&pts[(j*4)+3].x,(uint8_t*)publickeyhashrmd160_endomorphism[0][0],(uint8_t*)publickeyhashrmd160_endomorphism[0][1],(uint8_t*)publickeyhashrmd160_endomorphism[0][2],(uint8_t*)publickeyhashrmd160_endomorphism[0][3]);
-					secp.GetHash160_fromX(3,&pts[(j*4)].x,&pts[(j*4)+1].x,&pts[(j*4)+2].x,&pts[(j*4)+3].x,(uint8_t*)publickeyhashrmd160_endomorphism[1][0],(uint8_t*)publickeyhashrmd160_endomorphism[1][1],(uint8_t*)publickeyhashrmd160_endomorphism[1][2],(uint8_t*)publickeyhashrmd160_endomorphism[1][3]);
+					GetHash160_fromX(2,&pts[(j*4)].x,&pts[(j*4)+1].x,&pts[(j*4)+2].x,&pts[(j*4)+3].x,(uint8_t*)publickeyhashrmd160_endomorphism[0][0],(uint8_t*)publickeyhashrmd160_endomorphism[0][1],(uint8_t*)publickeyhashrmd160_endomorphism[0][2],(uint8_t*)publickeyhashrmd160_endomorphism[0][3]);
+					GetHash160_fromX(3,&pts[(j*4)].x,&pts[(j*4)+1].x,&pts[(j*4)+2].x,&pts[(j*4)+3].x,(uint8_t*)publickeyhashrmd160_endomorphism[1][0],(uint8_t*)publickeyhashrmd160_endomorphism[1][1],(uint8_t*)publickeyhashrmd160_endomorphism[1][2],(uint8_t*)publickeyhashrmd160_endomorphism[1][3]);
 
 					for(k = 0; k < 4;k++)	{
 						for(l = 0;l < 2; l++)	{
@@ -813,7 +736,7 @@ int main()	{
 									keyfound.Add(&key_mpz);
 
 									publickey.Set2(secp.ComputePublicKey(&keyfound));
-									secp.GetHash160(publickey,(uint8_t*)publickeyhashrmd160);
+									GetHash160(publickey,(uint8_t*)publickeyhashrmd160);
 									if(memcmp(publickeyhashrmd160_endomorphism[l][k],publickeyhashrmd160,20) != 0)	{
 										keyfound.Neg();
 										keyfound.Add(&curve_order);
@@ -829,8 +752,8 @@ int main()	{
 									memset(public_key_hex,0,132);
 									hextemp = (&keyfound)->GetBase16();
 									publickey2.Set2(secp.ComputePublicKey(&keyfound));
-									secp.GetPublicKeyHex(publickey2,public_key_hex);
-									secp.GetHash160(publickey2,(uint8_t*)rmdhash);
+									GetPublicKeyHex(publickey2,public_key_hex);
+									GetHash160(publickey2,(uint8_t*)rmdhash);
 
 									hexrmd = (char *) malloc(41);
 									for (int i = 0; i <20; i++) {
