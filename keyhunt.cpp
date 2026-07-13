@@ -151,7 +151,6 @@ public:
   Point AddDirect(Point &p1, Point &p2);
   Point DoubleDirect(Point &p);
 
-  Int order;            // Curve order
   Point GTable[256*32]; // Generator table
 };
 
@@ -162,19 +161,13 @@ void Secp256K1::Init() {
   // Prime for the finite field
   Int P;
   P.SetBase16("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F");
-
   // Set up field
   Int::SetupField(&P);
-
-  // Generator point and order
+  // Generator point
   Point G;
   G.x.SetBase16("79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798");
   G.y.SetBase16("483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8");
   G.z.SetInt32(1);
-  order.SetBase16("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141");
-
-  Int::InitK1(&order);
-
   // Compute Generator table
   Point N(G);
   for(int i = 0; i < 32; i++) {
@@ -487,10 +480,14 @@ int main()	{
 	Int n_range_end;
 	const char b58digits_ordered[] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 	Secp256K1 secp;
+	Int curve_order;
 
 	srand(time(NULL));
 
 	secp.Init();
+	// Generator order
+	curve_order.SetBase16("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141");
+	Int::InitK1(&curve_order);
 
 	printf("[+] Version 1.2 bitcoin hunt, developed by virophagesp based upon 0.2.230519 Satoshi Quest by AlbertoBSD\n");
 
@@ -819,7 +816,7 @@ int main()	{
 									secp.GetHash160(publickey,(uint8_t*)publickeyhashrmd160);
 									if(memcmp(publickeyhashrmd160_endomorphism[l][k],publickeyhashrmd160,20) != 0)	{
 										keyfound.Neg();
-										keyfound.Add(&secp.order);
+										keyfound.Add(&curve_order);
 									}
 
 									Point publickey2;
