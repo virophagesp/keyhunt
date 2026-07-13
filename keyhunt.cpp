@@ -135,8 +135,6 @@ class Secp256K1 {
 public:
   Secp256K1();
   ~Secp256K1();
-  void  Init();
-  Point ComputePublicKey(Int *privKey);
 
   Point GTable[256*32]; // Generator table
 };
@@ -148,7 +146,7 @@ Point DoubleDirect(Point &p);
 Secp256K1::Secp256K1() {
 }
 
-void Secp256K1::Init() {
+Secp256K1 Init(Secp256K1 secp) {
   // Prime for the finite field
   Int P;
   P.SetBase16("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F");
@@ -162,20 +160,21 @@ void Secp256K1::Init() {
   // Compute Generator table
   Point N(G);
   for(int i = 0; i < 32; i++) {
-    GTable[i * 256].Set(N);
+    secp.GTable[i * 256].Set(N);
     N.Set2(DoubleDirect(N));
     for (int j = 1; j < 255; j++) {
-      GTable[i * 256 + j].Set(N);
-      N.Set2(AddDirect(N, GTable[i * 256]));
+      secp.GTable[i * 256 + j].Set(N);
+      N.Set2(AddDirect(N, secp.GTable[i * 256]));
     }
-    GTable[i * 256 + 255].Set(N); // Dummy point for check function
+    secp.GTable[i * 256 + 255].Set(N); // Dummy point for check function
   }
+  return secp;
 }
 
 Secp256K1::~Secp256K1() {
 }
 
-Point Secp256K1::ComputePublicKey(Int *privKey) {
+Point ComputePublicKey(Secp256K1 secp, Int *privKey) {
   int i = 0;
   uint8_t b;
   Point Q;
@@ -186,13 +185,13 @@ Point Secp256K1::ComputePublicKey(Int *privKey) {
     if(b)
       break;
   }
-  Q.Set(GTable[256 * i + (b-1)]);
+  Q.Set(secp.GTable[256 * i + (b-1)]);
   i++;
 
   for(; i < 32; i++) {
     b = privKey->GetByte(i);
     if(b)
-      Q.Set2(Add2(Q, GTable[256 * i + (b-1)]));
+      Q.Set2(Add2(Q, secp.GTable[256 * i + (b-1)]));
   }
   Q.Reduce();
   return Q;
@@ -407,7 +406,7 @@ int main()	{
 
 	srand(time(NULL));
 
-	secp.Init();
+	secp = Init(secp);
 	// Generator order
 	curve_order.SetBase16("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141");
 	Int::InitK1(&curve_order);
@@ -416,7 +415,7 @@ int main()	{
 
 	stride.SetInt32(1);
 
-	G.Set2(secp.ComputePublicKey(&stride));
+	G.Set2(ComputePublicKey(secp,&stride));
 	g.Set(G);
 	Gn.reserve(512);
 	Gn[0].Set(g);
@@ -612,7 +611,7 @@ int main()	{
 			free(hextemp);
 			do {
 				key_mpz.Add(512);
-	 			startP.Set2(secp.ComputePublicKey(&key_mpz));
+	 			startP.Set2(ComputePublicKey(secp,&key_mpz));
 				key_mpz.Sub(512);
 
 				for(i = 0; i < 511; i++) {
@@ -735,7 +734,7 @@ int main()	{
 									keyfound.SetInt32(k);
 									keyfound.Add(&key_mpz);
 
-									publickey.Set2(secp.ComputePublicKey(&keyfound));
+									publickey.Set2(ComputePublicKey(secp,&keyfound));
 									GetHash160(publickey,(uint8_t*)publickeyhashrmd160);
 									if(memcmp(publickeyhashrmd160_endomorphism[l][k],publickeyhashrmd160,20) != 0)	{
 										keyfound.Neg();
@@ -751,7 +750,7 @@ int main()	{
 									memset(address,0,50);
 									memset(public_key_hex,0,132);
 									hextemp = (&keyfound)->GetBase16();
-									publickey2.Set2(secp.ComputePublicKey(&keyfound));
+									publickey2.Set2(ComputePublicKey(secp,&keyfound));
 									GetPublicKeyHex(publickey2,public_key_hex);
 									GetHash160(publickey2,(uint8_t*)rmdhash);
 
