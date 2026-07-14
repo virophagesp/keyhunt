@@ -285,24 +285,6 @@ void GetHash160(Point &pubKey, unsigned char *hash) {
 	ripemd160_32(shapk, hash);
 }
 
-#define KEYBUFFPREFIX(buff,k,fix) \
-(buff)[0] = (k->bits[7] >> 8) | ((uint32_t)(fix) << 24); \
-(buff)[1] = (k->bits[6] >> 8) | (k->bits[7] <<24); \
-(buff)[2] = (k->bits[5] >> 8) | (k->bits[6] <<24); \
-(buff)[3] = (k->bits[4] >> 8) | (k->bits[5] <<24); \
-(buff)[4] = (k->bits[3] >> 8) | (k->bits[4] <<24); \
-(buff)[5] = (k->bits[2] >> 8) | (k->bits[3] <<24); \
-(buff)[6] = (k->bits[1] >> 8) | (k->bits[2] <<24); \
-(buff)[7] = (k->bits[0] >> 8) | (k->bits[1] <<24); \
-(buff)[8] = 0x00800000 | (k->bits[0] <<24); \
-(buff)[9] = 0; \
-(buff)[10] = 0; \
-(buff)[11] = 0; \
-(buff)[12] = 0; \
-(buff)[13] = 0; \
-(buff)[14] = 0; \
-(buff)[15] = 0x108;
-
 void GetHash160_fromX(unsigned char prefix, Int *k0, Int *k1, Int *k2, Int *k3, uint8_t *h0, uint8_t *h1, uint8_t *h2, uint8_t *h3) {
 	unsigned char sh0[64] __attribute__((aligned(16)));
 	unsigned char sh1[64] __attribute__((aligned(16)));
@@ -314,10 +296,70 @@ void GetHash160_fromX(unsigned char prefix, Int *k0, Int *k1, Int *k2, Int *k3, 
 	uint32_t b2[16];
 	uint32_t b3[16];
 
-	KEYBUFFPREFIX(b0, k0, prefix);
-	KEYBUFFPREFIX(b1, k1, prefix);
-	KEYBUFFPREFIX(b2, k2, prefix);
-	KEYBUFFPREFIX(b3, k3, prefix);
+	b0[0] = (k0->bits[7] >> 8) | ((uint32_t)(prefix) << 24);
+	b0[1] = (k0->bits[6] >> 8) | (k0->bits[7] <<24);
+	b0[2] = (k0->bits[5] >> 8) | (k0->bits[6] <<24);
+	b0[3] = (k0->bits[4] >> 8) | (k0->bits[5] <<24);
+	b0[4] = (k0->bits[3] >> 8) | (k0->bits[4] <<24);
+	b0[5] = (k0->bits[2] >> 8) | (k0->bits[3] <<24);
+	b0[6] = (k0->bits[1] >> 8) | (k0->bits[2] <<24);
+	b0[7] = (k0->bits[0] >> 8) | (k0->bits[1] <<24);
+	b0[8] = 0x00800000 | (k0->bits[0] <<24);
+	b0[9] = 0;
+	b0[10] = 0;
+	b0[11] = 0;
+	b0[12] = 0;
+	b0[13] = 0;
+	b0[14] = 0;
+	b0[15] = 0x108;
+	b1[0] = (k1->bits[7] >> 8) | ((uint32_t)(prefix) << 24);
+	b1[1] = (k1->bits[6] >> 8) | (k1->bits[7] <<24);
+	b1[2] = (k1->bits[5] >> 8) | (k1->bits[6] <<24);
+	b1[3] = (k1->bits[4] >> 8) | (k1->bits[5] <<24);
+	b1[4] = (k1->bits[3] >> 8) | (k1->bits[4] <<24);
+	b1[5] = (k1->bits[2] >> 8) | (k1->bits[3] <<24);
+	b1[6] = (k1->bits[1] >> 8) | (k1->bits[2] <<24);
+	b1[7] = (k1->bits[0] >> 8) | (k1->bits[1] <<24);
+	b1[8] = 0x00800000 | (k1->bits[0] <<24);
+	b1[9] = 0;
+	b1[10] = 0;
+	b1[11] = 0;
+	b1[12] = 0;
+	b1[13] = 0;
+	b1[14] = 0;
+	b1[15] = 0x108;
+	b2[0] = (k2->bits[7] >> 8) | ((uint32_t)(prefix) << 24);
+	b2[1] = (k2->bits[6] >> 8) | (k2->bits[7] <<24);
+	b2[2] = (k2->bits[5] >> 8) | (k2->bits[6] <<24);
+	b2[3] = (k2->bits[4] >> 8) | (k2->bits[5] <<24);
+	b2[4] = (k2->bits[3] >> 8) | (k2->bits[4] <<24);
+	b2[5] = (k2->bits[2] >> 8) | (k2->bits[3] <<24);
+	b2[6] = (k2->bits[1] >> 8) | (k2->bits[2] <<24);
+	b2[7] = (k2->bits[0] >> 8) | (k2->bits[1] <<24);
+	b2[8] = 0x00800000 | (k2->bits[0] <<24);
+	b2[9] = 0;
+	b2[10] = 0;
+	b2[11] = 0;
+	b2[12] = 0;
+	b2[13] = 0;
+	b2[14] = 0;
+	b2[15] = 0x108;
+	b3[0] = (k3->bits[7] >> 8) | ((uint32_t)(prefix) << 24);
+	b3[1] = (k3->bits[6] >> 8) | (k3->bits[7] <<24);
+	b3[2] = (k3->bits[5] >> 8) | (k3->bits[6] <<24);
+	b3[3] = (k3->bits[4] >> 8) | (k3->bits[5] <<24);
+	b3[4] = (k3->bits[3] >> 8) | (k3->bits[4] <<24);
+	b3[5] = (k3->bits[2] >> 8) | (k3->bits[3] <<24);
+	b3[6] = (k3->bits[1] >> 8) | (k3->bits[2] <<24);
+	b3[7] = (k3->bits[0] >> 8) | (k3->bits[1] <<24);
+	b3[8] = 0x00800000 | (k3->bits[0] <<24);
+	b3[9] = 0;
+	b3[10] = 0;
+	b3[11] = 0;
+	b3[12] = 0;
+	b3[13] = 0;
+	b3[14] = 0;
+	b3[15] = 0x108;
 
 	sha256sse_1B(b0, b1, b2, b3, sh0, sh1, sh2, sh3);
 	ripemd160sse_32(sh0, sh1, sh2, sh3, h0, h1, h2, h3);
