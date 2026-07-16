@@ -381,48 +381,38 @@ int main()	{
 	Point pts[1024];
 	Int dx[513];
 	Int dx_inverse[513];
-	Point startP;
-	Int dy;
-	Int dyn;
-	Int _s;
-	Int _p;
-	Point pp;
-	Point pn;
-	int i,l;
-	uint64_t j,count;
-	Point R,publickey;
-	int continue_flag,k;
+	Point startP,pp,pn,R,publickey,G,G2,g,_2Gn,N,publickey2;
+	Int dy,dyn,_s,_p,key_mpz,keyfound,stride,n_range_start,n_range_end,curve_order,P,newValue,inverse;
+	int i,l,continue_flag,k,offset,carry;
+	uint64_t j,count,N_SEQUENTIAL_MAX,a,b,x,byte;
 	char *hextemp = NULL;
 	char publickeyhashrmd160[20];
 	char publickeyhashrmd160_endomorphism[12][4][20];
-	Int key_mpz,keyfound;
-	Point G,g;
 	std::vector<Point> Gn;
-	Point _2Gn;
 	struct bloom bloom;
-	uint64_t N_SEQUENTIAL_MAX;
-	Int stride;
 	uint8_t *addressTable;
-	Int n_range_start;
-	Int n_range_end;
 	const char b58digits_ordered[] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 	Point secp[256*32];
-	Int curve_order;
+	uint8_t bloom_add_looper,c,mask,bloom_check_looper;
+	FILE *keys;
+	char *hexrmd,public_key_hex[132],address[50],rmdhash[20];
+	unsigned char c2;
+	char digest[60];
+	const uint8_t *bin;
+	size_t i2, j2, high, zcount,size;
 
 	srand(time(NULL));
 
 	// Prime for the finite field
-	Int P;
 	P.SetBase16("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F");
 	// Set up field
 	Int::SetupField(&P);
 	// Generator point
-	Point G2;
 	G2.x.SetBase16("79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798");
 	G2.y.SetBase16("483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8");
 	G2.z.SetInt32(1);
 	// Compute Generator table
-	Point N(G2);
+	N.Set(G2);
 	for(int i = 0; i < 32; i++) {
 		secp[i * 256].Set(N);
 		N.Set2(DoubleDirect(N));
@@ -582,7 +572,7 @@ int main()	{
 		rawvalue[20] = 97;
 	}
 
-    uint64_t a = -9095181581730021519;
+    a = -9095181581730021519;
     a ^= (((*((const uint64_t*)&rawvalue[1]) * -4417276706812531889) << 31) | ((*((const uint64_t*)&rawvalue[1]) * -4417276706812531889) >> 33)) * -7046029288634856825;
     a  = ((a << 27) | (a >> 37)) * -7046029288634856825 + -8796714831421723037;
     a ^= ((*((const uint64_t*)&rawvalue[9]) * -4417276706812531889 << 31) | (*((const uint64_t*)&rawvalue[9]) * -4417276706812531889 >> 33)) * -7046029288634856825;
@@ -594,7 +584,7 @@ int main()	{
     a ^= a >> 29;
     a *= 1609587929392839161;
     a ^= a >> 32;
-    uint64_t b = a + 2870177450012600281;
+    b = a + 2870177450012600281;
     b ^= (((*((const uint64_t*)&rawvalue[1]) * -4417276706812531889) << 31) | ((*((const uint64_t*)&rawvalue[1]) * -4417276706812531889) >> 33)) * -7046029288634856825;
     b  = ((b << 27) | (b >> 37)) * -7046029288634856825 + -8796714831421723037;
     b ^= ((*((const uint64_t*)&rawvalue[9]) * -4417276706812531889 << 31) | (*((const uint64_t*)&rawvalue[9]) * -4417276706812531889 >> 33)) * -7046029288634856825;
@@ -606,8 +596,6 @@ int main()	{
     b ^= b >> 29;
     b *= 1609587929392839161;
     b ^= b >> 32;
-	uint64_t x,byte;
-	uint8_t bloom_add_looper,c,mask;
 	for (bloom_add_looper = 0; bloom_add_looper < 20; bloom_add_looper++) {
 		x = (a + b*bloom_add_looper) % 35944;
 		byte = x >> 3;
@@ -645,9 +633,6 @@ int main()	{
 
 				dx[i].ModSub(&Gn[i].x,&startP.x);  // For the first point
 				dx[i + 1].ModSub(&_2Gn.x,&startP.x); // For the next center point
-
-				Int newValue;
-				Int inverse;
 
 				dx_inverse[0].Set(&(dx[0]));
 				for (int i = 1; i < 513; i++) {
@@ -718,7 +703,7 @@ int main()	{
 
 					for(k = 0; k < 4;k++)	{
 						for(l = 0;l < 2; l++)	{
-							uint64_t a = -9095181581730021519;
+							a = -9095181581730021519;
 							a ^= (((*((const uint64_t*)&publickeyhashrmd160_endomorphism[l][k][0]) * -4417276706812531889) << 31) | ((*((const uint64_t*)&publickeyhashrmd160_endomorphism[l][k][0]) * -4417276706812531889) >> 33)) * -7046029288634856825;
 							a  = ((a << 27) | (a >> 37)) * -7046029288634856825 + -8796714831421723037;
 							a ^= ((*((const uint64_t*)&publickeyhashrmd160_endomorphism[l][k][8]) * -4417276706812531889 << 31) | (*((const uint64_t*)&publickeyhashrmd160_endomorphism[l][k][8]) * -4417276706812531889 >> 33)) * -7046029288634856825;
@@ -730,7 +715,7 @@ int main()	{
 							a ^= a >> 29;
 							a *= 1609587929392839161;
 							a ^= a >> 32;
-							uint64_t b = a + 2870177450012600281;
+							b = a + 2870177450012600281;
 							b ^= (((*((const uint64_t*)&publickeyhashrmd160_endomorphism[l][k][0]) * -4417276706812531889) << 31) | ((*((const uint64_t*)&publickeyhashrmd160_endomorphism[l][k][0]) * -4417276706812531889) >> 33)) * -7046029288634856825;
 							b  = ((b << 27) | (b >> 37)) * -7046029288634856825 + -8796714831421723037;
 							b ^= ((*((const uint64_t*)&publickeyhashrmd160_endomorphism[l][k][8]) * -4417276706812531889 << 31) | (*((const uint64_t*)&publickeyhashrmd160_endomorphism[l][k][8]) * -4417276706812531889 >> 33)) * -7046029288634856825;
@@ -742,8 +727,6 @@ int main()	{
 							b ^= b >> 29;
 							b *= 1609587929392839161;
 							b ^= b >> 32;
-							uint64_t x,byte;
-							uint8_t bloom_check_looper,c,mask;
 							for (bloom_check_looper = 0; bloom_check_looper < 20; bloom_check_looper++) {
 								x = (a + b*bloom_check_looper) % 35944;
 								byte = x >> 3;
@@ -766,12 +749,7 @@ int main()	{
 										keyfound.Add(&curve_order);
 									}
 
-									Point publickey2;
-									FILE *keys;
-									char *hextemp,*hexrmd,public_key_hex[132],address[50],rmdhash[20];
-									int offset = 0;
-									unsigned char c2;
-									char digest[60];
+									offset = 0;
 									memset(address,0,50);
 									memset(public_key_hex,0,132);
 									hextemp = (&keyfound)->GetBase16();
@@ -792,10 +770,8 @@ int main()	{
 									sha256((uint8_t*)digest, 21,(uint8_t*) digest+21);
 									sha256((uint8_t*)digest+21, 32,(uint8_t*) digest+21);
 
-									const uint8_t *bin = (const uint8_t *)digest;
-									int carry;
-									size_t i2, j2, high, zcount = 0;
-									size_t size;
+									bin = (const uint8_t *)digest;
+									zcount = 0;
 
 									while (zcount < 25 && !bin[zcount])
 										++zcount;
