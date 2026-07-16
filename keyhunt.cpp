@@ -426,7 +426,7 @@ int main()	{
 	curve_order.SetBase16("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141");
 	Int::InitK1(&curve_order);
 
-	printf("[+] Version 1.2 bitcoin hunt, developed by virophagesp based upon 0.2.230519 Satoshi Quest by AlbertoBSD\n");
+	printf("[+] Version 1.3 bitcoin hunt, developed by virophagesp based upon 0.2.230519 Satoshi Quest by AlbertoBSD\n");
 
 	stride.SetInt32(1);
 
