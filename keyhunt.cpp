@@ -445,10 +445,8 @@ int main()	{
 	printf("[+] Allocating memory for addressTable\n");
 	addressTable = (uint8_t *) malloc(20);
 	printf("[+] Bloom filter for 1 elements.\n");
-	memset((&bloom), 0, sizeof(struct bloom));
 	(&bloom)->bf = (uint8_t *)calloc((uint64_t)35944, sizeof(uint8_t));
 	printf("[+] Loading data to the bloomfilter total: 0.03 MB\n");
-	memset(addressTable,0,20);
 
 	printf("[+] Setting search for btc adddress\n");
 
@@ -750,7 +748,6 @@ int main()	{
 									}
 
 									offset = 0;
-									memset(address,0,50);
 									memset(public_key_hex,0,132);
 									hextemp = (&keyfound)->GetBase16();
 									publickey2.Set2(ComputePublicKey(secp,&keyfound));
