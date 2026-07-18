@@ -700,42 +700,42 @@ int main()	{
 
 					for(k = 0; k < 4;k++)	{
 						for(l = 0;l < 2; l++)	{
-							a = -9095181581730021519;
-							a ^= (((*((const uint64_t*)&publickeyhashrmd160_endomorphism[l][k][0]) * -4417276706812531889) << 31) | ((*((const uint64_t*)&publickeyhashrmd160_endomorphism[l][k][0]) * -4417276706812531889) >> 33)) * -7046029288634856825;
-							a  = ((a << 27) | (a >> 37)) * -7046029288634856825 + -8796714831421723037;
-							a ^= ((*((const uint64_t*)&publickeyhashrmd160_endomorphism[l][k][8]) * -4417276706812531889 << 31) | (*((const uint64_t*)&publickeyhashrmd160_endomorphism[l][k][8]) * -4417276706812531889 >> 33)) * -7046029288634856825;
-							a  = ((a << 27) | (a >> 37)) * -7046029288634856825 + -8796714831421723037;
-							a ^= (uint64_t)(*((const uint32_t*)&publickeyhashrmd160_endomorphism[l][k][16])) * -7046029288634856825;
-							a = ((a << 23) | (a >> 41)) * -4417276706812531889 + 1609587929392839161;
-							a ^= a >> 33;
-							a *= -4417276706812531889;
-							a ^= a >> 29;
-							a *= 1609587929392839161;
-							a ^= a >> 32;
-							b = a + 2870177450012600281;
-							b ^= (((*((const uint64_t*)&publickeyhashrmd160_endomorphism[l][k][0]) * -4417276706812531889) << 31) | ((*((const uint64_t*)&publickeyhashrmd160_endomorphism[l][k][0]) * -4417276706812531889) >> 33)) * -7046029288634856825;
-							b  = ((b << 27) | (b >> 37)) * -7046029288634856825 + -8796714831421723037;
-							b ^= ((*((const uint64_t*)&publickeyhashrmd160_endomorphism[l][k][8]) * -4417276706812531889 << 31) | (*((const uint64_t*)&publickeyhashrmd160_endomorphism[l][k][8]) * -4417276706812531889 >> 33)) * -7046029288634856825;
-							b  = ((b << 27) | (b >> 37)) * -7046029288634856825 + -8796714831421723037;
-							b ^= (uint64_t)(*((const uint32_t*)&publickeyhashrmd160_endomorphism[l][k][16])) * -7046029288634856825;
-							b = ((b << 23) | (b >> 41)) * -4417276706812531889 + 1609587929392839161;
-							b ^= b >> 33;
-							b *= -4417276706812531889;
-							b ^= b >> 29;
-							b *= 1609587929392839161;
-							b ^= b >> 32;
-							for (bloom_check_looper = 0; bloom_check_looper < 20; bloom_check_looper++) {
-								x = (a + b*bloom_check_looper) % 35944;
-								byte = x >> 3;
-								c = (&bloom)->bf[byte];	 // expensive memory access
-								mask = 1 << (x % 8);
-								if (!(c & mask)) {
-									break;
+							if(memcmp(publickeyhashrmd160_endomorphism[l][k],addressTable,20) == 0) {
+								a = -9095181581730021519;
+								a ^= (((*((const uint64_t*)&publickeyhashrmd160_endomorphism[l][k][0]) * -4417276706812531889) << 31) | ((*((const uint64_t*)&publickeyhashrmd160_endomorphism[l][k][0]) * -4417276706812531889) >> 33)) * -7046029288634856825;
+								a  = ((a << 27) | (a >> 37)) * -7046029288634856825 + -8796714831421723037;
+								a ^= ((*((const uint64_t*)&publickeyhashrmd160_endomorphism[l][k][8]) * -4417276706812531889 << 31) | (*((const uint64_t*)&publickeyhashrmd160_endomorphism[l][k][8]) * -4417276706812531889 >> 33)) * -7046029288634856825;
+								a  = ((a << 27) | (a >> 37)) * -7046029288634856825 + -8796714831421723037;
+								a ^= (uint64_t)(*((const uint32_t*)&publickeyhashrmd160_endomorphism[l][k][16])) * -7046029288634856825;
+								a = ((a << 23) | (a >> 41)) * -4417276706812531889 + 1609587929392839161;
+								a ^= a >> 33;
+								a *= -4417276706812531889;
+								a ^= a >> 29;
+								a *= 1609587929392839161;
+								a ^= a >> 32;
+								b = a + 2870177450012600281;
+								b ^= (((*((const uint64_t*)&publickeyhashrmd160_endomorphism[l][k][0]) * -4417276706812531889) << 31) | ((*((const uint64_t*)&publickeyhashrmd160_endomorphism[l][k][0]) * -4417276706812531889) >> 33)) * -7046029288634856825;
+								b  = ((b << 27) | (b >> 37)) * -7046029288634856825 + -8796714831421723037;
+								b ^= ((*((const uint64_t*)&publickeyhashrmd160_endomorphism[l][k][8]) * -4417276706812531889 << 31) | (*((const uint64_t*)&publickeyhashrmd160_endomorphism[l][k][8]) * -4417276706812531889 >> 33)) * -7046029288634856825;
+								b  = ((b << 27) | (b >> 37)) * -7046029288634856825 + -8796714831421723037;
+								b ^= (uint64_t)(*((const uint32_t*)&publickeyhashrmd160_endomorphism[l][k][16])) * -7046029288634856825;
+								b = ((b << 23) | (b >> 41)) * -4417276706812531889 + 1609587929392839161;
+								b ^= b >> 33;
+								b *= -4417276706812531889;
+								b ^= b >> 29;
+								b *= 1609587929392839161;
+								b ^= b >> 32;
+								for (bloom_check_looper = 0; bloom_check_looper < 20; bloom_check_looper++) {
+									x = (a + b*bloom_check_looper) % 35944;
+									byte = x >> 3;
+									c = (&bloom)->bf[byte];	 // expensive memory access
+									mask = 1 << (x % 8);
+									if (!(c & mask)) {
+										break;
+									}
 								}
-							}
 
-							if(bloom_check_looper == 20) {
-								if(memcmp(publickeyhashrmd160_endomorphism[l][k],addressTable,20) == 0)	{
+								if(bloom_check_looper == 20)	{
 									keyfound.SetInt32(k);
 									keyfound.Add(&key_mpz);
 
