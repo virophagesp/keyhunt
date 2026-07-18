@@ -412,10 +412,10 @@ int main()	{
 	G2.z.SetInt32(1);
 	// Compute Generator table
 	N.Set(G2);
-	for(int i = 0; i < 32; i++) {
+	for(i = 0; i < 32; i++) {
 		secp[i * 256].Set(N);
 		N.Set2(DoubleDirect(N));
-		for (int j = 1; j < 255; j++) {
+		for (j = 1; j < 255; j++) {
 			secp[i * 256 + j].Set(N);
 			N.Set2(AddDirect(N, secp[i * 256]));
 		}
@@ -435,7 +435,7 @@ int main()	{
 	Gn[0].Set(g);
 	g.Set2(DoubleDirect(g));
 	Gn[1].Set(g);
-	for(int i = 2; i < 512; i++) {
+	for(i = 2; i < 512; i++) {
 		g.Set2(AddDirect(g,G));
 		Gn[i].Set(g);
 	}
@@ -632,7 +632,7 @@ int main()	{
 				dx[i + 1].ModSub(&_2Gn.x,&startP.x); // For the next center point
 
 				dx_inverse[0].Set(&(dx[0]));
-				for (int i = 1; i < 513; i++) {
+				for (i = 1; i < 513; i++) {
 					dx_inverse[i].ModMulK1(&(dx_inverse[i - 1]), &(dx[i]));
 				}
 
@@ -640,7 +640,7 @@ int main()	{
 				inverse.Set(&(dx_inverse[513 - 1]));
 				inverse.ModInv();
 
-				for (int i = 513 - 1; i > 0; i--) {
+				for (i = 513 - 1; i > 0; i--) {
 					newValue.ModMulK1(&(dx_inverse[i - 1]), &inverse);
 					inverse.ModMulK1(&(dx[i]));
 					dx[i].Set(&newValue);
@@ -754,7 +754,7 @@ int main()	{
 									GetHash160(publickey2,(uint8_t*)rmdhash);
 
 									hexrmd = (char *) malloc(41);
-									for (int i = 0; i <20; i++) {
+									for (i = 0; i <20; i++) {
 										c2 = rmdhash[i];
 										sprintf((char*) (hexrmd + offset),"%.2x",c2);
 										offset+=2;
