@@ -371,7 +371,7 @@ int main()	{
 	Int dx_inverse[513];
 	Point startP,pp,pn,R,publickey,G,G2,g,_2Gn,N,publickey2;
 	Int dy,dyn,_s,_p,key_mpz,keyfound,stride,n_range_start,n_range_end,curve_order,P,newValue,inverse;
-	int i,l,continue_flag,k,offset,carry;
+	int i,l,k,offset,carry;
 	uint64_t j,count,N_SEQUENTIAL_MAX,a,b,x,byte;
 	char *hextemp = NULL;
 	char publickeyhashrmd160[20];
@@ -583,238 +583,230 @@ int main()	{
 		}
 	}
 
-	continue_flag = 1;
-	do	{
-		if(n_range_start.IsLower(&n_range_end))	{
-			key_mpz.Set(&n_range_start);
-			n_range_start.Add(N_SEQUENTIAL_MAX);
-		}
-		else	{
-			continue_flag = 0;
-		}
-		if(continue_flag)	{
-			count = 0;
-			hextemp = key_mpz.GetBase16();
-			printf("\rBase key: %s     \r",hextemp);
-			fflush(stdout);
-			free(hextemp);
-			do {
-				key_mpz.Add(512);
-	 			startP.Set2(ComputePublicKey(secp,&key_mpz));
-				key_mpz.Sub(512);
+	while (n_range_start.IsLower(&n_range_end))	{
+		key_mpz.Set(&n_range_start);
+		n_range_start.Add(N_SEQUENTIAL_MAX);
+		count = 0;
+		hextemp = key_mpz.GetBase16();
+		printf("\rBase key: %s     \r",hextemp);
+		fflush(stdout);
+		free(hextemp);
+		while (count < N_SEQUENTIAL_MAX) {
+			key_mpz.Add(512);
+ 			startP.Set2(ComputePublicKey(secp,&key_mpz));
+			key_mpz.Sub(512);
 
-				for(i = 0; i < 511; i++) {
-					dx[i].ModSub(&Gn[i].x,&startP.x);
-				}
+			for(i = 0; i < 511; i++) {
+				dx[i].ModSub(&Gn[i].x,&startP.x);
+			}
 
-				dx[i].ModSub(&Gn[i].x,&startP.x);  // For the first point
-				dx[i + 1].ModSub(&_2Gn.x,&startP.x); // For the next center point
+			dx[i].ModSub(&Gn[i].x,&startP.x);  // For the first point
+			dx[i + 1].ModSub(&_2Gn.x,&startP.x); // For the next center point
 
-				dx_inverse[0].Set(&(dx[0]));
-				for (i = 1; i < 513; i++) {
-					dx_inverse[i].ModMulK1(&(dx_inverse[i - 1]), &(dx[i]));
-				}
+			dx_inverse[0].Set(&(dx[0]));
+			for (i = 1; i < 513; i++) {
+				dx_inverse[i].ModMulK1(&(dx_inverse[i - 1]), &(dx[i]));
+			}
 
-				// Do the inversion
-				inverse.Set(&(dx_inverse[513 - 1]));
-				inverse.ModInv();
+			// Do the inversion
+			inverse.Set(&(dx_inverse[513 - 1]));
+			inverse.ModInv();
 
-				for (i = 513 - 1; i > 0; i--) {
-					newValue.ModMulK1(&(dx_inverse[i - 1]), &inverse);
-					inverse.ModMulK1(&(dx[i]));
-					dx[i].Set(&newValue);
-				}
+			for (i = 513 - 1; i > 0; i--) {
+				newValue.ModMulK1(&(dx_inverse[i - 1]), &inverse);
+				inverse.ModMulK1(&(dx[i]));
+				dx[i].Set(&newValue);
+			}
 
-				dx[0].Set(&inverse);
+			dx[0].Set(&inverse);
 
-				pts[512].Set(startP);
+			pts[512].Set(startP);
 
-				for(i = 0; i<511; i++) {
-					pp.Set(startP);
-					pn.Set(startP);
-
-					// P = startP + i*G
-					dy.ModSub(&Gn[i].y,&pp.y);
-
-					_s.ModMulK1(&dy,&dx[i]);        // s = (p2.y-p1.y)*inverse(p2.x-p1.x);
-					_p.ModSquareK1(&_s);            // _p = pow2(s)
-
-					pp.x.ModNeg();
-					pp.x.ModAdd(&_p);
-					pp.x.ModSub(&Gn[i].x);           // rx = pow2(s) - p1.x - p2.x;
-
-					// P = startP - i*G  , if (x,y) = i*G then (x,-y) = -i*G
-					dyn.Set(&Gn[i].y);
-					dyn.ModNeg();
-					dyn.ModSub(&pn.y);
-
-					_s.ModMulK1(&dyn,&dx[i]);      // s = (p2.y-p1.y)*inverse(p2.x-p1.x);
-					_p.ModSquareK1(&_s);            // _p = pow2(s)
-					pn.x.ModNeg();
-					pn.x.ModAdd(&_p);
-					pn.x.ModSub(&Gn[i].x);          // rx = pow2(s) - p1.x - p2.x;
-
-					pts[512 + (i + 1)].Set(pp);
-					pts[512 - (i + 1)].Set(pn);
-				}
-
-				// First point (startP - (GRP_SZIE/2)*G)
+			for(i = 0; i<511; i++) {
+				pp.Set(startP);
 				pn.Set(startP);
+
+				// P = startP + i*G
+				dy.ModSub(&Gn[i].y,&pp.y);
+
+				_s.ModMulK1(&dy,&dx[i]);        // s = (p2.y-p1.y)*inverse(p2.x-p1.x);
+				_p.ModSquareK1(&_s);            // _p = pow2(s)
+
+				pp.x.ModNeg();
+				pp.x.ModAdd(&_p);
+				pp.x.ModSub(&Gn[i].x);           // rx = pow2(s) - p1.x - p2.x;
+
+				// P = startP - i*G  , if (x,y) = i*G then (x,-y) = -i*G
 				dyn.Set(&Gn[i].y);
 				dyn.ModNeg();
 				dyn.ModSub(&pn.y);
 
-				_s.ModMulK1(&dyn,&dx[i]);
-				_p.ModSquareK1(&_s);
-
+				_s.ModMulK1(&dyn,&dx[i]);      // s = (p2.y-p1.y)*inverse(p2.x-p1.x);
+				_p.ModSquareK1(&_s);            // _p = pow2(s)
 				pn.x.ModNeg();
 				pn.x.ModAdd(&_p);
-				pn.x.ModSub(&Gn[i].x);
+				pn.x.ModSub(&Gn[i].x);          // rx = pow2(s) - p1.x - p2.x;
 
-				pts[0].Set(pn);
+				pts[512 + (i + 1)].Set(pp);
+				pts[512 - (i + 1)].Set(pn);
+			}
 
-				for(j = 0; j < 256;j++){
-					GetHash160_fromX(2,&pts[(j*4)].x,&pts[(j*4)+1].x,&pts[(j*4)+2].x,&pts[(j*4)+3].x,(uint8_t*)publickeyhashrmd160_endomorphism[0][0],(uint8_t*)publickeyhashrmd160_endomorphism[0][1],(uint8_t*)publickeyhashrmd160_endomorphism[0][2],(uint8_t*)publickeyhashrmd160_endomorphism[0][3]);
-					GetHash160_fromX(3,&pts[(j*4)].x,&pts[(j*4)+1].x,&pts[(j*4)+2].x,&pts[(j*4)+3].x,(uint8_t*)publickeyhashrmd160_endomorphism[1][0],(uint8_t*)publickeyhashrmd160_endomorphism[1][1],(uint8_t*)publickeyhashrmd160_endomorphism[1][2],(uint8_t*)publickeyhashrmd160_endomorphism[1][3]);
+			// First point (startP - (GRP_SZIE/2)*G)
+			pn.Set(startP);
+			dyn.Set(&Gn[i].y);
+			dyn.ModNeg();
+			dyn.ModSub(&pn.y);
 
-					for(k = 0; k < 4;k++)	{
-						for(l = 0;l < 2; l++)	{
-							if(memcmp(publickeyhashrmd160_endomorphism[l][k],addressTable,20) == 0) {
-								a = -9095181581730021519;
-								a ^= (((*((const uint64_t*)&publickeyhashrmd160_endomorphism[l][k][0]) * -4417276706812531889) << 31) | ((*((const uint64_t*)&publickeyhashrmd160_endomorphism[l][k][0]) * -4417276706812531889) >> 33)) * -7046029288634856825;
-								a  = ((a << 27) | (a >> 37)) * -7046029288634856825 + -8796714831421723037;
-								a ^= ((*((const uint64_t*)&publickeyhashrmd160_endomorphism[l][k][8]) * -4417276706812531889 << 31) | (*((const uint64_t*)&publickeyhashrmd160_endomorphism[l][k][8]) * -4417276706812531889 >> 33)) * -7046029288634856825;
-								a  = ((a << 27) | (a >> 37)) * -7046029288634856825 + -8796714831421723037;
-								a ^= (uint64_t)(*((const uint32_t*)&publickeyhashrmd160_endomorphism[l][k][16])) * -7046029288634856825;
-								a = ((a << 23) | (a >> 41)) * -4417276706812531889 + 1609587929392839161;
-								a ^= a >> 33;
-								a *= -4417276706812531889;
-								a ^= a >> 29;
-								a *= 1609587929392839161;
-								a ^= a >> 32;
-								b = a + 2870177450012600281;
-								b ^= (((*((const uint64_t*)&publickeyhashrmd160_endomorphism[l][k][0]) * -4417276706812531889) << 31) | ((*((const uint64_t*)&publickeyhashrmd160_endomorphism[l][k][0]) * -4417276706812531889) >> 33)) * -7046029288634856825;
-								b  = ((b << 27) | (b >> 37)) * -7046029288634856825 + -8796714831421723037;
-								b ^= ((*((const uint64_t*)&publickeyhashrmd160_endomorphism[l][k][8]) * -4417276706812531889 << 31) | (*((const uint64_t*)&publickeyhashrmd160_endomorphism[l][k][8]) * -4417276706812531889 >> 33)) * -7046029288634856825;
-								b  = ((b << 27) | (b >> 37)) * -7046029288634856825 + -8796714831421723037;
-								b ^= (uint64_t)(*((const uint32_t*)&publickeyhashrmd160_endomorphism[l][k][16])) * -7046029288634856825;
-								b = ((b << 23) | (b >> 41)) * -4417276706812531889 + 1609587929392839161;
-								b ^= b >> 33;
-								b *= -4417276706812531889;
-								b ^= b >> 29;
-								b *= 1609587929392839161;
-								b ^= b >> 32;
-								for (bloom_check_looper = 0; bloom_check_looper < 20; bloom_check_looper++) {
-									x = (a + b*bloom_check_looper) % 35944;
-									byte = x >> 3;
-									c = bloom_bf[byte];	 // expensive memory access
-									mask = 1 << (x % 8);
-									if (!(c & mask)) {
-										break;
-									}
+			_s.ModMulK1(&dyn,&dx[i]);
+			_p.ModSquareK1(&_s);
+
+			pn.x.ModNeg();
+			pn.x.ModAdd(&_p);
+			pn.x.ModSub(&Gn[i].x);
+
+			pts[0].Set(pn);
+
+			for(j = 0; j < 256;j++){
+				GetHash160_fromX(2,&pts[(j*4)].x,&pts[(j*4)+1].x,&pts[(j*4)+2].x,&pts[(j*4)+3].x,(uint8_t*)publickeyhashrmd160_endomorphism[0][0],(uint8_t*)publickeyhashrmd160_endomorphism[0][1],(uint8_t*)publickeyhashrmd160_endomorphism[0][2],(uint8_t*)publickeyhashrmd160_endomorphism[0][3]);
+				GetHash160_fromX(3,&pts[(j*4)].x,&pts[(j*4)+1].x,&pts[(j*4)+2].x,&pts[(j*4)+3].x,(uint8_t*)publickeyhashrmd160_endomorphism[1][0],(uint8_t*)publickeyhashrmd160_endomorphism[1][1],(uint8_t*)publickeyhashrmd160_endomorphism[1][2],(uint8_t*)publickeyhashrmd160_endomorphism[1][3]);
+
+				for(k = 0; k < 4;k++)	{
+					for(l = 0;l < 2; l++)	{
+						if(memcmp(publickeyhashrmd160_endomorphism[l][k],addressTable,20) == 0) {
+							a = -9095181581730021519;
+							a ^= (((*((const uint64_t*)&publickeyhashrmd160_endomorphism[l][k][0]) * -4417276706812531889) << 31) | ((*((const uint64_t*)&publickeyhashrmd160_endomorphism[l][k][0]) * -4417276706812531889) >> 33)) * -7046029288634856825;
+							a  = ((a << 27) | (a >> 37)) * -7046029288634856825 + -8796714831421723037;
+							a ^= ((*((const uint64_t*)&publickeyhashrmd160_endomorphism[l][k][8]) * -4417276706812531889 << 31) | (*((const uint64_t*)&publickeyhashrmd160_endomorphism[l][k][8]) * -4417276706812531889 >> 33)) * -7046029288634856825;
+							a  = ((a << 27) | (a >> 37)) * -7046029288634856825 + -8796714831421723037;
+							a ^= (uint64_t)(*((const uint32_t*)&publickeyhashrmd160_endomorphism[l][k][16])) * -7046029288634856825;
+							a = ((a << 23) | (a >> 41)) * -4417276706812531889 + 1609587929392839161;
+							a ^= a >> 33;
+							a *= -4417276706812531889;
+							a ^= a >> 29;
+							a *= 1609587929392839161;
+							a ^= a >> 32;
+							b = a + 2870177450012600281;
+							b ^= (((*((const uint64_t*)&publickeyhashrmd160_endomorphism[l][k][0]) * -4417276706812531889) << 31) | ((*((const uint64_t*)&publickeyhashrmd160_endomorphism[l][k][0]) * -4417276706812531889) >> 33)) * -7046029288634856825;
+							b  = ((b << 27) | (b >> 37)) * -7046029288634856825 + -8796714831421723037;
+							b ^= ((*((const uint64_t*)&publickeyhashrmd160_endomorphism[l][k][8]) * -4417276706812531889 << 31) | (*((const uint64_t*)&publickeyhashrmd160_endomorphism[l][k][8]) * -4417276706812531889 >> 33)) * -7046029288634856825;
+							b  = ((b << 27) | (b >> 37)) * -7046029288634856825 + -8796714831421723037;
+							b ^= (uint64_t)(*((const uint32_t*)&publickeyhashrmd160_endomorphism[l][k][16])) * -7046029288634856825;
+							b = ((b << 23) | (b >> 41)) * -4417276706812531889 + 1609587929392839161;
+							b ^= b >> 33;
+							b *= -4417276706812531889;
+							b ^= b >> 29;
+							b *= 1609587929392839161;
+							b ^= b >> 32;
+							for (bloom_check_looper = 0; bloom_check_looper < 20; bloom_check_looper++) {
+								x = (a + b*bloom_check_looper) % 35944;
+								byte = x >> 3;
+								c = bloom_bf[byte];	 // expensive memory access
+								mask = 1 << (x % 8);
+								if (!(c & mask)) {
+									break;
+								}
+							}
+
+							if(bloom_check_looper == 20)	{
+								keyfound.SetInt32(k);
+								keyfound.Add(&key_mpz);
+
+								publickey.Set2(ComputePublicKey(secp,&keyfound));
+								GetHash160(publickey,(uint8_t*)publickeyhashrmd160);
+								if(memcmp(publickeyhashrmd160_endomorphism[l][k],publickeyhashrmd160,20) != 0)	{
+									keyfound.Neg();
+									keyfound.Add(&curve_order);
 								}
 
-								if(bloom_check_looper == 20)	{
-									keyfound.SetInt32(k);
-									keyfound.Add(&key_mpz);
+								offset = 0;
+								memset(public_key_hex,0,132);
+								hextemp = (&keyfound)->GetBase16();
+								publickey2.Set2(ComputePublicKey(secp,&keyfound));
+								GetPublicKeyHex(publickey2,public_key_hex);
+								GetHash160(publickey2,(uint8_t*)rmdhash);
 
-									publickey.Set2(ComputePublicKey(secp,&keyfound));
-									GetHash160(publickey,(uint8_t*)publickeyhashrmd160);
-									if(memcmp(publickeyhashrmd160_endomorphism[l][k],publickeyhashrmd160,20) != 0)	{
-										keyfound.Neg();
-										keyfound.Add(&curve_order);
-									}
+								hexrmd = (char *) malloc(41);
+								for (i = 0; i <20; i++) {
+									c2 = rmdhash[i];
+									sprintf((char*) (hexrmd + offset),"%.2x",c2);
+									offset+=2;
+								}
+								hexrmd[40] = 0;
 
-									offset = 0;
-									memset(public_key_hex,0,132);
-									hextemp = (&keyfound)->GetBase16();
-									publickey2.Set2(ComputePublicKey(secp,&keyfound));
-									GetPublicKeyHex(publickey2,public_key_hex);
-									GetHash160(publickey2,(uint8_t*)rmdhash);
+								digest[0] = 0;
+								memcpy(digest+1,rmdhash,20);
+								sha256((uint8_t*)digest, 21,(uint8_t*) digest+21);
+								sha256((uint8_t*)digest+21, 32,(uint8_t*) digest+21);
 
-									hexrmd = (char *) malloc(41);
-									for (i = 0; i <20; i++) {
-										c2 = rmdhash[i];
-										sprintf((char*) (hexrmd + offset),"%.2x",c2);
-										offset+=2;
-									}
-									hexrmd[40] = 0;
+								bin = (const uint8_t *)digest;
+								zcount = 0;
 
-									digest[0] = 0;
-									memcpy(digest+1,rmdhash,20);
-									sha256((uint8_t*)digest, 21,(uint8_t*) digest+21);
-									sha256((uint8_t*)digest+21, 32,(uint8_t*) digest+21);
+								while (zcount < 25 && !bin[zcount])
+									++zcount;
 
-									bin = (const uint8_t *)digest;
-									zcount = 0;
+								size = (25 - zcount) * 138 / 100 + 1;
+								uint8_t buf[size];
+								memset(buf, 0, size);
 
-									while (zcount < 25 && !bin[zcount])
-										++zcount;
-
-									size = (25 - zcount) * 138 / 100 + 1;
-									uint8_t buf[size];
-									memset(buf, 0, size);
-
-									for (i2 = zcount, high = size - 1; i2 < 25; ++i2, high = j2)
+								for (i2 = zcount, high = size - 1; i2 < 25; ++i2, high = j2)
+								{
+									for (carry = bin[i2], j2 = size - 1; (j2 > high) || carry; --j2)
 									{
-										for (carry = bin[i2], j2 = size - 1; (j2 > high) || carry; --j2)
-										{
-											carry += 256 * buf[j2];
-											buf[j2] = carry % 58;
-											carry /= 58;
-											if (!j2) {
-												// Otherwise j2 wraps to maxint which is > high
-												break;
-											}
+										carry += 256 * buf[j2];
+										buf[j2] = carry % 58;
+										carry /= 58;
+										if (!j2) {
+											// Otherwise j2 wraps to maxint which is > high
+											break;
 										}
 									}
-
-									for (j2 = 0; j2 < size && !buf[j2]; ++j2);
-
-									if (40 <= zcount + size - j2)
-									{
-										fprintf(stderr,"error b58enc\n");
-									}
-									else
-									{
-										if (zcount)
-											memset(address, '1', zcount);
-										for (i2 = zcount; j2 < size; ++i2, ++j2)
-											address[i2] = b58digits_ordered[buf[j2]];
-										address[i2] = '\0';
-									}
-
-									printf("\nHit! Private Key: %s\npubkey: %s\nAddress %s\nrmd160 %s\n",hextemp,public_key_hex,address,hexrmd);
-
-									free(hextemp);
-									free(hexrmd);
 								}
+
+								for (j2 = 0; j2 < size && !buf[j2]; ++j2);
+
+								if (40 <= zcount + size - j2)
+								{
+									fprintf(stderr,"error b58enc\n");
+								}
+								else
+								{
+									if (zcount)
+										memset(address, '1', zcount);
+									for (i2 = zcount; j2 < size; ++i2, ++j2)
+										address[i2] = b58digits_ordered[buf[j2]];
+									address[i2] = '\0';
+								}
+
+								printf("\nHit! Private Key: %s\npubkey: %s\nAddress %s\nrmd160 %s\n",hextemp,public_key_hex,address,hexrmd);
+
+								free(hextemp);
+								free(hexrmd);
 							}
 						}
 					}
-					count+=4;
-					key_mpz.Add(4);
 				}
+				count+=4;
+				key_mpz.Add(4);
+			}
 
-				// Next start point (startP + GRP_SIZE*G)
-				pp.Set(startP);
-				dy.ModSub(&_2Gn.y,&pp.y);
+			// Next start point (startP + GRP_SIZE*G)
+			pp.Set(startP);
+			dy.ModSub(&_2Gn.y,&pp.y);
 
-				_s.ModMulK1(&dy,&dx[i + 1]);
-				_p.ModSquareK1(&_s);
+			_s.ModMulK1(&dy,&dx[i + 1]);
+			_p.ModSquareK1(&_s);
 
-				pp.x.ModNeg();
-				pp.x.ModAdd(&_p);
-				pp.x.ModSub(&_2Gn.x);
+			pp.x.ModNeg();
+			pp.x.ModAdd(&_p);
+			pp.x.ModSub(&_2Gn.x);
 
-				//The Y value for the next start point always need to be calculated
-				pp.y.ModSub(&_2Gn.x,&pp.x);
-				pp.y.ModMulK1(&_s);
-				pp.y.ModSub(&_2Gn.y);
-				startP.Set(pp);
-			}while(count < N_SEQUENTIAL_MAX);
+			//The Y value for the next start point always need to be calculated
+			pp.y.ModSub(&_2Gn.x,&pp.x);
+			pp.y.ModMulK1(&_s);
+			pp.y.ModSub(&_2Gn.y);
+			startP.Set(pp);
 		}
-	} while(continue_flag);
+	}
 	free(bloom_bf);
 	printf("\nEnd\n");
 }
