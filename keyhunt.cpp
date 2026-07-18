@@ -365,17 +365,6 @@ void GetHash160_fromX(unsigned char prefix, Int *k0, Int *k1, Int *k2, Int *k3, 
 	ripemd160sse_32(sh0, sh1, sh2, sh3, h0, h1, h2, h3);
 }
 
-/** ***************************************************************************
- * Structure to keep track of one bloom filter.  Caller needs to
- * allocate this and pass it to the functions below. First call for
- * every struct must be to bloom_init().
- *
- */
-struct bloom
-{
-	uint8_t *bf;
-};
-
 int main()	{
 	uint8_t rawvalue[21];
 	Point pts[1024];
@@ -389,7 +378,7 @@ int main()	{
 	char publickeyhashrmd160[20];
 	char publickeyhashrmd160_endomorphism[12][4][20];
 	std::vector<Point> Gn;
-	struct bloom bloom;
+	uint8_t *bloom_bf;
 	uint8_t *addressTable;
 	const char b58digits_ordered[] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 	Point secp[256*32];
@@ -444,7 +433,7 @@ int main()	{
 	printf("[+] Allocating memory for addressTable\n");
 	addressTable = (uint8_t *) malloc(20);
 	printf("[+] Bloom filter for 1 elements.\n");
-	(&bloom)->bf = (uint8_t *)calloc((uint64_t)35944, sizeof(uint8_t));
+	bloom_bf = (uint8_t *)calloc((uint64_t)35944, sizeof(uint8_t));
 	printf("[+] Loading data to the bloomfilter total: 0.03 MB\n");
 
 	printf("[+] Setting search for btc adddress\n");
@@ -596,10 +585,10 @@ int main()	{
 	for (bloom_add_looper = 0; bloom_add_looper < 20; bloom_add_looper++) {
 		x = (a + b*bloom_add_looper) % 35944;
 		byte = x >> 3;
-		c = (&bloom)->bf[byte];	 // expensive memory access
+		c = bloom_bf[byte];	 // expensive memory access
 		mask = 1 << (x % 8);
 		if (!(c & mask)) {
-			(&bloom)->bf[byte] = c | mask;
+			bloom_bf[byte] = c | mask;
 		}
 	}
 	memcpy(addressTable,rawvalue+1,20);
@@ -728,7 +717,7 @@ int main()	{
 								for (bloom_check_looper = 0; bloom_check_looper < 20; bloom_check_looper++) {
 									x = (a + b*bloom_check_looper) % 35944;
 									byte = x >> 3;
-									c = (&bloom)->bf[byte];	 // expensive memory access
+									c = bloom_bf[byte];	 // expensive memory access
 									mask = 1 << (x % 8);
 									if (!(c & mask)) {
 										break;
@@ -837,6 +826,6 @@ int main()	{
 		}
 	} while(continue_flag);
 	free(addressTable);
-	free(bloom.bf);
+	free(bloom_bf);
 	printf("\nEnd\n");
 }
