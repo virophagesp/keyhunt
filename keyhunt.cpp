@@ -379,7 +379,7 @@ int main()	{
 	char publickeyhashrmd160_endomorphism[12][4][20];
 	std::vector<Point> Gn;
 	uint8_t *bloom_bf;
-	uint8_t *addressTable;
+	uint8_t addressTable[20];
 	const char b58digits_ordered[] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 	Point secp[256*32];
 	uint8_t bloom_add_looper,c,mask,bloom_check_looper;
@@ -430,8 +430,6 @@ int main()	{
 	}
 	_2Gn.Set2(DoubleDirect(Gn[511]));
 
-	printf("[+] Allocating memory for addressTable\n");
-	addressTable = (uint8_t *) malloc(20);
 	printf("[+] Bloom filter for 1 elements.\n");
 	bloom_bf = (uint8_t *)calloc((uint64_t)35944, sizeof(uint8_t));
 	printf("[+] Loading data to the bloomfilter total: 0.03 MB\n");
@@ -825,7 +823,6 @@ int main()	{
 			}while(count < N_SEQUENTIAL_MAX);
 		}
 	} while(continue_flag);
-	free(addressTable);
 	free(bloom_bf);
 	printf("\nEnd\n");
 }
