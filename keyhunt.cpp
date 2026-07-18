@@ -366,7 +366,6 @@ void GetHash160_fromX(unsigned char prefix, Int *k0, Int *k1, Int *k2, Int *k3, 
 }
 
 int main()	{
-	uint8_t rawvalue[21];
 	Point pts[1024];
 	Int dx[513];
 	Int dx_inverse[513];
@@ -447,27 +446,26 @@ int main()	{
 		n_range_start.SetBase16((char *)"8000");
 		n_range_end.SetBase16((char *)"ffff");
 
-		rawvalue[0] = 0;
-		rawvalue[1] = 112;
-		rawvalue[2] = 37;
-		rawvalue[3] = 180;
-		rawvalue[4] = 239;
-		rawvalue[5] = 179;
-		rawvalue[6] = 255;
-		rawvalue[7] = 66;
-		rawvalue[8] = 235;
-		rawvalue[9] = 77;
-		rawvalue[10] = 109;
-		rawvalue[11] = 113;
-		rawvalue[12] = 250;
-		rawvalue[13] = 182;
-		rawvalue[14] = 181;
-		rawvalue[15] = 59;
-		rawvalue[16] = 79;
-		rawvalue[17] = 73;
-		rawvalue[18] = 103;
-		rawvalue[19] = 227;
-		rawvalue[20] = 221;
+		addressTable[0] = 112;
+		addressTable[1] = 37;
+		addressTable[2] = 180;
+		addressTable[3] = 239;
+		addressTable[4] = 179;
+		addressTable[5] = 255;
+		addressTable[6] = 66;
+		addressTable[7] = 235;
+		addressTable[8] = 77;
+		addressTable[9] = 109;
+		addressTable[10] = 113;
+		addressTable[11] = 250;
+		addressTable[12] = 182;
+		addressTable[13] = 181;
+		addressTable[14] = 59;
+		addressTable[15] = 79;
+		addressTable[16] = 73;
+		addressTable[17] = 103;
+		addressTable[18] = 227;
+		addressTable[19] = 221;
 	} else if (strcmp(IMPORTANT, "medium_test") == 0) {
 		printf("[+] -- from : 0x200000000\n");
 		printf("[+] -- to   : 0x3ffffffff\n");
@@ -475,27 +473,26 @@ int main()	{
 		n_range_start.SetBase16((char *)"200000000");
 		n_range_end.SetBase16((char *)"3ffffffff");
 
-		rawvalue[0] = 0;
-		rawvalue[1] = 246;
-		rawvalue[2] = 214;
-		rawvalue[3] = 125;
-		rawvalue[4] = 121;
-		rawvalue[5] = 131;
-		rawvalue[6] = 191;
-		rawvalue[7] = 112;
-		rawvalue[8] = 69;
-		rawvalue[9] = 15;
-		rawvalue[10] = 41;
-		rawvalue[11] = 92;
-		rawvalue[12] = 156;
-		rawvalue[13] = 184;
-		rawvalue[14] = 40;
-		rawvalue[15] = 218;
-		rawvalue[16] = 171;
-		rawvalue[17] = 38;
-		rawvalue[18] = 95;
-		rawvalue[19] = 27;
-		rawvalue[20] = 250;
+		addressTable[0] = 246;
+		addressTable[1] = 214;
+		addressTable[2] = 125;
+		addressTable[3] = 121;
+		addressTable[4] = 131;
+		addressTable[5] = 191;
+		addressTable[6] = 112;
+		addressTable[7] = 69;
+		addressTable[8] = 15;
+		addressTable[9] = 41;
+		addressTable[10] = 92;
+		addressTable[11] = 156;
+		addressTable[12] = 184;
+		addressTable[13] = 40;
+		addressTable[14] = 218;
+		addressTable[15] = 171;
+		addressTable[16] = 38;
+		addressTable[17] = 95;
+		addressTable[18] = 27;
+		addressTable[19] = 250;
 	} else if (strcmp(IMPORTANT, "big_test") == 0) {
 		printf("[+] -- from : 0x100000000000000000\n");
 		printf("[+] -- to   : 0x1fffffffffffffffff\n");
@@ -503,27 +500,26 @@ int main()	{
 		n_range_start.SetBase16((char *)"100000000000000000");
 		n_range_end.SetBase16((char *)"1fffffffffffffffff");
 
-		rawvalue[0] = 0;
-		rawvalue[1] = 97;
-		rawvalue[2] = 235;
-		rawvalue[3] = 138;
-		rawvalue[4] = 80;
-		rawvalue[5] = 200;
-		rawvalue[6] = 107;
-		rawvalue[7] = 5;
-		rawvalue[8] = 132;
-		rawvalue[9] = 187;
-		rawvalue[10] = 114;
-		rawvalue[11] = 125;
-		rawvalue[12] = 214;
-		rawvalue[13] = 91;
-		rawvalue[14] = 237;
-		rawvalue[15] = 141;
-		rawvalue[16] = 36;
-		rawvalue[17] = 0;
-		rawvalue[18] = 214;
-		rawvalue[19] = 213;
-		rawvalue[20] = 170;
+		addressTable[0] = 97;
+		addressTable[1] = 235;
+		addressTable[2] = 138;
+		addressTable[3] = 80;
+		addressTable[4] = 200;
+		addressTable[5] = 107;
+		addressTable[6] = 5;
+		addressTable[7] = 132;
+		addressTable[8] = 187;
+		addressTable[9] = 114;
+		addressTable[10] = 125;
+		addressTable[11] = 214;
+		addressTable[12] = 91;
+		addressTable[13] = 237;
+		addressTable[14] = 141;
+		addressTable[15] = 36;
+		addressTable[16] = 0;
+		addressTable[17] = 214;
+		addressTable[18] = 213;
+		addressTable[19] = 170;
 	} else if (strcmp(IMPORTANT, "money") == 0) {
 		printf("[+] -- from : 0x200000000000000000000\n");
 		printf("[+] -- to   : 0x3ffffffffffffffffffff\n");
@@ -531,35 +527,34 @@ int main()	{
 		n_range_start.SetBase16((char *)"200000000000000000000");
 		n_range_end.SetBase16((char *)"3ffffffffffffffffffff");
 
-		rawvalue[0] = 0;
-		rawvalue[1] = 32;
-		rawvalue[2] = 210;
-		rawvalue[3] = 141;
-		rawvalue[4] = 78;
-		rawvalue[5] = 135;
-		rawvalue[6] = 84;
-		rawvalue[7] = 57;
-		rawvalue[8] = 71;
-		rawvalue[9] = 199;
-		rawvalue[10] = 228;
-		rawvalue[11] = 145;
-		rawvalue[12] = 59;
-		rawvalue[13] = 205;
-		rawvalue[14] = 206;
-		rawvalue[15] = 170;
-		rawvalue[16] = 22;
-		rawvalue[17] = 226;
-		rawvalue[18] = 248;
-		rawvalue[19] = 240;
-		rawvalue[20] = 97;
+		addressTable[0] = 32;
+		addressTable[1] = 210;
+		addressTable[2] = 141;
+		addressTable[3] = 78;
+		addressTable[4] = 135;
+		addressTable[5] = 84;
+		addressTable[6] = 57;
+		addressTable[7] = 71;
+		addressTable[8] = 199;
+		addressTable[9] = 228;
+		addressTable[10] = 145;
+		addressTable[11] = 59;
+		addressTable[12] = 205;
+		addressTable[13] = 206;
+		addressTable[14] = 170;
+		addressTable[15] = 22;
+		addressTable[16] = 226;
+		addressTable[17] = 248;
+		addressTable[18] = 240;
+		addressTable[19] = 97;
 	}
 
     a = -9095181581730021519;
-    a ^= (((*((const uint64_t*)&rawvalue[1]) * -4417276706812531889) << 31) | ((*((const uint64_t*)&rawvalue[1]) * -4417276706812531889) >> 33)) * -7046029288634856825;
+    a ^= (((*((const uint64_t*)&addressTable[0]) * -4417276706812531889) << 31) | ((*((const uint64_t*)&addressTable[0]) * -4417276706812531889) >> 33)) * -7046029288634856825;
     a  = ((a << 27) | (a >> 37)) * -7046029288634856825 + -8796714831421723037;
-    a ^= ((*((const uint64_t*)&rawvalue[9]) * -4417276706812531889 << 31) | (*((const uint64_t*)&rawvalue[9]) * -4417276706812531889 >> 33)) * -7046029288634856825;
+    a ^= ((*((const uint64_t*)&addressTable[8]) * -4417276706812531889 << 31) | (*((const uint64_t*)&addressTable[8]) * -4417276706812531889 >> 33)) * -7046029288634856825;
     a  = ((a << 27) | (a >> 37)) * -7046029288634856825 + -8796714831421723037;
-    a ^= (uint64_t)(*((const uint32_t*)&rawvalue[17])) * -7046029288634856825;
+    a ^= (uint64_t)(*((const uint32_t*)&addressTable[16])) * -7046029288634856825;
     a = ((a << 23) | (a >> 41)) * -4417276706812531889 + 1609587929392839161;
     a ^= a >> 33;
     a *= -4417276706812531889;
@@ -567,11 +562,11 @@ int main()	{
     a *= 1609587929392839161;
     a ^= a >> 32;
     b = a + 2870177450012600281;
-    b ^= (((*((const uint64_t*)&rawvalue[1]) * -4417276706812531889) << 31) | ((*((const uint64_t*)&rawvalue[1]) * -4417276706812531889) >> 33)) * -7046029288634856825;
+    b ^= (((*((const uint64_t*)&addressTable[0]) * -4417276706812531889) << 31) | ((*((const uint64_t*)&addressTable[0]) * -4417276706812531889) >> 33)) * -7046029288634856825;
     b  = ((b << 27) | (b >> 37)) * -7046029288634856825 + -8796714831421723037;
-    b ^= ((*((const uint64_t*)&rawvalue[9]) * -4417276706812531889 << 31) | (*((const uint64_t*)&rawvalue[9]) * -4417276706812531889 >> 33)) * -7046029288634856825;
+    b ^= ((*((const uint64_t*)&addressTable[8]) * -4417276706812531889 << 31) | (*((const uint64_t*)&addressTable[8]) * -4417276706812531889 >> 33)) * -7046029288634856825;
     b  = ((b << 27) | (b >> 37)) * -7046029288634856825 + -8796714831421723037;
-    b ^= (uint64_t)(*((const uint32_t*)&rawvalue[17])) * -7046029288634856825;
+    b ^= (uint64_t)(*((const uint32_t*)&addressTable[16])) * -7046029288634856825;
     b = ((b << 23) | (b >> 41)) * -4417276706812531889 + 1609587929392839161;
     b ^= b >> 33;
     b *= -4417276706812531889;
@@ -587,7 +582,6 @@ int main()	{
 			bloom_bf[byte] = c | mask;
 		}
 	}
-	memcpy(addressTable,rawvalue+1,20);
 
 	continue_flag = 1;
 	do	{
