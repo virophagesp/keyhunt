@@ -394,7 +394,6 @@ int main()	{
 	const char b58digits_ordered[] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 	Point secp[256*32];
 	uint8_t bloom_add_looper,c,mask,bloom_check_looper;
-	FILE *keys;
 	char *hexrmd,public_key_hex[132],address[50],rmdhash[20];
 	unsigned char c2;
 	char digest[60];
@@ -806,11 +805,6 @@ int main()	{
 										address[i2] = '\0';
 									}
 
-									keys = fopen("KEYFOUNDKEYFOUND.txt","a+");
-									if(keys != NULL)	{
-										fprintf(keys,"Private Key: %s\npubkey: %s\nAddress %s\nrmd160 %s\n",hextemp,public_key_hex,address,hexrmd);
-										fclose(keys);
-									}
 									printf("\nHit! Private Key: %s\npubkey: %s\nAddress %s\nrmd160 %s\n",hextemp,public_key_hex,address,hexrmd);
 
 									free(hextemp);
