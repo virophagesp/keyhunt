@@ -434,8 +434,6 @@ int main()	{
 	bloom_bf = (uint8_t *)calloc((uint64_t)35944, sizeof(uint8_t));
 	printf("[+] Loading data to the bloomfilter total: 0.03 MB\n");
 
-	printf("[+] Setting search for btc adddress\n");
-
 	// sequential number option (putting this IMPORTANT here for easy finding )
 	N_SEQUENTIAL_MAX = strtol("0x100000",NULL,16);
 	printf("[+] N = %p\n",(void*)N_SEQUENTIAL_MAX);
