@@ -158,23 +158,19 @@ Point ComputePublicKey(Point *secp, Int *privKey) {
 	return Q;
 }
 
-void tohex_dst(char *ptr,char *dst)	{
-	int offset = 0;
-	unsigned char c;
-	for (int i = 0; i <33; i++) {
-		c = ptr[i];
-		sprintf((char*) (dst + offset),"%.2x",c);
-		offset+=2;
-	}
-	dst[66] = 0;
-}
-
 void GetPublicKeyHex(Point &pubKey,char *dst){
-	unsigned char publicKeyBytes[65];
+	unsigned char publicKeyBytes[33];
+	int offset;
+	int i;
 	// Compressed public key
 	publicKeyBytes[0] = pubKey.y.IsEven() ? 0x2 : 0x3;
 	pubKey.x.Get32Bytes(publicKeyBytes + 1);
-	tohex_dst((char*)publicKeyBytes,dst);
+	offset = 0;
+	for (i = 0; i <33; i++) {
+		sprintf((char*) (dst + offset),"%.2x",((char *)publicKeyBytes)[i]);
+		offset+=2;
+	}
+	dst[66] = 0;
 }
 
 Point AddDirect(Point &p1,Point &p2) {
