@@ -372,7 +372,7 @@ int main()	{
 	char *hextemp = NULL;
 	char publickeyhashrmd160[20];
 	char publickeyhashrmd160_endomorphism[12][4][20];
-	std::vector<Point> Gn;
+	Point Gn[512];
 	uint8_t bloom_bf[20];
 	uint8_t addressTable[20];
 	const char b58digits_ordered[] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
@@ -415,7 +415,6 @@ int main()	{
 
 	G.Set2(ComputePublicKey(secp,&stride));
 	g.Set(G);
-	Gn.reserve(512);
 	Gn[0].Set(g);
 	g.Set2(DoubleDirect(g));
 	Gn[1].Set(g);
