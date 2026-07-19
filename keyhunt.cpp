@@ -586,12 +586,10 @@ int main()	{
  			startP.Set2(ComputePublicKey(secp,&key_mpz));
 			key_mpz.Sub(512);
 
-			for(i = 0; i < 511; i++) {
+			for(i = 0; i < 512; i++) {
 				dx[i].ModSub(&Gn[i].x,&startP.x);
 			}
-
-			dx[i].ModSub(&Gn[i].x,&startP.x);  // For the first point
-			dx[i + 1].ModSub(&_2Gn.x,&startP.x); // For the next center point
+			dx[i].ModSub(&_2Gn.x,&startP.x); // For the next center point
 
 			dx_inverse[0].Set(&(dx[0]));
 			for (i = 1; i < 513; i++) {
@@ -599,10 +597,10 @@ int main()	{
 			}
 
 			// Do the inversion
-			inverse.Set(&(dx_inverse[513 - 1]));
+			inverse.Set(&(dx_inverse[512]));
 			inverse.ModInv();
 
-			for (i = 513 - 1; i > 0; i--) {
+			for (i = 512; i > 0; i--) {
 				newValue.ModMulK1(&(dx_inverse[i - 1]), &inverse);
 				inverse.ModMulK1(&(dx[i]));
 				dx[i].Set(&newValue);
@@ -643,16 +641,16 @@ int main()	{
 
 			// First point (startP - (GRP_SZIE/2)*G)
 			pn.Set(startP);
-			dyn.Set(&Gn[i].y);
+			dyn.Set(&Gn[511].y);
 			dyn.ModNeg();
 			dyn.ModSub(&pn.y);
 
-			_s.ModMulK1(&dyn,&dx[i]);
+			_s.ModMulK1(&dyn,&dx[511]);
 			_p.ModSquareK1(&_s);
 
 			pn.x.ModNeg();
 			pn.x.ModAdd(&_p);
-			pn.x.ModSub(&Gn[i].x);
+			pn.x.ModSub(&Gn[511].x);
 
 			pts[0].Set(pn);
 
