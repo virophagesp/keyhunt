@@ -384,8 +384,6 @@ int main()	{
 	const uint8_t *bin;
 	size_t i2, j2, high, zcount,size;
 
-	srand(time(NULL));
-
 	// Prime for the finite field
 	P.SetBase16("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F");
 	// Set up field
