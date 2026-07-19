@@ -368,12 +368,12 @@ int main()	{
 	Point startP,pp,pn,R,publickey,G,G2,g,_2Gn,N,publickey2;
 	Int dy,dyn,_s,_p,key_mpz,keyfound,stride,n_range_start,n_range_end,curve_order,P,newValue,inverse;
 	int i,l,k,offset,carry;
-	uint64_t j,count,N_SEQUENTIAL_MAX,a,b,x,byte;
+	uint64_t j,count,N_SEQUENTIAL_MAX,a,b;
 	char *hextemp = NULL;
 	char publickeyhashrmd160[20];
 	char publickeyhashrmd160_endomorphism[12][4][20];
 	std::vector<Point> Gn;
-	uint8_t *bloom_bf;
+	uint8_t bloom_bf[20];
 	uint8_t addressTable[20];
 	const char b58digits_ordered[] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 	Point secp[256*32];
@@ -424,10 +424,6 @@ int main()	{
 		Gn[i].Set(g);
 	}
 	_2Gn.Set2(DoubleDirect(Gn[511]));
-
-	printf("[+] Bloom filter for 1 elements.\n");
-	bloom_bf = (uint8_t *)calloc((uint64_t)35944, sizeof(uint8_t));
-	printf("[+] Loading data to the bloomfilter total: 0.03 MB\n");
 
 	// sequential number option (putting this IMPORTANT here for easy finding )
 	N_SEQUENTIAL_MAX = strtol("0x100000",NULL,16);
@@ -570,12 +566,10 @@ int main()	{
     b *= 1609587929392839161;
     b ^= b >> 32;
 	for (bloom_add_looper = 0; bloom_add_looper < 20; bloom_add_looper++) {
-		x = (a + b*bloom_add_looper) % 35944;
-		byte = x >> 3;
-		c = bloom_bf[byte];	 // expensive memory access
-		mask = 1 << (x % 8);
+		c = bloom_bf[bloom_add_looper];	 // expensive memory access
+		mask = 1 << ((a + b*bloom_add_looper) % 35944 % 8);
 		if (!(c & mask)) {
-			bloom_bf[byte] = c | mask;
+			bloom_bf[bloom_add_looper] = c | mask;
 		}
 	}
 
@@ -694,10 +688,8 @@ int main()	{
 							b *= 1609587929392839161;
 							b ^= b >> 32;
 							for (bloom_check_looper = 0; bloom_check_looper < 20; bloom_check_looper++) {
-								x = (a + b*bloom_check_looper) % 35944;
-								byte = x >> 3;
-								c = bloom_bf[byte];	 // expensive memory access
-								mask = 1 << (x % 8);
+								c = bloom_bf[bloom_check_looper];	 // expensive memory access
+								mask = 1 << ((a + b*bloom_check_looper) % 35944 % 8);
 								if (!(c & mask)) {
 									break;
 								}
@@ -803,6 +795,5 @@ int main()	{
 			startP.Set(pp);
 		}
 	}
-	free(bloom_bf);
 	printf("\nEnd\n");
 }
