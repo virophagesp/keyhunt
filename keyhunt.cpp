@@ -107,21 +107,6 @@ email: albertobsd@gmail.com
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <math.h>
-#include <inttypes.h>
-#include <assert.h>
-#include <fcntl.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <pthread.h>
-#include <sys/random.h>
-#include <vector>
-
 #include "Point.h"
 #include "sha256.h"
 #include "ripemd160.h"
