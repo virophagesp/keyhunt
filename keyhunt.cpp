@@ -143,21 +143,6 @@ Point ComputePublicKey(Point *secp, Int *privKey) {
 	return Q;
 }
 
-void GetPublicKeyHex(Point &pubKey,char *dst){
-	unsigned char publicKeyBytes[33];
-	int offset;
-	int i;
-	// Compressed public key
-	publicKeyBytes[0] = pubKey.y.IsEven() ? 0x2 : 0x3;
-	pubKey.x.Get32Bytes(publicKeyBytes + 1);
-	offset = 0;
-	for (i = 0; i <33; i++) {
-		sprintf((char*) (dst + offset),"%.2x",((char *)publicKeyBytes)[i]);
-		offset+=2;
-	}
-	dst[66] = 0;
-}
-
 Point AddDirect(Point &p1,Point &p2) {
 	Int _s;
 	Int _p;
@@ -363,7 +348,7 @@ int main()	{
 	const char b58digits_ordered[] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 	Point secp[256*32];
 	uint8_t bloom_add_looper,c,mask,bloom_check_looper;
-	char public_key_hex[132],address[50],rmdhash[20];
+	char address[50],rmdhash[20];
 	char digest[60];
 	const uint8_t *bin;
 	size_t i2, j2, high, zcount,size;
@@ -685,10 +670,8 @@ int main()	{
 									keyfound.Add(&curve_order);
 								}
 
-								memset(public_key_hex,0,132);
 								hextemp = (&keyfound)->GetBase16();
 								publickey2.Set2(ComputePublicKey(secp,&keyfound));
-								GetPublicKeyHex(publickey2,public_key_hex);
 								GetHash160(publickey2,(uint8_t*)rmdhash);
 
 								digest[0] = 0;
@@ -735,7 +718,7 @@ int main()	{
 									address[i2] = '\0';
 								}
 
-								printf("\nHit! Private Key: %s\npubkey: %s\nAddress %s\n",hextemp,public_key_hex,address);
+								printf("\nHit! Private Key: %s\nAddress %s\n",hextemp,address);
 
 								free(hextemp);
 							}
