@@ -352,7 +352,7 @@ int main()	{
 	Int dx_inverse[513];
 	Point startP,pp,pn,R,publickey,G,G2,g,_2Gn,N,publickey2;
 	Int dy,dyn,_s,_p,key_mpz,keyfound,stride,n_range_start,n_range_end,curve_order,P,newValue,inverse;
-	int i,l,k,offset,carry;
+	int i,l,k,carry;
 	uint64_t j,count,N_SEQUENTIAL_MAX,a,b;
 	char *hextemp = NULL;
 	char publickeyhashrmd160[20];
@@ -363,8 +363,7 @@ int main()	{
 	const char b58digits_ordered[] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 	Point secp[256*32];
 	uint8_t bloom_add_looper,c,mask,bloom_check_looper;
-	char *hexrmd,public_key_hex[132],address[50],rmdhash[20];
-	unsigned char c2;
+	char public_key_hex[132],address[50],rmdhash[20];
 	char digest[60];
 	const uint8_t *bin;
 	size_t i2, j2, high, zcount,size;
@@ -686,20 +685,11 @@ int main()	{
 									keyfound.Add(&curve_order);
 								}
 
-								offset = 0;
 								memset(public_key_hex,0,132);
 								hextemp = (&keyfound)->GetBase16();
 								publickey2.Set2(ComputePublicKey(secp,&keyfound));
 								GetPublicKeyHex(publickey2,public_key_hex);
 								GetHash160(publickey2,(uint8_t*)rmdhash);
-
-								hexrmd = (char *) malloc(41);
-								for (i = 0; i <20; i++) {
-									c2 = rmdhash[i];
-									sprintf((char*) (hexrmd + offset),"%.2x",c2);
-									offset+=2;
-								}
-								hexrmd[40] = 0;
 
 								digest[0] = 0;
 								memcpy(digest+1,rmdhash,20);
@@ -745,10 +735,9 @@ int main()	{
 									address[i2] = '\0';
 								}
 
-								printf("\nHit! Private Key: %s\npubkey: %s\nAddress %s\nrmd160 %s\n",hextemp,public_key_hex,address,hexrmd);
+								printf("\nHit! Private Key: %s\npubkey: %s\nAddress %s\n",hextemp,public_key_hex,address);
 
 								free(hextemp);
-								free(hexrmd);
 							}
 						}
 					}
