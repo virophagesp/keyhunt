@@ -532,7 +532,7 @@ int main()	{
     b *= 1609587929392839161;
     b ^= b >> 32;
 	for (bloom_add_looper = 0; bloom_add_looper < 20; bloom_add_looper++) {
-		c = bloom_bf[bloom_add_looper];	 // expensive memory access
+		c = bloom_bf[bloom_add_looper];
 		mask = 1 << ((a + b*bloom_add_looper) % 35944 % 8);
 		if (!(c & mask)) {
 			bloom_bf[bloom_add_looper] = c | mask;
@@ -652,7 +652,7 @@ int main()	{
 							b *= 1609587929392839161;
 							b ^= b >> 32;
 							for (bloom_check_looper = 0; bloom_check_looper < 20; bloom_check_looper++) {
-								c = bloom_bf[bloom_check_looper];	 // expensive memory access
+								c = bloom_bf[bloom_check_looper];
 								mask = 1 << ((a + b*bloom_check_looper) % 35944 % 8);
 								if (!(c & mask)) {
 									break;
