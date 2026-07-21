@@ -239,7 +239,7 @@ Point DoubleDirect(Point &p) {
 	return r;
 }
 
-void GetHash160(Point &pubKey, unsigned char *hash) {
+void GetHash160(Point pubKey, unsigned char *hash) {
 	unsigned char shapk[64];
 	unsigned char publicKeyBytes[128];
 
@@ -335,7 +335,7 @@ int main()	{
 	Point pts[1024];
 	Int dx[513];
 	Int dx_inverse[513];
-	Point startP,pp,pn,R,publickey,G,G2,g,_2Gn,N,publickey2;
+	Point startP,pp,pn,G,g,_2Gn;
 	Int dy,dyn,_s,_p,key_mpz,keyfound,stride,n_range_start,n_range_end,curve_order,P,newValue,inverse;
 	int i,l,k,carry;
 	uint64_t j,count,N_SEQUENTIAL_MAX,a,b;
@@ -346,7 +346,7 @@ int main()	{
 	uint8_t bloom_bf[20];
 	uint8_t addressTable[20];
 	const char b58digits_ordered[] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
-	Point secp[256*32];
+	Point secp[8192];
 	uint8_t bloom_add_looper,c,mask,bloom_check_looper;
 	char address[50],rmdhash[20];
 	char digest[60];
@@ -358,19 +358,18 @@ int main()	{
 	// Set up field
 	Int::SetupField(&P);
 	// Generator point
-	G2.x.SetBase16("79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798");
-	G2.y.SetBase16("483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8");
-	G2.z.SetInt32(1);
+	G.x.SetBase16("79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798");
+	G.y.SetBase16("483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8");
+	G.z.SetInt32(1);
 	// Compute Generator table
-	N.Set(G2);
 	for(i = 0; i < 32; i++) {
-		secp[i * 256].Set(N);
-		N.Set2(DoubleDirect(N));
+		secp[i * 256].Set(G);
+		G.Set2(DoubleDirect(G));
 		for (j = 1; j < 255; j++) {
-			secp[i * 256 + j].Set(N);
-			N.Set2(AddDirect(N, secp[i * 256]));
+			secp[i * 256 + j].Set(G);
+			G.Set2(AddDirect(G, secp[i * 256]));
 		}
-		secp[i * 256 + 255].Set(N); // Dummy point for check function
+		secp[i * 256 + 255].Set(G); // Dummy point for check function
 	}
 	// Generator order
 	curve_order.SetBase16("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141");
@@ -663,16 +662,14 @@ int main()	{
 								keyfound.SetInt32(k);
 								keyfound.Add(&key_mpz);
 
-								publickey.Set2(ComputePublicKey(secp,&keyfound));
-								GetHash160(publickey,(uint8_t*)publickeyhashrmd160);
+								GetHash160(ComputePublicKey(secp,&keyfound),(uint8_t*)publickeyhashrmd160);
 								if(memcmp(publickeyhashrmd160_endomorphism[l][k],publickeyhashrmd160,20) != 0)	{
 									keyfound.Neg();
 									keyfound.Add(&curve_order);
 								}
 
 								hextemp = (&keyfound)->GetBase16();
-								publickey2.Set2(ComputePublicKey(secp,&keyfound));
-								GetHash160(publickey2,(uint8_t*)rmdhash);
+								GetHash160(ComputePublicKey(secp,&keyfound),(uint8_t*)rmdhash);
 
 								digest[0] = 0;
 								memcpy(digest+1,rmdhash,20);
